@@ -11,6 +11,12 @@ namespace XProxy
     class Program
     {
         static ServerConsole sc;
+        static ServerStatus status;
+        static ProxyConfig config;
+        public static Server main_server;
+
+
+
         static void Main(string[] args)
         {
             sc = new ServerConsole();
@@ -19,46 +25,31 @@ namespace XProxy
             {
                 var configJson = System.IO.File.ReadAllText("config.json");
 
-                var configs = JsonSerializer.Deserialize<Dictionary<string, ProxyConfig>>(configJson);
+                config = JsonSerializer.Deserialize<ProxyConfig>(configJson);
 
-
-                Task.WhenAll(configs.Select(c =>
+                foreach(var server in config.servers)
                 {
-                    if (c.Value.protocol == "udp")
+                    Server srv = server.Value;
+                    srv.players_online = 0;
+                    status.servers.Add(server.Key, srv);
+                }
+
+                if (config.servers.ContainsKey(config.main_server))
+                    main_server = config.servers[config.main_server];
+
+                Task.Run(() =>
+                {
+                    try
                     {
-                        try
-                        {
-                            var proxy = new UdpProxy();
-                            return proxy.Start(c.Value.forwardIp, c.Value.forwardPort, c.Value.localPort, c.Value.localIp);
-                        }
-                        catch (Exception ex)
-                        {
-                            Console.WriteLine($"Failed to start {c.Key} : {ex.Message}");
-                            throw ex;
-                        }
+                        var proxy = new UdpProxy();
+                        return proxy.Start(config.port);
                     }
-                    else if (c.Value.protocol == "tcp")
+                    catch (Exception ex)
                     {
-                        try
-                        {
-                            var proxy = new TcpProxy();
-                            return proxy.Start(c.Value.forwardIp, c.Value.forwardPort, c.Value.localPort, c.Value.localIp);
-                        }
-                        catch (Exception ex)
-                        {
-                            Console.WriteLine($"Failed to start {c.Key} : {ex.Message}");
-                            throw ex;
-                        }
+                        Console.WriteLine($"Failed to start : {ex.Message}");
+                        throw ex;
                     }
-                    else
-                    {
-                        return Task.FromException(new InvalidOperationException($"procotol not supported {c.Value.protocol}"));
-                    }
-                })).Wait();
-
-
-
-
+                }).Wait();
             }
             catch (Exception ex)
             {
@@ -67,12 +58,24 @@ namespace XProxy
         }
     }
 
+    public class ServerStatus
+    {
+        public Dictionary<string, Server> servers { get; set; } = new Dictionary<string, Server>();
+    }
+
     public class ProxyConfig
     {
-        public string protocol { get; set; }
-        public ushort localPort { get; set; }
-        public string localIp { get; set; }
-        public string forwardIp { get; set; }
-        public ushort forwardPort { get; set; }
+        public int player_limit { get; set; } = -1;
+        public string ip { get; set; } = "localhost";
+        public ushort port { get; set; } = 25565;
+        public string main_server { get; set; } = "Unknown";
+        public Dictionary<string, Server> servers { get; set; } = new Dictionary<string, Server>();
+    }
+
+    public class Server
+    {
+        public string server_name { get; set; } = "Unknowns server";
+        public ushort port { get; set; } = 7777;
+        public int players_online { get; set; }
     }
 }

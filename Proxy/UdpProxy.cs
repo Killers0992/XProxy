@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Org.BouncyCastle.Asn1.Mozilla;
+using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
@@ -12,15 +13,16 @@ namespace XProxy.Proxy
 {
     class UdpProxy : IProxy
     {
-        public async Task Start(string remoteServerIp, ushort remoteServerPort, ushort localPort, string localIp = null)
+        public async Task Start(ushort port)
         {
             var clients = new ConcurrentDictionary<IPEndPoint, UdpClient>();
+            var client_server = new ConcurrentDictionary<string, ushort>();
 
             var server = new System.Net.Sockets.UdpClient(AddressFamily.InterNetworkV6);
             server.Client.SetSocketOption(SocketOptionLevel.IPv6, SocketOptionName.IPv6Only, false);
-            IPAddress localIpAddress = string.IsNullOrEmpty(localIp) ? IPAddress.IPv6Any : IPAddress.Parse(localIp);
-            server.Client.Bind(new IPEndPoint(localIpAddress, localPort));
-            Console.WriteLine($"proxy started UDP:{localIpAddress}|{localPort} -> {remoteServerIp}|{remoteServerPort}");
+            IPAddress localIpAddress = IPAddress.IPv6Any;
+            server.Client.Bind(new IPEndPoint(localIpAddress, port));
+            Console.WriteLine($"proxy started UDP:{localIpAddress}|{port}");
             var _ = Task.Run(async () =>
             {
 
@@ -34,6 +36,14 @@ namespace XProxy.Proxy
                             UdpClient c;
                             clients.TryRemove(client.Key, out c);
                             client.Value.Stop();
+                            var _2 = Task.Run(async () =>
+                            {
+                                await Task.Delay(3000);
+                                if (client.Value.lastActivity + TimeSpan.FromSeconds(3) < DateTime.UtcNow)
+                                {
+                                    client_server.TryRemove(client.Key.Address.ToString(), out ushort port);
+                                }
+                            });
                         }
                     }
                 }
@@ -46,7 +56,21 @@ namespace XProxy.Proxy
                 {
                     var message = await server.ReceiveAsync();
                     var endpoint = message.RemoteEndPoint;
-                    var client = clients.GetOrAdd(endpoint, ep => new UdpClient(server, endpoint, new IPEndPoint(IPAddress.Parse(remoteServerIp), remoteServerPort)));
+                    UdpClient client = null;
+                    if (clients.ContainsKey(endpoint))
+                    {
+                        client = clients[endpoint];
+                    }
+                    else
+                    {
+                        ushort last_port = Program.main_server.port;
+                        if (client_server.ContainsKey(endpoint.Address.ToString()))
+                            last_port = client_server[endpoint.Address.ToString()];
+                        else
+                            client_server.TryAdd(endpoint.Address.ToString(), last_port);
+                        client = new UdpClient(server, endpoint, new IPEndPoint(IPAddress.Parse("127.0.0.1"), last_port));
+                        clients.TryAdd(endpoint, client);
+                    }
                     await client.SendToServer(message.Buffer);
                 }
                 catch (Exception ex)
@@ -73,7 +97,7 @@ namespace XProxy.Proxy
             Run();
         }
 
-
+        public Server client_on_server;
         public readonly System.Net.Sockets.UdpClient client = new System.Net.Sockets.UdpClient();
         public DateTime lastActivity = DateTime.UtcNow;
         private readonly IPEndPoint _clientEndpoint;
