@@ -71,7 +71,7 @@ namespace XProxy.ServerList.Cryptography
 				signer.BlockUpdate(bytes, 0, data.Length);
 				result = signer.VerifySignature(signature);
 			}
-			catch (Exception ex)
+			catch (Exception)
 			{
 				result = false;
 			}

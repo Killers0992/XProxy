@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using System.Linq;
 using XProxy.ServerList;
 using XProxy.Proxy;
+using Utf8Json;
 
 namespace XProxy
 {
@@ -18,7 +19,7 @@ namespace XProxy
             {
                 var configJson = System.IO.File.ReadAllText("config.json");
 
-                var configs = Newtonsoft.Json.JsonConvert.DeserializeObject<Dictionary<string, ProxyConfig>>(configJson);
+                var configs = JsonSerializer.Deserialize<Dictionary<string, ProxyConfig>>(configJson);
 
 
                 Task.WhenAll(configs.Select(c =>
