@@ -2,9 +2,10 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using System.Linq;
-using netproxy;
+using XProxy.ServerList;
+using XProxy.Proxy;
 
-namespace NetProxy
+namespace XProxy
 {
     class Program
     {
@@ -72,9 +73,5 @@ namespace NetProxy
         public string localIp { get; set; }
         public string forwardIp { get; set; }
         public ushort forwardPort { get; set; }
-    }
-    interface IProxy
-    {
-        Task Start(string remoteServerIp, ushort remoteServerPort, ushort localPort, string localIp = null);
     }
 }

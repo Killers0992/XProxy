@@ -3,10 +3,9 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading;
-using netproxy;
 using Utf8Json;
 
-namespace Authenticator
+namespace XProxy.ServerList.Authenticator
 {
 	public static class AuthenticatorQuery
 	{

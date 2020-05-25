@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Text;
 using Utf8Json;
 
-namespace netproxy
+namespace XProxy.ServerList
 {
 	public readonly struct AuthenticatorPlayerObject : IEquatable<AuthenticatorPlayerObject>, IJsonSerializable
 	{

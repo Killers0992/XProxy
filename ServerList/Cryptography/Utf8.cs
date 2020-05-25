@@ -1,6 +1,6 @@
 ﻿using System.Text;
 
-namespace netproxy
+namespace XProxy.ServerList.Cryptography
 {
 	public class Utf8
 	{

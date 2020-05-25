@@ -6,7 +6,7 @@ using Org.BouncyCastle.Crypto.Generators;
 using Org.BouncyCastle.OpenSsl;
 using Org.BouncyCastle.Security;
 
-namespace netproxy
+namespace XProxy.ServerList.Cryptography
 {
 	public class ECDSA
 	{

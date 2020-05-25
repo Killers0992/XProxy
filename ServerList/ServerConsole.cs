@@ -1,5 +1,4 @@
-﻿using Authenticator;
-using Org.BouncyCastle.Crypto;
+﻿using Org.BouncyCastle.Crypto;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -8,8 +7,10 @@ using System.Net.Http;
 using System.Text;
 using System.Threading;
 using Utf8Json;
+using XProxy.ServerList.Authenticator;
+using XProxy.ServerList.Cryptography;
 
-namespace netproxy
+namespace XProxy.ServerList
 {
     public class ServerConsole
     {
@@ -182,8 +183,6 @@ namespace netproxy
 					string str = string.Empty;
 					try
 					{
-						int count = 25;
-						int num = 0;
 						List<AuthenticatorPlayerObject> list = new List<AuthenticatorPlayerObject>();
 						/*while (!ServerConsole.NewPlayers.IsEmpty)
 						{
