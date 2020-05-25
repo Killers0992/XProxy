@@ -36,12 +36,13 @@ namespace XProxy.Proxy
                         if (client.Value.lastActivity + time < timeNow)
                         {
                             UdpClient c;
+                            IPEndPoint point = client.Key;
                             clients.TryRemove(client.Key, out c);
                             client.Value.Stop();
                             var _2 = Task.Run(async () =>
                             {
                                 await Task.Delay(3000);
-                                if (client.Value.lastActivity + time <  timeNow)
+                                if (!clients.ContainsKey(point))
                                 {
                                     client_server.TryRemove(client.Key.Address.ToString(), out ushort port);
                                 }
