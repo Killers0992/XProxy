@@ -13,11 +13,12 @@ namespace XProxy.Proxy
 {
     class UdpProxy : IProxy
     {
+        static readonly TimeSpan time = TimeSpan.FromSeconds(3);
+
         public async Task Start(ushort port)
         {
             var clients = new ConcurrentDictionary<IPEndPoint, UdpClient>();
             var client_server = new ConcurrentDictionary<string, ushort>();
-
             var server = new System.Net.Sockets.UdpClient(AddressFamily.InterNetworkV6);
             server.Client.SetSocketOption(SocketOptionLevel.IPv6, SocketOptionName.IPv6Only, false);
             IPAddress localIpAddress = IPAddress.IPv6Any;
@@ -29,9 +30,10 @@ namespace XProxy.Proxy
                 while (true)
                 {
                     await Task.Delay(3000);
+                    DateTime timeNow = DateTime.UtcNow;
                     foreach (var client in clients.ToArray())
                     {
-                        if (client.Value.lastActivity + TimeSpan.FromSeconds(3) < DateTime.UtcNow)
+                        if (client.Value.lastActivity + time < timeNow)
                         {
                             UdpClient c;
                             clients.TryRemove(client.Key, out c);
@@ -39,7 +41,7 @@ namespace XProxy.Proxy
                             var _2 = Task.Run(async () =>
                             {
                                 await Task.Delay(3000);
-                                if (client.Value.lastActivity + TimeSpan.FromSeconds(3) < DateTime.UtcNow)
+                                if (client.Value.lastActivity + time <  timeNow)
                                 {
                                     client_server.TryRemove(client.Key.Address.ToString(), out ushort port);
                                 }
