@@ -38,7 +38,7 @@ namespace XProxy.Proxy
                             UdpClient c;
                             IPEndPoint point = client.Key;
                             clients.TryRemove(client.Key, out c);
-                            client.Value.Stop();
+                            client.Value.Dispose();
                             var _2 = Task.Run(async () =>
                             {
                                 await Task.Delay(3000);
@@ -85,7 +85,7 @@ namespace XProxy.Proxy
         }
     }
 
-    class UdpClient
+    class UdpClient : IDisposable
     {
         private readonly System.Net.Sockets.UdpClient _server;
         public UdpClient(System.Net.Sockets.UdpClient server, IPEndPoint clientEndpoint, IPEndPoint remoteServer)
@@ -148,11 +148,12 @@ namespace XProxy.Proxy
             });
         }
 
-        public void Stop()
+        public void Dispose()
         {
             Console.WriteLine($"Closed {_clientEndpoint} => {_remoteServer}");
             ServerConsole.PlayersOnline--;
             _isRunning = false;
+            client.Dispose();
         }
     }
 }
