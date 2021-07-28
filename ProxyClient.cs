@@ -1,5 +1,6 @@
 ﻿using LiteNetLib;
 using LiteNetLib.Utils;
+using Mirror;
 using System;
 using System.Collections.Generic;
 using System.Net;
@@ -54,6 +55,7 @@ namespace XProxy
             Console.WriteLine($"Connecting client {this.ClientEndPoint} ({this.PreAuthData.UserID}) => {address}:{port}");
             if (Manager != null)
                 Manager.Connect(address, port, PreAuthData.RawPreAuth);
+            Console.WriteLine(PreAuthData.ToString());
             IsPooling = true;
         }
 
@@ -74,8 +76,67 @@ namespace XProxy
         {
             if (Manager.FirstPeer == null)
                 return;
+            ProcessData(ServerPeer.Id + 1, reader.GetRemainingBytesSegment(), -1);
             Manager.FirstPeer.Send(reader.RawData, reader.UserDataOffset, reader.UserDataSize, reader.RawData[3], deliveryMethod);
             reader.Recycle();
+        }
+
+        public void ProcessData(int connectionId, ArraySegment<byte> data, int channelId)
+        {
+            NetworkReader reader = NetworkReaderPool.GetReader(data);
+            int num;
+            if (MessagePacker.UnpackMessage(reader, out num))
+            {
+                NetworkMessage netMsg = new NetworkMessage
+                {
+                    reader = reader,
+                    conn = null,
+                    channelId = channelId
+                };
+                switch (num)
+                {
+                    case 33978:
+                        RpcMessage rpc = netMsg.ReadMessage<RpcMessage>();
+                        switch (rpc.functionHash)
+                        {
+                            case 1359606278:
+                                NetworkReader reader2 = NetworkReaderPool.GetReader(rpc.payload);
+                                Console.WriteLine("RPC FROM PlayerStats.RpcRoundRestart (server), Time " + reader2.ReadSingle() + ", Bool " + reader2.ReadBoolean());
+                                break;
+            
+                            case 1377427148:
+                                //Console.WriteLine("RPC FROM PlayerStats.TargetSyncHp (server)");
+                                /*NetworkWriter writer2 = NetworkWriterPool.GetWriter();
+                                writer2.WriteSingle(0f);
+                                writer2.WriteBoolean(true);
+                                RpcMessage msg = new RpcMessage
+                                {
+                                    netId = rpc.netId,
+                                    componentIndex = rpc.componentIndex,
+                                    functionHash = 1258067280,
+                                    payload = writer2.ToArraySegment()
+                                };
+                                NetworkWriter writer = NetworkWriterPool.GetWriter();
+                                MessagePacker.Pack<RpcMessage>(msg, writer);
+                                ArraySegment<byte> segment = writer.ToArraySegment();
+                                ServerPeer.Send(segment.Array, segment.Offset, segment.Count, (byte)((channelId < 5) ? channelId : 0), DeliveryMethod.ReliableOrdered);
+                                NetworkWriterPool.Recycle(writer);*/
+                                break;
+                        }
+                        break;
+                    case 46228:
+                        CommandMessage cmd = netMsg.ReadMessage<CommandMessage>();
+                        switch (cmd.functionHash)
+                        {
+                            //Client console command
+                            case -1962147612:
+                                Console.WriteLine($"Client executed some command (client)");
+                                break;
+                        }
+                        //Console.WriteLine($"Received Command Message from server");
+                        break;
+                }
+            }
         }
 
         private readonly NetManager Manager;
@@ -106,7 +167,8 @@ namespace XProxy
         }
 
         public void OnNetworkReceive(NetPeer peer, NetPacketReader reader, DeliveryMethod deliveryMethod)
-        {
+        {            
+            ProcessData(peer.Id + 1, reader.GetRemainingBytesSegment(), -1);
             ServerPeer.Send(reader.RawData, reader.UserDataOffset, reader.UserDataSize, deliveryMethod);
             reader.Recycle();
         }
@@ -123,11 +185,9 @@ namespace XProxy
 
         public void OnPeerDisconnected(NetPeer peer, DisconnectInfo disconnectInfo)
         {
-            Console.WriteLine($"Peer disconnected");
-
             if (disconnectInfo.AdditionalData.TryGetByte(out byte lastRejectionReason))
             {
-                RejectionReason reason = (RejectionReason)lastRejectionReason; 
+                RejectionReason reason = (RejectionReason)lastRejectionReason;
                 Console.WriteLine($"Client {this.ClientEndPoint} ({this.PreAuthData.UserID}) disconnected from target server {TargetAddress}:{TargetPort} with reason {reason}");
                 switch (reason)
                 {
@@ -164,6 +224,10 @@ namespace XProxy
                         ConnectionRequest.Reject(writer);
                         break;
                 }
+            }
+            else
+            {
+                ServerPeer.Disconnect();
             }
             if (ServerPeer == null && !IsRedirecting)
                 DisconnectFromProxy();
