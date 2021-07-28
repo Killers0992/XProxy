@@ -49,7 +49,7 @@ namespace XProxy
         {
             this.TargetAddress = address;
             this.TargetPort = port;
-            Console.WriteLine($"Connecting client {this.ClientEndPoint} => {address}:{port}");
+            Console.WriteLine($"Connecting client {this.ClientEndPoint} ({this.PreAuthData.UserID}) => {address}:{port}");
             if (Manager != null)
                 Manager.Connect(address, port, PreAuthData.RawPreAuth);
             IsPooling = true;
@@ -57,7 +57,7 @@ namespace XProxy
 
         public void DisconnectFromProxy()
         {
-            Console.WriteLine($"Client {this.ClientEndPoint} disconnected from proxy, killing task.");
+            Console.WriteLine($"Client {this.ClientEndPoint} ({this.PreAuthData.UserID}) disconnected from proxy, killing task.");
             token.Cancel();
         }
 
@@ -115,7 +115,7 @@ namespace XProxy
             if (disconnectInfo.AdditionalData.TryGetByte(out byte lastRejectionReason))
             {
                 RejectionReason reason = (RejectionReason)lastRejectionReason; 
-                Console.WriteLine($"Client {this.ClientEndPoint} disconnected from target server {TargetAddress}:{TargetPort} with reason {reason}");
+                Console.WriteLine($"Client {this.ClientEndPoint} ({this.PreAuthData.UserID}) disconnected from target server {TargetAddress}:{TargetPort} with reason {reason}");
                 switch (reason)
                 {
                     case RejectionReason.Challenge:
