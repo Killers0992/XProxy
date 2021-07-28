@@ -15,13 +15,12 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="LiteNetLib" Version="0.9.5" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
   </ItemGroup>
 
   <ItemGroup>
     <Reference Include="Mirror">
-      <HintPath>Mirror.dll</HintPath>
+      <HintPath>..\..\..\Steam\steamapps\common\SCP Secret Laboratory Dedicated Server\SCPSL_Data\Managed\Mirror.dll</HintPath>
     </Reference>
   </ItemGroup>
 

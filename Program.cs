@@ -11,15 +11,29 @@ namespace XProxy
 {
     class Program
     {
-        private static ProxyConfig config;
+        public static ProxyConfig config;
         private static ProxyServer server;
         static void Main(string[] args)
+        
         {
             if (!File.Exists($"./config.json"))
                 File.WriteAllText("./config.json", JsonConvert.SerializeObject(new ProxyConfig(), Formatting.Indented));
             config = JsonConvert.DeserializeObject<ProxyConfig>(File.ReadAllText("./config.json"));
             server = new ProxyServer(config);
-            Console.ReadKey();
+            while (true)
+            {
+                var line = Console.ReadLine();
+                if (!string.IsNullOrEmpty(line))
+                {
+                    var cmdArgs = line.Split(' ');
+                    switch (cmdArgs[0].ToUpper())
+                    {
+                        case "CTARGET":
+                            server.RedirectAllClients(cmdArgs[1], int.Parse(cmdArgs[2]));
+                            break;
+                    }
+                }
+            }
         }
     }
 }

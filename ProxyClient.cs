@@ -1,5 +1,6 @@
 ﻿using LiteNetLib;
 using LiteNetLib.Utils;
+using Mirror;
 using System;
 using System.Collections.Generic;
 using System.Net;
@@ -29,20 +30,22 @@ namespace XProxy
             Manager.ChannelsCount = 5;
             Manager.Start();
 
-            CancellationToken ct = token.Token;
-            poolerTask = Task.Factory.StartNew(async () =>
+            Task.Factory.StartNew(async () =>
             {
-                ct.ThrowIfCancellationRequested();
-                while (true)
+                while (!end)
                 {
-                    if (ct.IsCancellationRequested)
-                        ct.ThrowIfCancellationRequested();
-                    if (Manager != null && IsPooling)
-                        if (Manager.IsRunning)
-                            Manager.PollEvents();
+                    try
+                    {
+                        if (Manager != null && IsPooling)
+                            if (Manager.IsRunning)
+                                Manager.PollEvents();
+                    }catch(Exception ex)
+                    {
+                        Console.WriteLine(ex.ToString());
+                    }
                     await Task.Delay(15);
                 }
-            }, ct);
+            });
         }
 
         public void ConnectTo(string address, int port)
@@ -55,14 +58,23 @@ namespace XProxy
             IsPooling = true;
         }
 
+        public void Redirect(string address, int port)
+        {
+            Console.WriteLine($"Redirecting client {this.ClientEndPoint} ({this.PreAuthData.UserID}) from {TargetAddress}:{TargetPort} => {address}:{port}");
+            this.TargetAddress = address;
+            this.TargetPort = port;
+        }
+
         public void DisconnectFromProxy()
         {
             Console.WriteLine($"Client {this.ClientEndPoint} ({this.PreAuthData.UserID}) disconnected from proxy, killing task.");
-            token.Cancel();
+            end = false;
         }
 
         public void ReceiveData(NetPacketReader reader, DeliveryMethod deliveryMethod)
         {
+            if (Manager.FirstPeer == null)
+                return;
             Manager.FirstPeer.Send(reader.RawData, reader.UserDataOffset, reader.UserDataSize, reader.RawData[3], deliveryMethod);
             reader.Recycle();
         }
@@ -73,11 +85,11 @@ namespace XProxy
         private IPEndPoint ClientEndPoint => ConnectionRequest != null ? ConnectionRequest.RemoteEndPoint : ServerPeer.EndPoint;
         public PreAuthModel PreAuthData { get; set; }
 
-        private Task poolerTask;
-        private CancellationTokenSource token = new CancellationTokenSource();
+        private bool end = false;
 
         public bool IsConnected { get; set; } = false;
         public bool IsPooling { get; set; } = false;
+        public bool IsRedirecting { get; set; } = false;
 
         public string TargetAddress { get; set; } = "localhost";
         public int TargetPort { get; set; } = 7777;
@@ -88,6 +100,7 @@ namespace XProxy
 
         public void OnNetworkError(IPEndPoint endPoint, SocketError socketError)
         {
+            Console.WriteLine($"Retard " + socketError);
         }
 
         public void OnNetworkLatencyUpdate(NetPeer peer, int latency)
@@ -96,7 +109,7 @@ namespace XProxy
 
         public void OnNetworkReceive(NetPeer peer, NetPacketReader reader, DeliveryMethod deliveryMethod)
         {
-            ServerPeer.Send(reader.RawData, reader.UserDataOffset, reader.UserDataSize, reader.RawData[3], deliveryMethod);
+            ServerPeer.Send(reader.RawData, reader.UserDataOffset, reader.UserDataSize, deliveryMethod);
             reader.Recycle();
         }
 
@@ -112,6 +125,8 @@ namespace XProxy
 
         public void OnPeerDisconnected(NetPeer peer, DisconnectInfo disconnectInfo)
         {
+            Console.WriteLine($"Peer disconnected");
+
             if (disconnectInfo.AdditionalData.TryGetByte(out byte lastRejectionReason))
             {
                 RejectionReason reason = (RejectionReason)lastRejectionReason; 
@@ -152,8 +167,7 @@ namespace XProxy
                         break;
                 }
             }
-
-            if (ServerPeer == null)
+            if (ServerPeer == null && !IsRedirecting)
                 DisconnectFromProxy();
             IsConnected = false;
             IsPooling = false;

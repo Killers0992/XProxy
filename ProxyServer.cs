@@ -27,7 +27,7 @@ namespace XProxy
             manager.DisconnectTimeout = 5000;
             manager.ReconnectDelay = 500;
             manager.MaxConnectAttempts = 10;
-            manager.BroadcastReceiveEnabled = false;
+            manager.BroadcastReceiveEnabled = true;
             manager.ChannelsCount = 5;
 
             pollingTask = Task.Factory.StartNew(async () =>
@@ -43,6 +43,15 @@ namespace XProxy
             manager.Start(Config.proxyPort);
             Console.WriteLine($"Proxy started on port {Config.proxyPort}.");
             IsPooling = true;
+        }
+
+        public void RedirectAllClients(string ip, int port)
+        {
+            Console.WriteLine($"Redirecting all clients ({manager.ConnectedPeersCount}) to server {ip}:{port}.");
+            foreach (var client in clients)
+            {
+                client.Value.Redirect(ip, port);
+            }
         }
 
 
