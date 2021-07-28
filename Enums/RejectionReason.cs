@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace XProxy
+namespace XProxy.Enums
 {
 	public enum RejectionReason : byte
 	{
