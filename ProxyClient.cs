@@ -99,7 +99,6 @@ namespace XProxy
 
         public void OnNetworkError(IPEndPoint endPoint, SocketError socketError)
         {
-            Console.WriteLine($"Retard " + socketError);
         }
 
         public void OnNetworkLatencyUpdate(NetPeer peer, int latency)
