@@ -11,6 +11,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using XProxy.Enums;
 using XProxy.Models;
+using XProxy.ServerList;
 using static XProxy.Program;
 
 namespace XProxy
@@ -18,8 +19,13 @@ namespace XProxy
     public class ProxyServer : INetEventListener
     {
         private ProxyConfig Config;
-        public ProxyServer(ProxyConfig config)
+        private int targetID;
+        public ServerConsole serverlist;
+
+        public ProxyServer(ProxyConfig config, int Port, int targetServerID)
         {
+            serverlist = new ServerConsole(Port);
+            this.targetID = targetServerID;
             this.Config = config;
             manager = new NetManager(this);
             manager.IPv6Enabled = IPv6Mode.SeparateSocket;
@@ -41,8 +47,8 @@ namespace XProxy
                             manager.PollEvents();
                 }
             });
-            manager.Start(Config.proxyPort);
-            Console.WriteLine($"Proxy started on port {Config.proxyPort}.");
+            manager.Start(Port);
+            Console.WriteLine($"Proxy started on port {Port}.");
             IsPooling = true;
         }
 
@@ -61,32 +67,25 @@ namespace XProxy
 
         private bool IsPooling { get; set; } = false;
 
-        private ConcurrentDictionary<NetPeer, ProxyClient> clients = new ConcurrentDictionary<NetPeer, ProxyClient>();
+        public ConcurrentDictionary<NetPeer, ProxyClient> clients = new ConcurrentDictionary<NetPeer, ProxyClient>();
 
         public void OnConnectionRequest(ConnectionRequest request)
         {
-            ProxyClient prox = new ProxyClient(request, PreAuthModel.ReadPreAuth(request.Data));
+            ProxyClient prox = new ProxyClient(this, request, PreAuthModel.ReadPreAuth(request.RemoteEndPoint.Address.ToString(), request.Data));
             if (prox.PreAuthData == null)
             {
                 request.Reject();
                 return;
             }
 
-            if(prox.PreAuthData.ChallengeID != 0 && prox.PreAuthData.IsChallenge)
-            {
-                prox.ServerPeer = request.Accept();
-                prox.ConnectionRequest = null;
-                clients.TryAdd(prox.ServerPeer, prox);
-            }
-
-            if (Config.servers.TryGetValue(Config.mainServerID, out ProxyServerData proxServer))
+            if (Config.servers.TryGetValue(targetID, out ProxyServerData proxServer))
             {
                 prox.ConnectTo(proxServer.Address, proxServer.Port);
             }
             else
             {
                 NetDataWriter writer = new NetDataWriter();
-                writer.Put((byte)RejectionReason.Custom);
+                writer.Put((byte)RejectionReason.NotSpecified);
                 writer.Put("SERVER NOT FOUND");
                 request.Reject(writer);
             }
@@ -114,14 +113,14 @@ namespace XProxy
 
         public void OnPeerConnected(NetPeer peer)
         {
+            serverlist.PlayersOnline++;
         }
 
         public void OnPeerDisconnected(NetPeer peer, DisconnectInfo disconnectInfo)
         {
             if (clients.TryRemove(peer, out ProxyClient prox))
-            {
                 prox.DisconnectFromProxy();
-            }
+            serverlist.PlayersOnline--;
         }
     }
 }

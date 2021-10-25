@@ -10,11 +10,11 @@ namespace XProxy.Models
     {
         public NetDataWriter RawPreAuth;
         public bool IsChallenge { get; set; }
-        public static PreAuthModel ReadPreAuth(NetDataReader reader)
+        public static PreAuthModel ReadPreAuth(string endpoint, NetDataReader reader)
         {
             PreAuthModel model = new PreAuthModel();
             model.RawPreAuth = NetDataWriter.FromBytes(reader.RawData, reader.UserDataOffset, reader.UserDataSize);
-
+            model.RawPreAuth.Put(endpoint);
             if (reader.TryGetByte(out byte b))
                 model.b = b;
             byte cBackwardRevision = 0;
