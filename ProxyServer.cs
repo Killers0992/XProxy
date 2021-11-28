@@ -20,41 +20,52 @@ namespace XProxy
     {
         private ProxyConfig Config;
         private int targetID;
-        public ServerConsole serverlist;
+        public XProxy.ServerList.ServerConsole serverlist;
 
         public ProxyServer(ProxyConfig config, int Port, int targetServerID)
         {
-            serverlist = new ServerConsole(Port);
+            serverlist = new XProxy.ServerList.ServerConsole(Port);
             this.targetID = targetServerID;
             this.Config = config;
-            manager = new NetManager(this);
-            manager.IPv6Enabled = IPv6Mode.SeparateSocket;
-            manager.UpdateTime = 15;
-            manager.PingInterval = 1000;
-            manager.DisconnectTimeout = 5000;
-            manager.ReconnectDelay = 500;
-            manager.MaxConnectAttempts = 10;
-            manager.BroadcastReceiveEnabled = true;
-            manager.ChannelsCount = 5;
+            Manager = new NetManager(this);
+            Manager.IPv6Enabled = IPv6Mode.SeparateSocket;
+            //Manager.UpdateTime = 5;
+            Manager.AutoRecycle = false;
+            Manager.BroadcastReceiveEnabled = false;
+            Manager.ChannelsCount = (byte)6;
+            Manager.DisconnectTimeout = 5000;
+            Manager.ReconnectDelay = 1200;
+            Manager.UnsyncedDeliveryEvent = false;
+            Manager.EnableStatistics = false;
+            Manager.MaxConnectAttempts = 22;
+            Manager.MtuOverride = 0;
+            Manager.NatPunchEnabled = false;
+            Manager.PingInterval = 1000;
+            Manager.ReuseAddress = false;
+            Manager.UnconnectedMessagesEnabled = false;
+            Manager.UnsyncedEvents = false;
+            Manager.UnsyncedReceiveEvent = false;
+            Manager.UseSafeMtu = false;
 
             pollingTask = Task.Factory.StartNew(async () =>
             {
                 while (true)
                 {
                     await Task.Delay(15);
-                    if (manager != null && IsPooling)
-                        if (manager.IsRunning)
-                            manager.PollEvents();
+                    if (Manager != null && IsPooling)
+                        if (Manager.IsRunning)
+                            Manager.PollEvents();
                 }
             });
-            manager.Start(Port);
+            Manager.Start(Port);
             Console.WriteLine($"Proxy started on port {Port}.");
             IsPooling = true;
         }
 
+
         public void RedirectAllClients(string ip, int port)
         {
-            Console.WriteLine($"Redirecting all clients ({manager.ConnectedPeersCount}) to server {ip}:{port}.");
+            Console.WriteLine($"Redirecting all clients ({Manager.ConnectedPeersCount}) to server {ip}:{port}.");
             foreach (var client in clients)
             {
                 client.Value.Redirect(ip, port);
@@ -63,7 +74,7 @@ namespace XProxy
 
 
         private Task pollingTask;
-        private NetManager manager;
+        private NetManager Manager;
 
         private bool IsPooling { get; set; } = false;
 

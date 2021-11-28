@@ -9,7 +9,7 @@ namespace XProxy.Models
     public class PreAuthModel
     {
         public NetDataWriter RawPreAuth;
-        public bool IsChallenge { get; set; }
+
         public static PreAuthModel ReadPreAuth(string endpoint, NetDataReader reader)
         {
             PreAuthModel model = new PreAuthModel();
@@ -34,10 +34,7 @@ namespace XProxy.Models
             model.flag = cflag;
 
             if (reader.TryGetInt(out int challengeid))
-            {
-                model.IsChallenge = true;
                 model.ChallengeID = challengeid;
-            }
             if (reader.TryGetBytesWithLength(out byte[] challenge))
                 model.Challenge = challenge;
             if (reader.TryGetString(out string userid))
@@ -45,7 +42,7 @@ namespace XProxy.Models
             if (reader.TryGetLong(out long expiration))
                 model.Expiration = expiration;
             if (reader.TryGetByte(out byte flags))
-                model.Flags = flags;
+                model.Flags = (CentralAuthPreauthFlags)flags;
             if (reader.TryGetString(out string region))
                 model.Region = region;
             if (reader.TryGetBytesWithLength(out byte[] signature))
@@ -63,7 +60,7 @@ namespace XProxy.Models
         public byte[] Challenge { get; set; }
         public string UserID { get; set; } = "Unknown UserID";
         public long Expiration { get; set; }
-        public byte Flags { get; set; }
+        public CentralAuthPreauthFlags Flags { get; set; }
         public string Region { get; set; } = "Unknown Region";
         public byte[] Signature { get; set; } = new byte[0];
         public override string ToString()

@@ -8,6 +8,7 @@ using System.IO;
 using Newtonsoft.Json;
 using XProxy.ServerList;
 using System.Linq;
+using Mirror;
 
 namespace XProxy
 {
@@ -15,12 +16,26 @@ namespace XProxy
     {
         public static ProxyConfig config;
         public static ProxyServer server;
-        public static ServerConsole sconsole;
+        public static XProxy.ServerList.ServerConsole sconsole;
 
         static List<ProxyServer> servers = new List<ProxyServer>();
 
+        public static bool ShowDebugLogsFromServer = false;
+
         static void Main(string[] args)
         {
+            var type = typeof(NetworkMessage);
+            var types = AppDomain.CurrentDomain.GetAssemblies()
+                .SelectMany(s => s.GetTypes())
+                .Where(p => type.IsAssignableFrom(p));
+            foreach(var typ in types)
+            {
+                var id = (ushort)typ.FullName.GetStableHashCode() & 65535;
+                Console.WriteLine($"Id " + id + "  " + typ.FullName);
+            }
+
+            GeneratedNetworkCode.InitReadWriters();
+
             if (!File.Exists($"./config.json"))
                 File.WriteAllText("./config.json", JsonConvert.SerializeObject(new ProxyConfig(), Formatting.Indented));
             if (!File.Exists("./centralcache.txt"))
@@ -41,13 +56,13 @@ namespace XProxy
                     var cmdArgs = line.Split(' ');
                     switch (cmdArgs[0].ToUpper())
                     {
-                        case "CTARGET":
-                            server.RedirectAllClients(cmdArgs[1], int.Parse(cmdArgs[2]));
+                        case "METHODHASH":
+                            Console.WriteLine($"{cmdArgs[1].GetStableHashCode() * 503 + cmdArgs[2].GetStableHashCode()}");
                             break;
-                    }
-                    foreach(var server in servers)
-                    {
-                        server.serverlist.RunCentralServerCommand(cmdArgs[0], string.Join(" ", cmdArgs.Skip(1)));
+                        case "SHOWDEBUG":
+                            ShowDebugLogsFromServer = !ShowDebugLogsFromServer;
+                            Console.WriteLine($"Show debuglogs from server is set to {ShowDebugLogsFromServer}.");
+                            break;
                     }
                 }
             }

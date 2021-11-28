@@ -6,7 +6,7 @@ namespace XProxy
 {
     public class ProxyConfig
     {
-        public Dictionary<int, ProxyData> proxyServers { get; set; } = new Dictionary<int, ProxyData>() { { 7777, new ProxyData() } };
+        public Dictionary<int, ProxyData> proxyServers { get; set; } = new Dictionary<int, ProxyData>();
         public string ServerName { get; set; }
         public string ProxyPastebin { get; set; }
         public string GameVersion { get; set; }
