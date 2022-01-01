@@ -4,6 +4,7 @@ using LiteNetLib.Utils;
 using Mirror;
 using Org.BouncyCastle.Crypto;
 using Org.BouncyCastle.Crypto.Agreement;
+using RoundRestarting;
 using System;
 using System.Collections.Generic;
 using System.Net;
@@ -14,11 +15,13 @@ using System.Threading.Tasks;
 using XProxy.CustomMessages;
 using XProxy.Enums;
 using XProxy.Models;
+using static TeslaGateController;
 
 namespace XProxy
 {
     public class ProxyClient : INetEventListener
     {
+        public bool Redirecting { get; set; }
         private ProxyServer server;
         public ProxyClient(ProxyServer server, ConnectionRequest connectionRequest, PreAuthModel preAuth)
         {
@@ -48,7 +51,7 @@ namespace XProxy
 
             Manager.Start();
 
-            Task.Factory.StartNew(async () =>
+            Task.Run(async () =>
             {
                 while (!end)
                 {
@@ -66,16 +69,21 @@ namespace XProxy
             });
         }
 
-        public NetPeer ConnectTo(string address, int port)
+        public NetPeer ConnectTo(string address, int port, bool reusePreAuth = false)
         {
             this.TargetAddress = address;
             this.TargetPort = port;
             Console.WriteLine($"Connecting client {this.ClientEndPoint} ({this.PreAuthData.UserID}) => {address}:{port}");
             NetPeer conPeer = null;
             if (Manager != null)
-                conPeer = Manager.Connect(address, port, PreAuthData.RawPreAuth);
+            {
+                if (IsConnected)
+                    Manager.DisconnectAll();
+                conPeer = Manager.Connect(address, port, reusePreAuth ? PreAuthData.RegenPreAuth() : PreAuthData.RawPreAuth);
+            }
             Console.WriteLine(PreAuthData.ToString());
             IsPooling = true;
+            Redirecting = false;
             return conPeer;
         }
 
@@ -89,33 +97,32 @@ namespace XProxy
         public void DisconnectFromProxy()
         {
             Console.WriteLine($"Client {this.ClientEndPoint} ({this.PreAuthData.UserID}) disconnected from proxy, killing task.");
-            end = false;
+            end = true;
         }
 
 
         //Server -> ( Proxy Client ) -> Client
         public void OnNetworkReceive(NetPeer peer, NetPacketReader reader, DeliveryMethod deliveryMethod)
         {
-            /*  try
-              {
-                  var segment = new ArraySegment<byte>(reader.RawData, reader.UserDataOffset, reader.UserDataSize);
-                  using (PooledNetworkReader pooledReader = NetworkReaderPool.GetReader(segment))
-                  {
-                      while (pooledReader.Position < pooledReader.Length)
-                      {
-                          var cancelSend = false;
-                          if (!this.UnpackAndInvoke(pooledReader, -1, ref cancelSend, false))
-                          {
-                              break;
-                          }
-                      }
-                  }
-              }
-              catch (Exception ex)
-              {
-                  //Console.WriteLine($"Error " + ex.ToString());
-              }
-                                      */
+            try
+            {
+                using (PooledNetworkReader reader2 = NetworkReaderPool.GetReader(new ArraySegment<byte>(reader.RawData, reader.Position, reader.AvailableBytes)))
+                {
+                    while (reader2.Position < reader2.Length)
+                    {
+                        bool cancel = false;
+                        if (!UnpackAndInvoke(reader2, -1, ref cancel, false))
+                        {
+                            break;
+                        }
+                        if (cancel)
+                            goto skip;
+                    }
+                }
+            }
+            catch (Exception) { }
+
+
             try
             {
                 ServerPeer.Send(reader.RawData, reader.Position, reader.AvailableBytes, deliveryMethod);
@@ -124,6 +131,9 @@ namespace XProxy
             {
                 Console.WriteLine($"Error {ex}");
             }
+
+        skip:
+
             reader.Recycle();
         }
 
@@ -135,28 +145,25 @@ namespace XProxy
                 reader.Recycle();
                 return;
             }
-            /*
-               try
-               {
-                   var segment = new ArraySegment<byte>(reader.RawData, reader.UserDataOffset, reader.UserDataSize);
 
-                   using (PooledNetworkReader pooledReader = NetworkReaderPool.GetReader(segment))
-                   {
-                       while (pooledReader.Position < pooledReader.Length)
-                       {
-                           var cancelSend = false;
+            try
+            {
+                using (PooledNetworkReader reader2 = NetworkReaderPool.GetReader(new ArraySegment<byte>(reader.RawData, reader.Position, reader.AvailableBytes)))
+                {
+                    while (reader2.Position < reader2.Length)
+                    {
+                        bool cancel = false;
+                        if (!UnpackAndInvoke(reader2, -1, ref cancel, false))
+                        {
+                            break;
+                        }
+                        if (cancel)
+                            goto skip;
+                    }
+                }
+            }
+            catch (Exception) { }
 
-                           if (!this.UnpackAndInvoke(pooledReader, -1, ref cancelSend, true))
-                           {
-                               break;
-                           }
-                       }
-                   }
-               }
-               catch (Exception ex)
-               {
-                   //Console.WriteLine($"Error " + ex.ToString());
-               }                    */
 
             try
             {
@@ -167,6 +174,7 @@ namespace XProxy
             {
                 Console.WriteLine($"Error {ex}");
             }
+            skip:
             reader.Recycle();
         }
 
@@ -174,6 +182,18 @@ namespace XProxy
         {
             if (!MessagePacking.Unpack(reader, out ushort key))
                 return false;
+
+            var res = MessagePacking.GetId<RoundRestarting.RoundRestartMessage>();
+
+            if (res == key)
+            {
+                ProxyServer.ServerOverride.Add(ClientEndPoint.Address.ToString(), new ProxyServerData()
+                {
+                    Address = TargetAddress,
+                    Port = TargetPort,
+                });
+                Console.WriteLine($"Saving session {PreAuthData.UserID} ({ClientEndPoint.Address.ToString()}) to server {TargetAddress}:{TargetPort}, disconencting from proxy.");
+            }
 
             switch (key)
             {
@@ -188,74 +208,20 @@ namespace XProxy
                     };
                     switch (rpcMessage.functionHash)
                     {
-                        //TargetDiffieHellmanExchange
-                        case -663499796:
+                        case -0169:
+                            using (var poolReader = NetworkReaderPool.GetReader(rpcMessage.payload))
+                            {
+                                switch (poolReader.ReadByte())
+                                {
+                                    //Receive encryption keys for commands.
+                                    case 1:
+                                        Console.WriteLine("Receive encryption keys");
+                                        ServerEncryptionKey = poolReader.ReadBytesAndSize();
+                                        break;
+                                }
+                            }
+                            cancelPacket = true;
                             break;
-                    }
-                    break;
-                //PositionMessage
-                case 46471:
-                    if (isServer)
-                    {
-                        if (!Program.ShowDebugLogsFromServer)
-                            Console.WriteLine($"[Client -> (Proxy Server) -> Server] Received PositionMessage.");
-                    }
-                    else
-                    {
-                        if (Program.ShowDebugLogsFromServer)
-                            Console.WriteLine($"[Server -> (Proxy Client) -> Client] Received PositionMessage.");
-                    }
-                    break;
-                //RotationMessage
-                case 26002:
-                    if (isServer)
-                    {
-                        if (!Program.ShowDebugLogsFromServer)
-                            Console.WriteLine($"[Client -> (Proxy Server) -> Server] Received RotationMessage.");
-                    }
-                    else
-                    {
-                        if (Program.ShowDebugLogsFromServer)
-                            Console.WriteLine($"[Server -> (Proxy Client) -> Client] Received RotationMessage.");
-                    }
-                    break;
-                //PositionMessage2D
-                case 30233:
-                    if (isServer)
-                    {
-                        if (!Program.ShowDebugLogsFromServer)
-                            Console.WriteLine($"[Client -> (Proxy Server) -> Server] Received PositionMessage2D.");
-                    }
-                    else
-                    {
-                        if (Program.ShowDebugLogsFromServer)
-                            Console.WriteLine($"[Server -> (Proxy Client) -> Client] Received PositionMessage2D.");
-                    }
-                    break;
-                //PositionMessage2DJump
-                case 10727:
-                    if (isServer)
-                    {
-                        if (!Program.ShowDebugLogsFromServer)
-                            Console.WriteLine($"[Client -> (Proxy Server) -> Server] Received PositionMessage2DJump.");
-                    }
-                    else
-                    {
-                        if (Program.ShowDebugLogsFromServer)
-                            Console.WriteLine($"[Server -> (Proxy Client) -> Client] Received PositionMessage2DJump.");
-                    }
-                    break;
-                //PositionPPMMessage
-                case 40794:
-                    if (isServer)
-                    {
-                        if (!Program.ShowDebugLogsFromServer)
-                            Console.WriteLine($"[Client -> (Proxy Server) -> Server] Received PositionPPMMessage.");
-                    }
-                    else
-                    {
-                        if (Program.ShowDebugLogsFromServer)
-                            Console.WriteLine($"[Server -> (Proxy Client) -> Client] Received PositionPPMMessage.");
                     }
                     break;
                 //Command Message
@@ -276,7 +242,6 @@ namespace XProxy
                                 var data = payloadReader.ReadBytesAndSize();
                                 var encrypted = payloadReader.ReadBoolean();
 
-                                Console.WriteLine(encrypted);
                                 if (encrypted)
                                 {
                                     if (ServerEncryptionKey == null)
@@ -289,6 +254,19 @@ namespace XProxy
                                     {
                                         var query = Utf8.GetString(AES.AesGcmDecrypt(data, ServerEncryptionKey));
                                         Console.WriteLine($"Client {ClientEndPoint.Address} connected to {TargetAddress}:{TargetPort} sended console command, Query: {query}.");
+                                        var sp = query.Split(' ');
+                                        switch (sp[0].ToUpper())
+                                        {
+                                            case "SENDTO":
+                                                Redirecting = true;
+                                                ConnectTo(sp[1], int.Parse(sp[2]), true);
+                                                cancelPacket = true;
+                                                break;
+                                            case "SERVERS":
+
+                                                cancelPacket = true;
+                                                break;
+                                        }
                                     }
                                     catch
                                     {
@@ -344,16 +322,26 @@ namespace XProxy
             server.clients.TryAdd(ServerPeer, this);
             Console.WriteLine($"Client connected {this.ClientEndPoint} ({this.PreAuthData.UserID}) => {TargetAddress}:{TargetPort}");
             IsConnected = true;
+            if (Program.config.servers.ContainsKey(TargetPort))
+                Program.config.servers[TargetPort].Players++;
         }
 
         public void OnPeerDisconnected(NetPeer peer, DisconnectInfo disconnectInfo)
         {
+            if (Program.config.servers.ContainsKey(TargetPort))
+                Program.config.servers[TargetPort].Players--;
+
             if (disconnectInfo.AdditionalData.RawData == null && ConnectionRequest != null)
             {
-                NetDataWriter writer = new NetDataWriter();
-                writer.Put((byte)RejectionReason.Custom);
-                writer.Put("Server is offline.");
-                ConnectionRequest.Reject(writer);
+                var targetServer = server.TakeFreeServer(ClientEndPoint.Address.ToString());
+                if (targetServer == null)
+                {
+                    NetDataWriter writer = new NetDataWriter();
+                    writer.Put((byte)RejectionReason.Custom);
+                    writer.Put("Server is offline.");
+                    ConnectionRequest.Reject(writer);
+                    goto skipChecking;
+                }
                 goto skipChecking;
             }
 
@@ -366,6 +354,16 @@ namespace XProxy
                     Console.WriteLine($"Client {this.ClientEndPoint} ({this.PreAuthData.UserID}) disconnected from target server {TargetAddress}:{TargetPort} with reason {reason}");
                     if (ConnectionRequest != null)
                     {
+                        if (reason == RejectionReason.Challenge)
+                        {
+                            if (!ProxyServer.ServerOverride.ContainsKey(ClientEndPoint.Address.ToString()))
+                                ProxyServer.ServerOverride.Add(ClientEndPoint.Address.ToString(), new ProxyServerData()
+                                {
+                                    Address = TargetAddress,
+                                    Port = TargetPort
+                                });
+                        }
+
                         Console.WriteLine($"Reject peer");
                         ConnectionRequest.Reject(writer2);
                     }
@@ -384,9 +382,8 @@ namespace XProxy
             {
                 ServerPeer.Disconnect();
             }
-            skipChecking:
-            if (ServerPeer == null && !IsRedirecting)
-                DisconnectFromProxy();
+        skipChecking:
+            DisconnectFromProxy();
             IsConnected = false;
             IsPooling = false;
         }

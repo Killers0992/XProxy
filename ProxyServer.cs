@@ -4,6 +4,7 @@ using Mirror;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Linq;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
@@ -19,13 +20,13 @@ namespace XProxy
     public class ProxyServer : INetEventListener
     {
         private ProxyConfig Config;
-        private int targetID;
         public XProxy.ServerList.ServerConsole serverlist;
 
-        public ProxyServer(ProxyConfig config, int Port, int targetServerID)
+        public static Dictionary<string, ProxyServerData> ServerOverride = new Dictionary<string, ProxyServerData>();
+
+        public ProxyServer(ProxyConfig config, int Port)
         {
             serverlist = new XProxy.ServerList.ServerConsole(Port);
-            this.targetID = targetServerID;
             this.Config = config;
             Manager = new NetManager(this);
             Manager.IPv6Enabled = IPv6Mode.SeparateSocket;
@@ -80,6 +81,23 @@ namespace XProxy
 
         public ConcurrentDictionary<NetPeer, ProxyClient> clients = new ConcurrentDictionary<NetPeer, ProxyClient>();
 
+        public ProxyServerData TakeFreeServer(string clientIp)
+        {
+            var srv = Config.servers.Where(p => p.Value.Players < p.Value.MaxPlayers).OrderBy(p => p.Value.Players).ToList();
+
+            if (srv.Count == 0)
+                return null;
+
+            var target = srv[0].Value;
+
+            if (ServerOverride.TryGetValue(clientIp, out ProxyServerData data))
+            {
+                target = data;
+                ServerOverride.Remove(clientIp);
+            }
+            return target;
+        }
+
         public void OnConnectionRequest(ConnectionRequest request)
         {
             ProxyClient prox = new ProxyClient(this, request, PreAuthModel.ReadPreAuth(request.RemoteEndPoint.Address.ToString(), request.Data));
@@ -89,17 +107,16 @@ namespace XProxy
                 return;
             }
 
-            if (Config.servers.TryGetValue(targetID, out ProxyServerData proxServer))
-            {
-                prox.ConnectTo(proxServer.Address, proxServer.Port);
-            }
-            else
+            var targetServer = TakeFreeServer(request.RemoteEndPoint.Address.ToString());
+            if (targetServer == null)
             {
                 NetDataWriter writer = new NetDataWriter();
-                writer.Put((byte)RejectionReason.NotSpecified);
-                writer.Put("SERVER NOT FOUND");
+                writer.Put((byte)RejectionReason.ServerFull);
                 request.Reject(writer);
+                return;
             }
+
+            prox.ConnectTo(targetServer.Address, targetServer.Port);
         }
 
         public void OnNetworkError(IPEndPoint endPoint, SocketError socketError)

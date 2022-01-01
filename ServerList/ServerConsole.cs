@@ -36,7 +36,7 @@ namespace XProxy.ServerList
 		public ServerConsole(int serverPort)
         {
 			Port = serverPort;
-			PlayersOnline = 0;
+			PlayersOnline = -1;
 			string ip = new WebClient().DownloadString("https://api.scpslgame.com/ip.php");
 			ServerConsole.Ip = (ip.EndsWith(".") ? ip.Remove(ip.Length - 1) : ip);
 			RunRefreshPublicKey();
@@ -213,7 +213,7 @@ namespace XProxy.ServerList
 							"players=",
 							PlayersOnline,
 							"/",
-							50
+							500
 						}),
 						"playersList=" + _verificationPlayersList,
 						"newPlayers=" + str,
@@ -242,7 +242,7 @@ namespace XProxy.ServerList
 							"players=",
 							PlayersOnline,
 							"/",
-							50
+							500
 						}),
 						"newPlayers=" + str,
 						"port=" + Port,
