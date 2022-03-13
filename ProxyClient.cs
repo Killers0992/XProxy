@@ -22,7 +22,9 @@ namespace XProxy
     public class ProxyClient : INetEventListener
     {
         public bool Redirecting { get; set; }
+
         private ProxyServer server;
+
         public ProxyClient(ProxyServer server, ConnectionRequest connectionRequest, PreAuthModel preAuth)
         {
             this.server = server;
@@ -49,24 +51,30 @@ namespace XProxy
             Manager.UnsyncedReceiveEvent = false;
             Manager.UseSafeMtu = false;
 
-            Manager.Start();
-
-            Task.Run(async () =>
+            Task.Factory.StartNew(async () =>
             {
-                while (!end)
-                {
-                    try
-                    {
-                        if (Manager != null && IsPooling)
-                            if (Manager.IsRunning)
-                                Manager.PollEvents();
-                    }catch(Exception ex)
-                    {
-                        Console.WriteLine(ex.ToString());
-                    }
-                    await Task.Delay(15);
-                }
+                await Run();
             });
+
+            Manager.Start();
+        }
+
+        public async Task Run()
+        {
+            while (!end)
+            {
+                try
+                {
+                    if (Manager != null)
+                        if (Manager.IsRunning)
+                            Manager.PollEvents();
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine(ex.ToString());
+                }
+                await Task.Delay(15);
+            }
         }
 
         public NetPeer ConnectTo(string address, int port, bool reusePreAuth = false)
@@ -79,10 +87,9 @@ namespace XProxy
             {
                 if (IsConnected)
                     Manager.DisconnectAll();
-                conPeer = Manager.Connect(address, port, reusePreAuth ? PreAuthData.RegenPreAuth() : PreAuthData.RawPreAuth);
+                conPeer = Manager.Connect(address, port, PreAuthData.RawPreAuth);
             }
             Console.WriteLine(PreAuthData.ToString());
-            IsPooling = true;
             Redirecting = false;
             return conPeer;
         }
@@ -94,17 +101,10 @@ namespace XProxy
             this.TargetPort = port;
         }
 
-        public void DisconnectFromProxy()
-        {
-            Console.WriteLine($"Client {this.ClientEndPoint} ({this.PreAuthData.UserID}) disconnected from proxy, killing task.");
-            end = true;
-        }
-
-
         //Server -> ( Proxy Client ) -> Client
         public void OnNetworkReceive(NetPeer peer, NetPacketReader reader, DeliveryMethod deliveryMethod)
         {
-            try
+           /*try
             {
                 using (PooledNetworkReader reader2 = NetworkReaderPool.GetReader(new ArraySegment<byte>(reader.RawData, reader.Position, reader.AvailableBytes)))
                 {
@@ -122,6 +122,7 @@ namespace XProxy
             }
             catch (Exception) { }
 
+            */
 
             try
             {
@@ -132,7 +133,7 @@ namespace XProxy
                 Console.WriteLine($"Error {ex}");
             }
 
-        skip:
+       // skip:
 
             reader.Recycle();
         }
@@ -146,7 +147,7 @@ namespace XProxy
                 return;
             }
 
-            try
+        /*    try
             {
                 using (PooledNetworkReader reader2 = NetworkReaderPool.GetReader(new ArraySegment<byte>(reader.RawData, reader.Position, reader.AvailableBytes)))
                 {
@@ -163,7 +164,7 @@ namespace XProxy
                 }
             }
             catch (Exception) { }
-
+        */
 
             try
             {
@@ -187,11 +188,6 @@ namespace XProxy
 
             if (res == key)
             {
-                ProxyServer.ServerOverride.Add(ClientEndPoint.Address.ToString(), new ProxyServerData()
-                {
-                    Address = TargetAddress,
-                    Port = TargetPort,
-                });
                 Console.WriteLine($"Saving session {PreAuthData.UserID} ({ClientEndPoint.Address.ToString()}) to server {TargetAddress}:{TargetPort}, disconencting from proxy.");
             }
 
@@ -293,7 +289,6 @@ namespace XProxy
         private bool end = false;
 
         public bool IsConnected { get; set; } = false;
-        public bool IsPooling { get; set; } = false;
         public bool IsRedirecting { get; set; } = false;
 
         public string TargetAddress { get; set; } = "localhost";
@@ -319,29 +314,20 @@ namespace XProxy
         {
             ServerPeer = ConnectionRequest.Accept();
             ConnectionRequest = null;
-            server.clients.TryAdd(ServerPeer, this);
+
+            ProxyServer.clients[server.ServerPort].TryAdd(ServerPeer.ConnectionNum, this);
             Console.WriteLine($"Client connected {this.ClientEndPoint} ({this.PreAuthData.UserID}) => {TargetAddress}:{TargetPort}");
             IsConnected = true;
-            if (Program.config.servers.ContainsKey(TargetPort))
-                Program.config.servers[TargetPort].Players++;
         }
 
         public void OnPeerDisconnected(NetPeer peer, DisconnectInfo disconnectInfo)
         {
-            if (Program.config.servers.ContainsKey(TargetPort))
-                Program.config.servers[TargetPort].Players--;
-
             if (disconnectInfo.AdditionalData.RawData == null && ConnectionRequest != null)
             {
-                var targetServer = server.TakeFreeServer(ClientEndPoint.Address.ToString());
-                if (targetServer == null)
-                {
-                    NetDataWriter writer = new NetDataWriter();
-                    writer.Put((byte)RejectionReason.Custom);
-                    writer.Put("Server is offline.");
-                    ConnectionRequest.Reject(writer);
-                    goto skipChecking;
-                }
+                NetDataWriter writer = new NetDataWriter();
+                writer.Put((byte)RejectionReason.Custom);
+                writer.Put("Server is offline.");
+                ConnectionRequest.Reject(writer);
                 goto skipChecking;
             }
 
@@ -354,16 +340,6 @@ namespace XProxy
                     Console.WriteLine($"Client {this.ClientEndPoint} ({this.PreAuthData.UserID}) disconnected from target server {TargetAddress}:{TargetPort} with reason {reason}");
                     if (ConnectionRequest != null)
                     {
-                        if (reason == RejectionReason.Challenge)
-                        {
-                            if (!ProxyServer.ServerOverride.ContainsKey(ClientEndPoint.Address.ToString()))
-                                ProxyServer.ServerOverride.Add(ClientEndPoint.Address.ToString(), new ProxyServerData()
-                                {
-                                    Address = TargetAddress,
-                                    Port = TargetPort
-                                });
-                        }
-
                         Console.WriteLine($"Reject peer");
                         ConnectionRequest.Reject(writer2);
                     }
@@ -383,9 +359,8 @@ namespace XProxy
                 ServerPeer.Disconnect();
             }
         skipChecking:
-            DisconnectFromProxy();
             IsConnected = false;
-            IsPooling = false;
+            end = true;
         }
     }
 }

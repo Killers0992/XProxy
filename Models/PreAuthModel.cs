@@ -3,6 +3,7 @@ using LiteNetLib.Utils;
 using System;
 using System.Collections.Generic;
 using System.Text;
+using XProxy.Enums;
 
 namespace XProxy.Models
 {
@@ -10,114 +11,95 @@ namespace XProxy.Models
     {
         public NetDataWriter RawPreAuth;
 
-        public NetDataWriter RegenPreAuth()
+        public static PreAuthModel ReadPreAuth(string endpoint, NetDataReader reader, ref string failedOn)
         {
-            NetDataWriter writer = new NetDataWriter();
-            writer.Put(b);
-            writer.Put(Major);
-            writer.Put(Minor);
-            writer.Put(Revision);
-            writer.Put(BackwardRevision);
-            writer.Put(flag);
-            writer.Put(0);
-            writer.Put(UserID);
-            writer.Put(Expiration);
-            writer.Put((byte)Flags);
-            writer.Put(Region);
-            writer.PutBytesWithLength(Signature);
-            return writer;
-        }
-
-        public static PreAuthModel ReadPreAuth(string endpoint, NetDataReader reader)
-        {
-
             PreAuthModel model = new PreAuthModel();
             model.IpAddress = endpoint;
 
             model.RawPreAuth = NetDataWriter.FromBytes(reader.RawData, reader.UserDataOffset, reader.UserDataSize);
             model.RawPreAuth.Put(endpoint);
 
-            if (reader.TryGetByte(out byte b))
+            failedOn = "Client Type";
+            if (!reader.TryGetByte(out byte clientType)) return model;
+            model.ClientType = (ClientType)clientType;
+
+            failedOn = "Major Version";
+            if (!reader.TryGetByte(out byte major)) return model;
+            model.Major = major;
+
+            failedOn = "Minor Version";
+            if (!reader.TryGetByte(out byte minor)) return model;
+            model.Minor = minor;
+
+            failedOn = "Revision Version";
+            if (!reader.TryGetByte(out byte revision)) return model;
+            model.Revision = revision;
+
+            failedOn = "Backward Compatibility";
+            if (!reader.TryGetBool(out bool backwardCompatibility)) return model;
+            model.BackwardCompatibility = backwardCompatibility;
+
+            if (backwardCompatibility)
             {
-                model.b = b;
-           //     Console.WriteLine("Receive B " + b );
+                failedOn = "Backward Revision";
+                if (!reader.TryGetByte(out byte backwardRevision)) return model;
+                model.BackwardRevision = backwardRevision;
             }
 
-            byte cBackwardRevision = 0;
-            byte cMajor;
-            byte cMinor;
-            byte cRevision;
-            bool cflag;
-            if (!reader.TryGetByte(out cMajor) || !reader.TryGetByte(out cMinor) || !reader.TryGetByte(out cRevision) || !reader.TryGetBool(out cflag) || (cflag && !reader.TryGetByte(out cBackwardRevision)))
-            {
-                return null;
-            }
+            failedOn = "ChallengeID";
+            if (!reader.TryGetInt(out int challengeid)) return model;
+            model.ChallengeID = challengeid;
 
-            model.Major = cMajor;
-            model.Minor = cMinor;
-            model.Revision = cRevision;
-            model.BackwardRevision = cBackwardRevision;
-            model.flag = cflag;
+            failedOn = "ChallengeResponse";
+            if (!reader.TryGetBytesWithLength(out byte[] challenge)) return model;
+            model.ChallengeResponse = challenge;
 
-            if (reader.TryGetInt(out int challengeid))
-            {
-                model.ChallengeID = challengeid;
-               // Console.WriteLine("Receive challenge ID" + challengeid);
-            }
+            var Challenge = Encoding.UTF8.GetString(challenge);
 
-            if (reader.TryGetBytesWithLength(out byte[] challenge))
-            {
-                model.Challenge = challenge;
-               // Console.WriteLine("Receive challenge " + Encoding.UTF8.GetString(challenge));
-            }
+            if (Program.config.BlockUserids.Contains(Challenge))
+                return model;
 
-            if (reader.TryGetString(out string userid))
+            if (challengeid != 0 && challenge.Length != 0)
             {
+                failedOn = "UserID";
+                if (!reader.TryGetString(out string userid)) return model;
+
+                failedOn = "UserID is null/empty";
+                if (string.IsNullOrEmpty(userid)) return model;
                 model.UserID = userid;
-               // Console.WriteLine("Receive userid " + userid );
-            }  
 
-            if (reader.TryGetLong(out long expiration))
-            {
+                failedOn = "Expiration";
+                if (!reader.TryGetLong(out long expiration)) return model;
                 model.Expiration = expiration;
-               // Console.WriteLine("Receive expiration " + expiration);
-            }
 
-            if (reader.TryGetByte(out byte flags))
-            {
+                failedOn = "Flags";
+                if (!reader.TryGetByte(out byte flags)) return model;
                 model.Flags = (CentralAuthPreauthFlags)flags;
-                //Console.WriteLine("Receive flags");
-            }
 
-            if (reader.TryGetString(out string region))
-            {
+                failedOn = "Region";
+                if (!reader.TryGetString(out string region)) return model;
                 model.Region = region;
-               // Console.WriteLine("Receive region");
-            }
 
-            if (reader.TryGetBytesWithLength(out byte[] signature))
-            {
+                failedOn = "Signature";
+                if (!reader.TryGetBytesWithLength(out byte[] signature)) return model;
                 model.Signature = signature;
-               // Console.WriteLine("Receive signature");
             }
 
+            model.IsValid = true;
             return model;
         }
 
+        public bool IsValid { get; set; }
         public string IpAddress { get; set; }
-
-
-        public byte b { get; set; }
-
+        public ClientType ClientType { get; set; }
         public byte Major { get; set; }
         public byte Minor { get; set; }
         public byte Revision { get; set; }
+        public bool BackwardCompatibility { get; set; }
         public byte BackwardRevision { get; set; }
 
-        public bool flag { get; set; }
-
         public int ChallengeID { get; set; }
-        public byte[] Challenge { get; set; }
+        public byte[] ChallengeResponse { get; set; }
 
         public string UserID { get; set; } = "Unknown UserID";
 
@@ -132,11 +114,13 @@ namespace XProxy.Models
         public override string ToString()
         {
             return string.Concat(
-                $"Version: {Major}.{Minor}.{Revision}, Backward revision: {BackwardRevision}",
+                $"Client Type: {ClientType}",
+                Environment.NewLine,
+                $"Version: {Major}.{Minor}.{Revision}, Backward Compatibility: {(BackwardCompatibility ? "NO" : $"YES ( Revision {BackwardRevision} )")}",
                 Environment.NewLine,
                 $"Challenge ID: {ChallengeID}",
                 Environment.NewLine,
-                $"Challenge: {Encoding.UTF8.GetString(Challenge)}",
+                $"Challenge: {Encoding.UTF8.GetString(ChallengeResponse)}",
                 Environment.NewLine,
                 $"UserID: {UserID}",
                 Environment.NewLine,

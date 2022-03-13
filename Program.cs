@@ -32,9 +32,13 @@ namespace XProxy
                 File.WriteAllText($"./centralkeysignature.txt", "");
             config = JsonConvert.DeserializeObject<ProxyConfig>(File.ReadAllText("./config.json"));
             File.WriteAllText("./config.json", JsonConvert.SerializeObject(config, Formatting.Indented));
-            foreach(var server in config.proxyServers)
+            foreach (var server in config.proxyServers)
             {
-                servers.Add(new ProxyServer(config, server.Key));
+                Task.Factory.StartNew(async () =>
+                {
+                    var serv = new ProxyServer(server.Key, server.Value.TargetIP, server.Value.TargetPort);
+                    await serv.Run();
+                });
             }
             while (true)
             {

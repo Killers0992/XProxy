@@ -19,18 +19,21 @@ namespace XProxy
 {
     public class ProxyServer : INetEventListener
     {
-        private ProxyConfig Config;
         public XProxy.ServerList.ServerConsole serverlist;
 
-        public static Dictionary<string, ProxyServerData> ServerOverride = new Dictionary<string, ProxyServerData>();
+        public int ServerPort { get; set; }
 
-        public ProxyServer(ProxyConfig config, int Port)
+        public string TargetIP { get; set; }
+        public int TargetPort { get; set; }
+
+        public ProxyServer(int serverPort, string targetIp, int targetPort)
         {
-            serverlist = new XProxy.ServerList.ServerConsole(Port);
-            this.Config = config;
+            this.ServerPort = serverPort;
+            this.TargetIP = targetIp;
+            this.TargetPort = targetPort;
+            serverlist = new XProxy.ServerList.ServerConsole(serverPort);
             Manager = new NetManager(this);
             Manager.IPv6Enabled = IPv6Mode.SeparateSocket;
-            //Manager.UpdateTime = 5;
             Manager.AutoRecycle = false;
             Manager.BroadcastReceiveEnabled = false;
             Manager.ChannelsCount = (byte)6;
@@ -47,76 +50,43 @@ namespace XProxy
             Manager.UnsyncedEvents = false;
             Manager.UnsyncedReceiveEvent = false;
             Manager.UseSafeMtu = false;
-
-            pollingTask = Task.Factory.StartNew(async () =>
-            {
-                while (true)
-                {
-                    await Task.Delay(15);
-                    if (Manager != null && IsPooling)
-                        if (Manager.IsRunning)
-                            Manager.PollEvents();
-                }
-            });
-            Manager.Start(Port);
-            Console.WriteLine($"Proxy started on port {Port}.");
-            IsPooling = true;
+            Manager.Start(serverPort);
+            Console.WriteLine($"Proxy started on port {serverPort} redirecting to {TargetIP}:{targetPort}.");
+            clients.Add(serverPort, new ConcurrentDictionary<byte, ProxyClient>());
         }
 
-
-        public void RedirectAllClients(string ip, int port)
+        public async Task Run()
         {
-            Console.WriteLine($"Redirecting all clients ({Manager.ConnectedPeersCount}) to server {ip}:{port}.");
-            foreach (var client in clients)
+            while (true)
             {
-                client.Value.Redirect(ip, port);
+                await Task.Delay(16);
+                if (Manager != null)
+                    if (Manager.IsRunning)
+                        Manager.PollEvents();
             }
         }
 
-
-        private Task pollingTask;
         private NetManager Manager;
 
-        private bool IsPooling { get; set; } = false;
+        public static Dictionary<int, ConcurrentDictionary<byte, ProxyClient>> clients = new Dictionary<int, ConcurrentDictionary<byte, ProxyClient>>();
 
-        public ConcurrentDictionary<NetPeer, ProxyClient> clients = new ConcurrentDictionary<NetPeer, ProxyClient>();
-
-        public ProxyServerData TakeFreeServer(string clientIp)
-        {
-            var srv = Config.servers.Where(p => p.Value.Players < p.Value.MaxPlayers).OrderBy(p => p.Value.Players).ToList();
-
-            if (srv.Count == 0)
-                return null;
-
-            var target = srv[0].Value;
-
-            if (ServerOverride.TryGetValue(clientIp, out ProxyServerData data))
-            {
-                target = data;
-                ServerOverride.Remove(clientIp);
-            }
-            return target;
-        }
+        public Dictionary<byte, CancellationTokenSource> Tokens = new Dictionary<byte, CancellationTokenSource>();
 
         public void OnConnectionRequest(ConnectionRequest request)
         {
-            ProxyClient prox = new ProxyClient(this, request, PreAuthModel.ReadPreAuth(request.RemoteEndPoint.Address.ToString(), request.Data));
-            if (prox.PreAuthData == null)
+            string failed = string.Empty;
+            var preAuth = PreAuthModel.ReadPreAuth(request.RemoteEndPoint.Address.ToString(), request.Data, ref failed);
+
+            if (!preAuth.IsValid)
             {
+                Console.WriteLine($"Preauth is invalid for connection " + request.RemoteEndPoint.Address.ToString() + $" {failed} ");
                 request.Reject();
                 return;
             }
 
-            var targetServer = TakeFreeServer(request.RemoteEndPoint.Address.ToString());
-            if (targetServer == null)
-            {
-                NetDataWriter writer = new NetDataWriter();
-                writer.Put((byte)RejectionReason.ServerFull);
-                request.Reject(writer);
-                return;
-            }
+            ProxyClient prox = new ProxyClient(this, request, preAuth);
 
-            prox.ConnectTo(targetServer.Address, targetServer.Port);
+            prox.ConnectTo(TargetIP, TargetPort);
         }
 
         public void OnNetworkError(IPEndPoint endPoint, SocketError socketError)
@@ -129,7 +99,7 @@ namespace XProxy
 
         public void OnNetworkReceive(NetPeer peer, NetPacketReader reader, DeliveryMethod deliveryMethod)
         {
-            if (clients.TryGetValue(peer, out ProxyClient prox))
+            if (clients[ServerPort].TryGetValue(peer.ConnectionNum, out ProxyClient prox))
             {
                 prox.ReceiveData(reader, deliveryMethod);
             }
@@ -146,8 +116,13 @@ namespace XProxy
 
         public void OnPeerDisconnected(NetPeer peer, DisconnectInfo disconnectInfo)
         {
-            if (clients.TryRemove(peer, out ProxyClient prox))
-                prox.DisconnectFromProxy();
+            clients[ServerPort].TryRemove(peer.ConnectionNum, out _);
+            
+            if (Tokens.TryGetValue(peer.ConnectionNum, out CancellationTokenSource token))
+            {
+                token.Cancel();
+                Tokens.Remove(peer.ConnectionNum);
+            }
             serverlist.PlayersOnline--;
         }
     }
