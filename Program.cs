@@ -30,7 +30,7 @@ namespace XProxy
             services.AddHostedService<PublicKeyService>();
             services.AddHostedService<ListService>();
             services.AddHostedService<ClientsUpdaterService>();
-            services.AddHostedService<PluginsService>();
+            services.AddSingleton<PluginsService>();
             services.AddHostedService<CommandsService>();
         }
 
