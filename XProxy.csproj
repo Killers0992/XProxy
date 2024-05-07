@@ -14,25 +14,19 @@
     <PackageReference Include="Microsoft.Extensions.Hosting" Version="8.0.0" />
     <PackageReference Include="Portable.BouncyCastle" Version="1.9.0" />
     <PackageReference Include="System.Net.WebHeaderCollection" Version="4.3.0" />
-	<PackageReference Include="Newtonsoft.Json" IsTrimmable="false" Version="13.0.1" />
-	<PackageReference Include="YamlDotNet" IsTrimmable="false" Version="15.1.2" />
+	<PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
+	<PackageReference Include="YamlDotNet" Version="15.1.2" />
   </ItemGroup>
 
   <ItemGroup>
-    <Reference Include="Assembly-CSharp" IsTrimmable="false">
+    <Reference Include="Assembly-CSharp">
       <HintPath>$(SL_REFERENCES)\Assembly-CSharp.dll</HintPath>
-    </Reference>
-    <Reference Include="CommandSystem.Core">
-      <HintPath>$(SL_REFERENCES)\CommandSystem.Core.dll</HintPath>
     </Reference>
     <Reference Include="Mirror">
       <HintPath>$(SL_REFERENCES)\Mirror.dll</HintPath>
     </Reference>
     <Reference Include="NorthwoodLib">
       <HintPath>$(SL_REFERENCES)\NorthwoodLib.dll</HintPath>
-    </Reference>
-    <Reference Include="Pooling">
-      <HintPath>$(SL_REFERENCES)\Pooling.dll</HintPath>
     </Reference>
     <Reference Include="UnityEngine.CoreModule">
       <HintPath>$(UNITY_REFERENCES)\UnityEngine.CoreModule.dll</HintPath>
