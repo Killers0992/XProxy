@@ -1,7 +1,6 @@
 ﻿using System.IO;
 using XProxy.Serialization;
 using XProxy.Models;
-using Windows.Globalization;
 
 namespace XProxy.Services
 {
