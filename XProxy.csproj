@@ -11,7 +11,8 @@
 	<DebugSymbols>true</DebugSymbols>
 	<DebugType>embedded</DebugType>
 
-	 <PublishTrimmed>true</PublishTrimmed>
+	<PublishTrimmed>true</PublishTrimmed>
+	<TrimMode>partial</TrimMode>
   </PropertyGroup>
 
   <ItemGroup>
