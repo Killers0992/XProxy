@@ -21,7 +21,7 @@ namespace XProxy.Core.Connections
             }
             catch(Exception ex)
             {
-
+                Logger.Error(ex, "Connection");
             }
         }
 

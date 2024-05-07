@@ -1,18 +1,14 @@
-﻿using Microsoft.Extensions.Hosting;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
-using System.Xml.Linq;
 using XProxy.Core;
 
 namespace XProxy.Services
 {
-    public class PluginsService : BackgroundService
+    public class PluginsService
     {
         public List<Assembly> Dependencies = new List<Assembly>();
         public Dictionary<Assembly, Plugin> AssemblyToPlugin = new Dictionary<Assembly, Plugin>();
@@ -24,10 +20,7 @@ namespace XProxy.Services
         public PluginsService(ConfigService config)
         {
             _config = config;
-        }
 
-        protected override async Task ExecuteAsync(CancellationToken stoppingToken)
-        {
             if (!Directory.Exists(_pluginsPath))
                 Directory.CreateDirectory(_pluginsPath);
 

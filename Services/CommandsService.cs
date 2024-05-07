@@ -68,6 +68,7 @@ namespace XProxy.Services
                     Logger.Info(Config.Messages.CommandNotExistsMessage.Replace("%name%", args[0]), "CommandsService");
                 }
 
+                await Task.Delay(1);
             }
         }
     }
