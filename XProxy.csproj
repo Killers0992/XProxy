@@ -28,11 +28,17 @@
     <Reference Include="Assembly-CSharp">
       <HintPath>$(SL_REFERENCES)\Assembly-CSharp.dll</HintPath>
     </Reference>
+    <Reference Include="CommandSystem.Core">
+      <HintPath>$(SL_REFERENCES)\CommandSystem.Core.dll</HintPath>
+    </Reference>
     <Reference Include="Mirror">
       <HintPath>$(SL_REFERENCES)\Mirror.dll</HintPath>
     </Reference>
     <Reference Include="NorthwoodLib">
       <HintPath>$(SL_REFERENCES)\NorthwoodLib.dll</HintPath>
+    </Reference>
+    <Reference Include="Pooling">
+      <HintPath>$(SL_REFERENCES)\Pooling.dll</HintPath>
     </Reference>
     <Reference Include="UnityEngine.CoreModule">
       <HintPath>$(UNITY_REFERENCES)\UnityEngine.CoreModule.dll</HintPath>
