@@ -1,0 +1,44 @@
+name: .NET
+
+on:
+  push:
+    branches: [ "master" ]
+  pull_request:
+    branches: [ "master" ]
+    
+env:
+  DEPOT_DOWNLOADER_VERSION: 2.5.0 
+  SL_REFERENCES: D:\a\Proxy\SCPSL_REFERENCES\SCPSL_Data\Managed
+  UNITY_REFERENCES: D:\a\Proxy\SCPSL_REFERENCES\SCPSL_Data\Managed
+
+jobs:
+  build:
+
+    runs-on: windows-latest
+    steps:
+    - uses: actions/checkout@v3
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v2
+      with:
+        dotnet-version: 7.0.x
+    - name: Download depot downloader
+      shell: pwsh
+      run: |
+        New-Item -ItemType Directory -Force -Path D:\a\Proxy
+        New-Item -ItemType Directory -Force -Path D:\a\Proxy\DepotDownloader
+        Invoke-WebRequest -Uri "https://github.com/SteamRE/DepotDownloader/releases/download/DepotDownloader_${{ env.DEPOT_DOWNLOADER_VERSION }}/depotdownloader-${{ env.DEPOT_DOWNLOADER_VERSION }}.zip" -OutFile "D:\a\Proxy\depotdownloader.zip"
+        Expand-Archive -Path D:\a\Proxy\depotdownloader.zip -PassThru -DestinationPath D:\a\Proxy/DepotDownloader
+    - name: Download SCPSL references.
+      shell: pwsh
+      run: |
+        New-Item -ItemType Directory -Force -Path D:\a\Proxy\SCPSL_REFERENCES
+        Start-Process -NoNewWindow -Wait -FilePath "D:\a\Proxy\DepotDownloader\DepotDownloader.exe" -WorkingDirectory "D:\a\Proxy\DepotDownloader" -ArgumentList '-app 996560','-dir D:\a\Proxy\SCPSL_REFERENCES','-filelist "${{ github.workspace }}\download-files.txt"'
+    - name: Restore dependencies
+      run: dotnet restore
+    - name: Publish Linux x64
+      run: dotnet publish --configuration Release --runtime linux-x64
+    - name: Upload Linux x64
+      uses: actions/upload-artifact@v3
+      with: 
+        name: XProxy Linux x64
+        path: ${{ github.workspace }}/Proxy/bin/Release/net7.0-windows10.0.17763.0\publish\linux-x64\XProxy
