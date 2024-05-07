@@ -10,6 +10,8 @@
 
 	<DebugSymbols>true</DebugSymbols>
 	<DebugType>embedded</DebugType>
+
+	<PublishSingleFile>true</PublishSingleFile>
   </PropertyGroup>
 
   <ItemGroup>
