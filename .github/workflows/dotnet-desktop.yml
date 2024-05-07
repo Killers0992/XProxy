@@ -32,7 +32,7 @@ jobs:
       shell: pwsh
       run: |
         New-Item -ItemType Directory -Force -Path D:\a\Proxy\SCPSL_REFERENCES
-        Start-Process -NoNewWindow -Wait -FilePath "D:\a\Proxy\DepotDownloader\DepotDownloader.exe" -WorkingDirectory "D:\a\Proxy\DepotDownloader" -ArgumentList '-app 996560','-dir D:\a\Proxy\SCPSL_REFERENCES','-filelist "${{ github.workspace }}\download-files.txt"'
+        Start-Process -NoNewWindow -Wait -FilePath "D:\a\Proxy\DepotDownloader\DepotDownloader.exe" -WorkingDirectory "D:\a\Proxy\DepotDownloader" -ArgumentList '-app 996560','-dir D:\a\Proxy\SCPSL_REFERENCES'
     - name: Restore dependencies
       run: dotnet restore
     - name: Publish Linux x64
