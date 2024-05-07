@@ -331,7 +331,6 @@ namespace XProxy.Services
                     init = false;
                     Update = Update || cycle == 10;
 
-                    int num = 0;
                     List<AuthPlayerModel> list = new List<AuthPlayerModel>();
 
                     string str = JsonConvert.SerializeObject(new AuthPlayersModel() { Players = list.ToArray() });
