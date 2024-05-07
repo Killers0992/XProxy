@@ -23,7 +23,6 @@ namespace XProxy.Models
         public string Email { get; set; } = "example@gmail.com";
 
         [Description("Server name.")]
-        [YamlMember(ScalarStyle = ScalarStyle.SingleQuoted)]
         public string ServerName { get; set; } = "Example server name.";
 
         [Description("Server information.")]
@@ -86,7 +85,6 @@ namespace XProxy.Models
 
         [Description("If maintenance mode is enabled.")]
         public bool MaintenanceMode { get; set; }
-        [YamlMember(ScalarStyle = ScalarStyle.SingleQuoted)]
         [Description("Name of server visbile on serverlist when maintenance mode is enabled.")]
         public string MaintenanceServerName { get; set; } = "Maintenance mode";
     }
