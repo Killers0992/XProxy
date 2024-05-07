@@ -1,7 +1,5 @@
-﻿using LiteNetLib;
-using LiteNetLib.Utils;
+﻿using LiteNetLib.Utils;
 using System;
-using System.Collections.Generic;
 using System.Text;
 using XProxy.Enums;
 
@@ -17,7 +15,6 @@ namespace XProxy.Models
             model.IpAddress = endpoint;
 
             model.RawPreAuth = NetDataWriter.FromBytes(reader.RawData, reader.UserDataOffset, reader.UserDataSize);
-            model.RawPreAuth.Put(endpoint);
 
             failedOn = "Client Type";
             if (!reader.TryGetByte(out byte clientType)) return model;
@@ -50,40 +47,37 @@ namespace XProxy.Models
             if (!reader.TryGetInt(out int challengeid)) return model;
             model.ChallengeID = challengeid;
 
-            failedOn = "ChallengeResponse";
-            if (!reader.TryGetBytesWithLength(out byte[] challenge)) return model;
-            model.ChallengeResponse = challenge;
-
-            var Challenge = Encoding.UTF8.GetString(challenge);
-
-            if (Program.config.BlockUserids.Contains(Challenge))
-                return model;
-
-            if (challengeid != 0 && challenge.Length != 0)
+            if (model.ChallengeID != 0)
             {
-                failedOn = "UserID";
-                if (!reader.TryGetString(out string userid)) return model;
-
-                failedOn = "UserID is null/empty";
-                if (string.IsNullOrEmpty(userid)) return model;
-                model.UserID = userid;
-
-                failedOn = "Expiration";
-                if (!reader.TryGetLong(out long expiration)) return model;
-                model.Expiration = expiration;
-
-                failedOn = "Flags";
-                if (!reader.TryGetByte(out byte flags)) return model;
-                model.Flags = (CentralAuthPreauthFlags)flags;
-
-                failedOn = "Region";
-                if (!reader.TryGetString(out string region)) return model;
-                model.Region = region;
-
-                failedOn = "Signature";
-                if (!reader.TryGetBytesWithLength(out byte[] signature)) return model;
-                model.Signature = signature;
+                failedOn = "ChallengeResponse";
+                if (!reader.TryGetBytesWithLength(out byte[] challenge)) return model;
+                model.ChallengeResponse = challenge;
             }
+            else
+                model.ChallengeResponse = new byte[0];
+
+            failedOn = "UserID";
+            if (!reader.TryGetString(out string userid)) return model;
+
+            failedOn = "UserID is null/empty ( player not authenticated )";
+            if (string.IsNullOrEmpty(userid)) return model;
+            model.UserID = userid;
+
+            failedOn = "Expiration";
+            if (!reader.TryGetLong(out long expiration)) return model;
+            model.Expiration = expiration;
+
+            failedOn = "Flags";
+            if (!reader.TryGetByte(out byte flags)) return model;
+            model.Flags = (CentralAuthPreauthFlags)flags;
+
+            failedOn = "Region";
+            if (!reader.TryGetString(out string region)) return model;
+            model.Region = region;
+
+            failedOn = "Signature";
+            if (!reader.TryGetBytesWithLength(out byte[] signature)) return model;
+            model.Signature = signature;
 
             model.IsValid = true;
             return model;

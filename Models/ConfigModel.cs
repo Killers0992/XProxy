@@ -1,0 +1,120 @@
+﻿using System;
+using System.Collections.Generic;
+using System.ComponentModel;
+using XProxy.Enums;
+using YamlDotNet.Core;
+using YamlDotNet.Serialization;
+
+namespace XProxy.Models
+{
+    public class ConfigModel
+    {
+        [YamlIgnore]
+        private System.Version _version;
+
+        [Description("Enables debug logs.")]
+        public bool Debug { get; set; }
+        [Description("Language of messages.")]
+        public string Langauge { get; set; } = "en";
+        [Description("Port which proxy will use to listen for connections.")]
+        public ushort Port { get; set; } = 7777;
+
+        [Description("Email used for listing your server on SCP SL serverlist.")]
+        public string Email { get; set; } = "example@gmail.com";
+
+        [Description("Server name.")]
+        [YamlMember(ScalarStyle = ScalarStyle.SingleQuoted)]
+        public string ServerName { get; set; } = "Example server name.";
+
+        [Description("Server information.")]
+        public string Pastebin { get; set; } = "m4DqS5r0";
+
+        [Description("Version of game.")]
+        public string GameVersion { get; set; } = "13.4.2";
+
+        [YamlIgnore]
+        public System.Version GameVersionParsed
+        {
+            get
+            {
+                if (_version == null)
+                {
+                    System.Version.TryParse(GameVersion, out _version);
+                }
+
+                return _version;
+            }
+        }
+
+        [Description("Maximum amount of players which can connect to your proxy.")]
+        public int MaxPlayers { get; set; } = 50;
+
+        [Description("Priority servers used for first connection and fallback servers.")]
+        public List<string> Priorities { get; set; } = new List<string>() { "lobby" };
+
+        [Description("Available servers.")]
+        public Dictionary<string, ServerModel> Servers { get; set; } = new Dictionary<string, ServerModel>()
+        {
+            { "lobby", new ServerModel()
+                {
+                    Name = "Lobby",
+                    Ip = "127.0.0.1",
+                    Port = 7777,
+                    MaxPlayers = 50,
+                    ConnectionType = ConnectionType.Simulated,
+                    Simulation = "Lobby",
+                } 
+            },
+            { "vanilla", new ServerModel()
+                {
+                    Name = "Vanilla",
+                    Ip = "127.0.0.1",
+                    Port = 7778,
+                }
+            }
+        };
+
+        [Description("User permissions")]
+        public Dictionary<string, UserModel> Users { get; set; } = new Dictionary<string, UserModel>()
+        {
+            { "admin@admin", new UserModel()
+                {
+                     IgnoreMaintenance = true,
+                }
+            }
+        };
+
+        [Description("If maintenance mode is enabled.")]
+        public bool MaintenanceMode { get; set; }
+        [YamlMember(ScalarStyle = ScalarStyle.SingleQuoted)]
+        [Description("Name of server visbile on serverlist when maintenance mode is enabled.")]
+        public string MaintenanceServerName { get; set; } = "Maintenance mode";
+    }
+
+    public class ServerModel
+    {
+        [Description("Name of server.")]
+        public string Name { get; set; }
+        [Description("IP Address of target server.")]
+        public string Ip { get; set; }
+        [Description("Port of target server.")]
+        public ushort Port { get; set; }
+
+        [Description("Maximum amount of players which can connect to server.")]
+        public int MaxPlayers { get; set; } = 20;
+
+        [Description("Connection type set to Proxied will connect players to specific server, simulation needs to have Simulation set to specific type example lobby")]
+        public ConnectionType ConnectionType { get; set; } = ConnectionType.Proxied;
+        [Description("Simulation set when player connects to server, plugins can register custom ones and you need to specify type here.")]
+        public string Simulation { get; set; } = "-";
+
+        [Description("PreAuth will contain IP Address of client and target server will set this ip address to that one only if enable_proxy_ip_passthrough is set to true and trusted_proxies_ip_addresses has your proxy ip!")]
+        public bool SendIpAddressInPreAuth { get; set; } = true;
+    }
+
+    public class UserModel
+    {
+        [Description("If player can join when maintenance is enabled.")]
+        public bool IgnoreMaintenance { get; set; }
+    }
+}

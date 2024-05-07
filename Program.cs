@@ -1,67 +1,44 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Threading.Tasks;
-using LiteNetLib;
-using LiteNetLib.Utils;
-using System.Threading;
-using System.IO;
-using Newtonsoft.Json;
-using XProxy.ServerList;
-using System.Linq;
-using Mirror;
+﻿using System.Threading.Tasks;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
+using XProxy.Services;
 
 namespace XProxy
 {
     class Program
     {
-        public static ProxyConfig config;
-        public static ProxyServer server;
-        public static XProxy.ServerList.ServerConsole sconsole;
-
-        static List<ProxyServer> servers = new List<ProxyServer>();
-
-        public static bool ShowDebugLogsFromServer = false;
-
-        static void Main(string[] args)
+        static async Task Main(string[] args) => await RunApplication(BuildApplication());
+        
+        static HostApplicationBuilder BuildApplication()
         {
-            if (!File.Exists($"./config.json"))
-                File.WriteAllText("./config.json", JsonConvert.SerializeObject(new ProxyConfig(), Formatting.Indented));
-            if (!File.Exists("./centralcache.txt"))
-                File.WriteAllText($"./centralcache.txt", "");
-            if (!File.Exists("./centralkeysignature.txt"))
-                File.WriteAllText($"./centralkeysignature.txt", "");
-            config = JsonConvert.DeserializeObject<ProxyConfig>(File.ReadAllText("./config.json"));
-            File.WriteAllText("./config.json", JsonConvert.SerializeObject(config, Formatting.Indented));
-            foreach (var server in config.proxyServers)
-            {
-                Task.Factory.StartNew(async () =>
-                {
-                    var serv = new ProxyServer(server.Key, server.Value.TargetIP, server.Value.TargetPort);
-                    await serv.Run();
-                });
-            }
-            while (true)
-            {
-                var line = Console.ReadLine();
-                if (!string.IsNullOrEmpty(line))
-                {
-                    foreach(var srv in servers)
-                    {
-                        srv.serverlist.RunCentralServerCommand(line.Split(' ')[0], string.Join(" ", line.Split(' ').Skip(1)));
-                    }
-                    var cmdArgs = line.Split(' ');
-                    switch (cmdArgs[0].ToUpper())
-                    {
-                        case "METHODHASH":
-                            Console.WriteLine($"{cmdArgs[1].GetStableHashCode() * 503 + cmdArgs[2].GetStableHashCode()}");
-                            break;
-                        case "SHOWDEBUG":
-                            ShowDebugLogsFromServer = !ShowDebugLogsFromServer;
-                            Console.WriteLine($"Show debuglogs from server is set to {ShowDebugLogsFromServer}.");
-                            break;
-                    }
-                }
-            }
+            Logger.Ansi = new AnsiVtConsole.NetCore.AnsiVtConsole();
+
+            var builder = Host.CreateApplicationBuilder();
+
+            builder.Logging.SetMinimumLevel(LogLevel.None);
+
+            SetupServices(builder.Services);
+
+            return builder;
+        }
+
+        static void SetupServices(IServiceCollection services)
+        {
+            services.AddSingleton<ConfigService>(); 
+            services.AddHostedService<ProxyService>();
+            services.AddHostedService<PublicKeyService>();
+            services.AddHostedService<ListService>();
+            services.AddHostedService<ClientsUpdaterService>();
+            services.AddHostedService<PluginsService>();
+            services.AddHostedService<CommandsService>();
+        }
+
+        static async Task RunApplication(HostApplicationBuilder app)
+        {
+            IHost host = app.Build();
+
+            await host.RunAsync();
         }
     }
 }

@@ -1,129 +1,275 @@
 ﻿using LiteNetLib;
-using LiteNetLib.Utils;
 using Mirror;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Data;
 using System.Linq;
-using System.Net;
-using System.Net.Sockets;
-using System.Text;
-using System.Threading;
 using System.Threading.Tasks;
-using XProxy.Enums;
+using XProxy.Core;
+using XProxy.Core.Connections;
+using XProxy.Core.Events;
+using XProxy.Core.Events.Args;
 using XProxy.Models;
-using XProxy.ServerList;
-using static XProxy.Program;
+using XProxy.Services;
 
 namespace XProxy
 {
-    public class ProxyServer : INetEventListener
+    public class ProxyServer
     {
-        public XProxy.ServerList.ServerConsole serverlist;
+        private NetManager _manager;
+        private EventBasedNetListener _listener;
 
-        public int ServerPort { get; set; }
+        internal ConfigService _config;
 
-        public string TargetIP { get; set; }
-        public int TargetPort { get; set; }
+        public ushort Port => _config.Value.Port;
 
-        public ProxyServer(int serverPort, string targetIp, int targetPort)
+        public ConcurrentDictionary<int, Player> Players { get; private set; } = new ConcurrentDictionary<int, Player>();
+        public Dictionary<string, ServerInfo> Servers { get; private set; } = new Dictionary<string, ServerInfo>();
+
+        public Dictionary<string, LastServerInfo> ForceServerForUserID { get; set; } = new Dictionary<string, LastServerInfo>();
+
+        public static Dictionary<uint, string> MessageIdToName = new Dictionary<uint, string>();
+
+        public static Dictionary<string, Type> Simulations { get; private set; } = new Dictionary<string, Type>()
         {
-            this.ServerPort = serverPort;
-            this.TargetIP = targetIp;
-            this.TargetPort = targetPort;
-            serverlist = new XProxy.ServerList.ServerConsole(serverPort);
-            Manager = new NetManager(this);
-            Manager.IPv6Enabled = IPv6Mode.SeparateSocket;
-            Manager.AutoRecycle = false;
-            Manager.BroadcastReceiveEnabled = false;
-            Manager.ChannelsCount = (byte)6;
-            Manager.DisconnectTimeout = 5000;
-            Manager.ReconnectDelay = 1200;
-            Manager.UnsyncedDeliveryEvent = false;
-            Manager.EnableStatistics = false;
-            Manager.MaxConnectAttempts = 22;
-            Manager.MtuOverride = 0;
-            Manager.NatPunchEnabled = false;
-            Manager.PingInterval = 1000;
-            Manager.ReuseAddress = false;
-            Manager.UnconnectedMessagesEnabled = false;
-            Manager.UnsyncedEvents = false;
-            Manager.UnsyncedReceiveEvent = false;
-            Manager.UseSafeMtu = false;
-            Manager.Start(serverPort);
-            Console.WriteLine($"Proxy started on port {serverPort} redirecting to {TargetIP}:{targetPort}.");
-            clients.Add(serverPort, new ConcurrentDictionary<byte, ProxyClient>());
+            { "lobby", typeof(LobbyConnection) }
+        };
+
+        public ProxyServer(ConfigService config)
+        {
+            foreach(var message in typeof(GameConsoleTransmission).Assembly.GetTypes().Where(x => x.GetInterface("NetworkMessage") != null))
+            {
+                ushort key = (ushort)message.FullName.GetStableHashCode();
+
+                if (!MessageIdToName.ContainsKey(key))
+                    MessageIdToName.Add(key, message.FullName);
+            }
+
+            foreach (var message in typeof(Mirror.AddPlayerMessage).Assembly.GetTypes().Where(x => x.GetInterface("NetworkMessage") != null))
+            {
+                ushort key = (ushort)message.FullName.GetStableHashCode();
+
+                if (!MessageIdToName.ContainsKey(key))
+                    MessageIdToName.Add(key, message.FullName);
+            }
+
+
+            _config = config;
+            RefreshServers();
+
+            _listener = new EventBasedNetListener();
+            _listener.ConnectionRequestEvent += OnConnectionRequest;
+            _listener.NetworkReceiveEvent += OnNetworkReceive;
+            _listener.PeerDisconnectedEvent += OnPeerDisconnected;
+
+            _manager = new NetManager(_listener);
+            _manager.UpdateTime = 5;
+            _manager.BroadcastReceiveEnabled = true;
+            _manager.ChannelsCount = (byte)6;
+            _manager.DisconnectTimeout = 6000;
+            _manager.ReconnectDelay = 400;
+            _manager.MaxConnectAttempts = 2;
+            _manager.Start(_config.Value.Port);
+
+            Logger.Info("");
+            Logger.Info("");
+            Logger.Info($"{_config.Messages.ProxyStartedListeningMessage.Replace("%port%", $"{Port}")}", $"XProxyServer");
+            Logger.Info("");
+        }
+
+        public ServerInfo GetServerByIp(string ip)
+        {
+            string[] ipParse = ip.Split(':');
+
+            if (ipParse.Length != 2) return null;
+
+            string ipPart = ipParse[0];
+
+            if (!int.TryParse(ipParse[1], out int port))
+                return null;
+
+            return Servers.Values.Where(x => x.ServerIp == ipPart && x.ServerPort == port).FirstOrDefault();
+        }
+
+        public ServerInfo GetServerByName(string name)
+        {
+            if (Servers.TryGetValue(name, out ServerInfo info))
+                return info;
+
+            return null;
+        }
+
+        public ServerInfo GetRandomServerFromPriorities()
+        {
+            ServerInfo random = Servers
+                    .Where(x => _config.Value.Priorities.Contains(x.Key))
+                    .OrderBy(pair => _config.Value.Priorities.IndexOf(pair.Key))
+                    .Select(pair => pair.Value)
+                    .ToList()
+                    .FirstOrDefault();
+
+            return random;
+        }
+
+        public void SaveLastServerForUser(string userid, string serverIndex, float duration)
+        {
+            LastServerInfo newInfo = new LastServerInfo()
+            {
+                Index = serverIndex,
+                Time = DateTime.Now.AddSeconds(duration),
+            };
+
+            if (ForceServerForUserID.ContainsKey(userid))
+                ForceServerForUserID[userid] = newInfo;
+            else
+                ForceServerForUserID.Add(userid, newInfo);
+        }
+
+        public void ClearSavedLastServer(string userid)
+        {
+            ForceServerForUserID.Remove(userid);
+        }
+
+        public bool HasSavedLastServer(string userId)
+        {
+            if (!ForceServerForUserID.TryGetValue(userId, out LastServerInfo info))
+                return false;
+
+            return info.Time > DateTime.Now;
+        }
+
+        public ServerInfo GetSavedLastServer(string userid)
+        {
+            if (!HasSavedLastServer(userid)) return null;
+
+            return GetServerByName(ForceServerForUserID[userid].Index);
+        }
+
+        public ServerInfo GetSavedLastServerAndClear(string userid)
+        {
+            string name = ForceServerForUserID[userid].Index;
+
+            ClearSavedLastServer(userid);
+
+            return GetServerByName(name);
+        }
+
+        void RefreshServers()
+        {
+            Servers = _config.Value.Servers.ToDictionary(x => x.Key, a => new ServerInfo(a.Key, a.Value.Name, a.Value.Ip, a.Value.Port, a.Value.MaxPlayers, a.Value.SendIpAddressInPreAuth, a.Value.ConnectionType, a.Value.Simulation));
         }
 
         public async Task Run()
         {
             while (true)
             {
+                try
+                {
+                    if (_manager != null)
+                        if (_manager.IsRunning)
+                            _manager.PollEvents();
+                }
+                catch(Exception ex)
+                {
+                    Logger.Error(ex);
+                }
+
                 await Task.Delay(16);
-                if (Manager != null)
-                    if (Manager.IsRunning)
-                        Manager.PollEvents();
             }
         }
-
-        private NetManager Manager;
-
-        public static Dictionary<int, ConcurrentDictionary<byte, ProxyClient>> clients = new Dictionary<int, ConcurrentDictionary<byte, ProxyClient>>();
-
-        public Dictionary<byte, CancellationTokenSource> Tokens = new Dictionary<byte, CancellationTokenSource>();
 
         public void OnConnectionRequest(ConnectionRequest request)
         {
             string failed = string.Empty;
-            var preAuth = PreAuthModel.ReadPreAuth(request.RemoteEndPoint.Address.ToString(), request.Data, ref failed);
+            string ip = $"{request.RemoteEndPoint.Address}";
+            var preAuth = PreAuthModel.ReadPreAuth(ip, request.Data, ref failed);
 
             if (!preAuth.IsValid)
             {
-                Console.WriteLine($"Preauth is invalid for connection " + request.RemoteEndPoint.Address.ToString() + $" {failed} ");
+                Logger.Warn(_config.Messages.PreAuthIsInvalidMessage.Replace("%address%", $"{request.RemoteEndPoint.Address}").Replace("%failed%", failed), "XProxyServer");
                 request.Reject();
                 return;
             }
 
-            ProxyClient prox = new ProxyClient(this, request, preAuth);
-
-            prox.ConnectTo(TargetIP, TargetPort);
-        }
-
-        public void OnNetworkError(IPEndPoint endPoint, SocketError socketError)
-        {
-        }
-
-        public void OnNetworkLatencyUpdate(NetPeer peer, int latency)
-        {
-        }
-
-        public void OnNetworkReceive(NetPeer peer, NetPacketReader reader, DeliveryMethod deliveryMethod)
-        {
-            if (clients[ServerPort].TryGetValue(peer.ConnectionNum, out ProxyClient prox))
+            if (preAuth.Major != _config.Value.GameVersionParsed.Major || preAuth.Minor != _config.Value.GameVersionParsed.Minor || preAuth.Revision != _config.Value.GameVersionParsed.Build)
             {
-                prox.ReceiveData(reader, deliveryMethod);
+                request.DisconnectWrongVersion();
+                return;
             }
+
+            bool ignoreSlots = preAuth.Flags.HasFlagFast(CentralAuthPreauthFlags.ReservedSlot);
+
+            if (!ignoreSlots && _manager.ConnectedPeersCount >= _config.Value.MaxPlayers)
+            {
+                request.DisconnectServerFull();
+                return;
+            }
+
+            _config.Value.Users.TryGetValue(preAuth.UserID, out UserModel model);
+
+            if (!ignoreSlots && _config.Value.MaintenanceMode && (model == null || !model.IgnoreMaintenance))
+            {
+                request.Disconnect(_config.Messages.MaintenanceKickMessage);
+                Logger.Info(_config.Messages.MaintenanceDisconnectMessage.Replace("%address%", $"{request.RemoteEndPoint.Address}").Replace("%userid%", preAuth.UserID), $"XProxyServer");
+                return;
+            }
+
+            ProxyConnectionRequest ev = new ProxyConnectionRequest(this, request, preAuth.IpAddress, preAuth.UserID, preAuth.Flags);
+
+            EventManager.Proxy.InvokeConnectionRequest(ev);
+            
+            if (ev.IsCancelled)
+                return;
+
+            Player player = new Player(this);
+
+            ServerInfo target;
+            if (HasSavedLastServer(preAuth.UserID))
+                target = GetSavedLastServerAndClear(preAuth.UserID);
+            else
+                target = GetRandomServerFromPriorities();
+
+            PlayerAssignTargetServer ev2 = new PlayerAssignTargetServer(player, target);
+
+            EventManager.Player.InvokeAssignTargetServer(ev2);
+
+            if (target.SendIpAddressInPreAuth)
+            {
+                preAuth.RawPreAuth.Put(ip);
+            }
+
+            player.InternalSetup(request, preAuth, target);
+            player.InternalConnect();
         }
 
-        public void OnNetworkReceiveUnconnected(IPEndPoint remoteEndPoint, NetPacketReader reader, UnconnectedMessageType messageType)
+        public void OnNetworkReceive(NetPeer peer, NetPacketReader reader, byte channelNumber, DeliveryMethod deliveryMethod)
         {
-        }
+            if (!Players.TryGetValue(peer.Id, out Player player)) return;
 
-        public void OnPeerConnected(NetPeer peer)
-        {
-            serverlist.PlayersOnline++;
+            player.InternalReceiveDataFromProxy(reader, deliveryMethod);
         }
 
         public void OnPeerDisconnected(NetPeer peer, DisconnectInfo disconnectInfo)
         {
-            clients[ServerPort].TryRemove(peer.ConnectionNum, out _);
-            
-            if (Tokens.TryGetValue(peer.ConnectionNum, out CancellationTokenSource token))
+            if (!Players.TryGetValue(peer.Id, out Player player)) return;
+
+            bool showDisconnectMessage = !player.IsRoundRestarting && !player.IsRedirecting && disconnectInfo.Reason != DisconnectReason.DisconnectPeerCalled;
+
+            if (showDisconnectMessage)
             {
-                token.Cancel();
-                Tokens.Remove(peer.ConnectionNum);
+                switch (disconnectInfo.Reason)
+                {
+                    case DisconnectReason.RemoteConnectionClose:
+                        Logger.Info(_config.Messages.ProxyClientClosedConnectionMessage.Replace("%tag%", player.Tag).Replace("%address%", $"{peer.EndPoint.Address}").Replace("%userid%", player.UserId), $"XProxyServer");
+                        break;
+                    default:
+                        Logger.Info(_config.Messages.ProxyClientClosedConnectionMessage.Replace("%tag%", player.Tag).Replace("%address%", $"{peer.EndPoint.Address}").Replace("%userid%", player.UserId).Replace("%reason%", $"{disconnectInfo.Reason}"), $"XProxyServer");
+                        break;
+                }
             }
-            serverlist.PlayersOnline--;
+
+            player.InternalDestroy();
         }
     }
 }
