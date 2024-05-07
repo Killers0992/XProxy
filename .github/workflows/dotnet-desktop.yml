@@ -41,4 +41,4 @@ jobs:
       uses: actions/upload-artifact@v3
       with:
         name: XProxy Linux x64
-        path: ${{ github.workspace }}\Proxy\bin\Release\net7.0-windows10.0.17763.0\linux-x64\publish
+        path: ${{ github.workspace }}\bin\Release\net7.0-windows10.0.17763.0\linux-x64\publish\XProxy
