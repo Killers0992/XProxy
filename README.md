@@ -6,7 +6,7 @@ Proxy for SCP: Secret Laboratory allowing you to link multiple servres into one!
 Features
 - Virtual lobby - Allowing you to select specific server which you want to connect to.
 - Queue system - If server is full you will be added to queue and when system detects if theres free slot and then you will be connected.
-- Fallback system - IF server shutdowns or timeouts without any reason you will be connected to available server.
+- Fallback system - Server shutdowns or timeouts without any reason you will be connected to available server.
 
 # Setup
 1. Depending if you use linux or windows download proper build
