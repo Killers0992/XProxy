@@ -380,8 +380,8 @@ namespace XProxy.Core
             _netManager.UpdateTime = 5;
             _netManager.ChannelsCount = (byte)6;
             _netManager.DisconnectTimeout = 4000;
-            _netManager.ReconnectDelay = 1300;
-            _netManager.MaxConnectAttempts = 2;
+            _netManager.ReconnectDelay = 300;
+            _netManager.MaxConnectAttempts = 3;
 
             Task.Factory.StartNew(UpdateNetwork);
 
