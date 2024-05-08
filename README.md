@@ -22,7 +22,7 @@ trusted_proxies_ip_addresses:
 ```
   - Replace ``<IP OF YOUR PROXY>`` with public ip if your proxy is not running on same machine or with local ip, if you dont know which ip to set just before adding ip just connect to server via proxy and check console.
 
-# Commands
+# Console Commands
 | Command  | Arguments | Description |
 | ------------- | ------------- | ------------- |
 | servers  |   |  Sends you back to lobby.  |
