@@ -109,10 +109,17 @@ users:
 maintenanceMode: false
 # Name of server visbile on serverlist when maintenance mode is enabled.
 maintenanceServerName: 'Maintenance mode'
+# Auto updates proxy if needed.
+autoUpdater: true
 ```
 
 Default language ( you can submit translations via issues )
 ```yaml
+proxyVersion: 'Running version (f=green)%version%(f=white) for game version (f=green)%gameVersion%(f=white)'
+proxyIsUpToDate: 'Proxy is up to date!'
+proxyIsOutdated: 'Proxy is outdated, new version (f=green)%version%(f=white)'
+downloadingUpdate: 'Downloading update (f=green)%percentage%%(f=white)...'
+downloadedUpdate: 'Downloaded update!'
 playerTag: '(f=white)[(f=darkcyan)%serverIpPort%(f=white)] [(f=cyan)%server%(f=white)]'
 playerErrorTag: '(f=red)[(f=darkcyan)%serverIpPort%(f=red)] [(f=cyan)%server%(f=red)]'
 proxy: 'proxy'
