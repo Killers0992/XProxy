@@ -36,8 +36,6 @@ jobs:
       uses: actions/setup-dotnet@v2
       with:
         dotnet-version: 7.0.x
-    - name: Restore dependencies
-      run: dotnet restore
     - name: Publish Linux x64
       run: dotnet publish ${{ github.workspace }}/main/XProxy/XProxy.csproj --configuration Release --self-contained --runtime linux-x64
     - name: Upload Linux x64
