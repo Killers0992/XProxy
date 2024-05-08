@@ -1,6 +1,6 @@
-﻿namespace XProxy.BuildListing.Models
+﻿namespace XProxy.Models
 {
-    public class FileInfo
+    public class BuildFileInfo
     {
         public string Name { get; set; }
         public string Hash { get; set; }

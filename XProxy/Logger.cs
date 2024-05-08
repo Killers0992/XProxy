@@ -1,6 +1,4 @@
-﻿using AnsiVtConsole.NetCore;
-using System;
-using System.Drawing;
+﻿using System;
 using XProxy.Services;
 
 namespace XProxy

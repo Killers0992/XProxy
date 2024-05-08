@@ -88,6 +88,8 @@ namespace XProxy.Models
         public bool MaintenanceMode { get; set; }
         [Description("Name of server visbile on serverlist when maintenance mode is enabled.")]
         public string MaintenanceServerName { get; set; } = "Maintenance mode";
+        [Description("Auto updates proxy if needed.")]
+        public bool AutoUpdater { get; set; } = true;
     }
 
     public class ServerModel

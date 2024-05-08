@@ -21,6 +21,8 @@ namespace XProxy.Services
                 Directory.CreateDirectory(_languagesDir);
 
             Load();
+
+            Logger.Info(Messages.ProxyVersion.Replace("%version%", ProxyBuildInfo.ReleaseInfo.Version).Replace("%gameVersion%", ProxyBuildInfo.ReleaseInfo.GameVersion), "XProxy");
         }
 
         public ConfigModel Value { get; private set; }

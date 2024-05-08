@@ -72,9 +72,7 @@ namespace XProxy
             _manager.MaxConnectAttempts = 2;
             _manager.Start(_config.Value.Port);
 
-            Logger.Info("");
-            Logger.Info("");
-            Logger.Info($"{_config.Messages.ProxyStartedListeningMessage.Replace("%port%", $"{Port}")}", $"XProxyServer");
+            Logger.Info($"{_config.Messages.ProxyStartedListeningMessage.Replace("%port%", $"{Port}")}", $"XProxy");
             Logger.Info("");
         }
 
@@ -187,7 +185,7 @@ namespace XProxy
 
             if (!preAuth.IsValid)
             {
-                Logger.Warn(_config.Messages.PreAuthIsInvalidMessage.Replace("%address%", $"{request.RemoteEndPoint.Address}").Replace("%failed%", failed), "XProxyServer");
+                Logger.Warn(_config.Messages.PreAuthIsInvalidMessage.Replace("%address%", $"{request.RemoteEndPoint.Address}").Replace("%failed%", failed), "XProxy");
                 request.Reject();
                 return;
             }
@@ -211,7 +209,7 @@ namespace XProxy
             if (!ignoreSlots && _config.Value.MaintenanceMode && (model == null || !model.IgnoreMaintenance))
             {
                 request.Disconnect(_config.Messages.MaintenanceKickMessage);
-                Logger.Info(_config.Messages.MaintenanceDisconnectMessage.Replace("%address%", $"{request.RemoteEndPoint.Address}").Replace("%userid%", preAuth.UserID), $"XProxyServer");
+                Logger.Info(_config.Messages.MaintenanceDisconnectMessage.Replace("%address%", $"{request.RemoteEndPoint.Address}").Replace("%userid%", preAuth.UserID), $"XProxy");
                 return;
             }
 
@@ -235,9 +233,7 @@ namespace XProxy
             EventManager.Player.InvokeAssignTargetServer(ev2);
 
             if (target.SendIpAddressInPreAuth)
-            {
                 preAuth.RawPreAuth.Put(ip);
-            }
 
             player.InternalSetup(request, preAuth, target);
             player.InternalConnect();
@@ -261,10 +257,10 @@ namespace XProxy
                 switch (disconnectInfo.Reason)
                 {
                     case DisconnectReason.RemoteConnectionClose:
-                        Logger.Info(_config.Messages.ProxyClientClosedConnectionMessage.Replace("%tag%", player.Tag).Replace("%address%", $"{peer.EndPoint.Address}").Replace("%userid%", player.UserId), $"XProxyServer");
+                        Logger.Info(_config.Messages.ProxyClientClosedConnectionMessage.Replace("%tag%", player.Tag).Replace("%address%", $"{peer.EndPoint.Address}").Replace("%userid%", player.UserId), $"XProxy");
                         break;
                     default:
-                        Logger.Info(_config.Messages.ProxyClientClosedConnectionMessage.Replace("%tag%", player.Tag).Replace("%address%", $"{peer.EndPoint.Address}").Replace("%userid%", player.UserId).Replace("%reason%", $"{disconnectInfo.Reason}"), $"XProxyServer");
+                        Logger.Info(_config.Messages.ProxyClientClosedConnectionMessage.Replace("%tag%", player.Tag).Replace("%address%", $"{peer.EndPoint.Address}").Replace("%userid%", player.UserId).Replace("%reason%", $"{disconnectInfo.Reason}"), $"XProxy");
                         break;
                 }
             }

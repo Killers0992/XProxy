@@ -4,9 +4,7 @@ using Newtonsoft.Json;
 using Octokit;
 using System.ComponentModel.DataAnnotations;
 using System.Security.Cryptography;
-using System.Text;
-using XProxy.BuildListing.Models;
-using FileInfo = XProxy.BuildListing.Models.FileInfo;
+using XProxy.Models;
 
 await Host.CreateDefaultBuilder()
     .RunCommandLineApplicationAsync<AppCommand>(args);
@@ -22,7 +20,7 @@ public class AppCommand
             if (_gitHubClient == null)
             {
                 _gitHubClient = new GitHubClient(new ProductHeaderValue("XProxy.Listing"));
-                _gitHubClient.Credentials =new Credentials(Token);
+                _gitHubClient.Credentials = new Credentials(Token);
             }
 
             return _gitHubClient;
@@ -79,10 +77,9 @@ public class AppCommand
 
             foreach(var release in releases)
             {
-
                 ReleaseInfo rInfo = null;
 
-                Dictionary<string, FileInfo> files = new Dictionary<string, FileInfo>();
+                Dictionary<string, BuildFileInfo> files = new Dictionary<string, BuildFileInfo>();
 
                 foreach (var asset in release.Assets)
                 {
@@ -103,7 +100,7 @@ public class AppCommand
                             if (result2.IsSuccessStatusCode)
                             {
                                 byte[] bytes = await result2.Content.ReadAsByteArrayAsync();
-                                files.Add(fileName, new FileInfo()
+                                files.Add(fileName, new BuildFileInfo()
                                 {
                                     Hash = BytesToMD5(bytes),
                                     Name = fileName,

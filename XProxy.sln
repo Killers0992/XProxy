@@ -7,6 +7,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "XProxy", "XProxy\XProxy.csp
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "XProxy.BuildListing", "XProxy.BuildListing\XProxy.BuildListing.csproj", "{9E9AC74C-4756-414B-813F-8C931332739D}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "XProxy.Shared", "XProxy.Shared\XProxy.Shared.csproj", "{5527DA7F-9BFE-476B-8ED1-6A7AD0E39636}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -31,6 +33,14 @@ Global
 		{9E9AC74C-4756-414B-813F-8C931332739D}.Release|Any CPU.Build.0 = Release|Any CPU
 		{9E9AC74C-4756-414B-813F-8C931332739D}.Release|x64.ActiveCfg = Release|Any CPU
 		{9E9AC74C-4756-414B-813F-8C931332739D}.Release|x64.Build.0 = Release|Any CPU
+		{5527DA7F-9BFE-476B-8ED1-6A7AD0E39636}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5527DA7F-9BFE-476B-8ED1-6A7AD0E39636}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5527DA7F-9BFE-476B-8ED1-6A7AD0E39636}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{5527DA7F-9BFE-476B-8ED1-6A7AD0E39636}.Debug|x64.Build.0 = Debug|Any CPU
+		{5527DA7F-9BFE-476B-8ED1-6A7AD0E39636}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5527DA7F-9BFE-476B-8ED1-6A7AD0E39636}.Release|Any CPU.Build.0 = Release|Any CPU
+		{5527DA7F-9BFE-476B-8ED1-6A7AD0E39636}.Release|x64.ActiveCfg = Release|Any CPU
+		{5527DA7F-9BFE-476B-8ED1-6A7AD0E39636}.Release|x64.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

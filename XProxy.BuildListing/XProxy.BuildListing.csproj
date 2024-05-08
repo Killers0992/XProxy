@@ -16,4 +16,8 @@
 		<PackageReference Include="Octokit" Version="9.1.2" />
 	</ItemGroup>
 
+	<ItemGroup>
+	  <ProjectReference Include="..\XProxy.Shared\XProxy.Shared.csproj" />
+	</ItemGroup>
+
 </Project>
