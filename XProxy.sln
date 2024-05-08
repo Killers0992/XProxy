@@ -3,7 +3,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.1.31911.260
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "XProxy", "XProxy.csproj", "{B0992447-DC8F-45E4-A8CA-1DC1DE08D58D}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "XProxy", "XProxy\XProxy.csproj", "{40557EF4-42B8-4B23-810F-87D61D49AC0F}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -13,14 +13,14 @@ Global
 		Release|x64 = Release|x64
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{B0992447-DC8F-45E4-A8CA-1DC1DE08D58D}.Debug|Any CPU.ActiveCfg = Release|Any CPU
-		{B0992447-DC8F-45E4-A8CA-1DC1DE08D58D}.Debug|Any CPU.Build.0 = Release|Any CPU
-		{B0992447-DC8F-45E4-A8CA-1DC1DE08D58D}.Debug|x64.ActiveCfg = Debug|x64
-		{B0992447-DC8F-45E4-A8CA-1DC1DE08D58D}.Debug|x64.Build.0 = Debug|x64
-		{B0992447-DC8F-45E4-A8CA-1DC1DE08D58D}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{B0992447-DC8F-45E4-A8CA-1DC1DE08D58D}.Release|Any CPU.Build.0 = Release|Any CPU
-		{B0992447-DC8F-45E4-A8CA-1DC1DE08D58D}.Release|x64.ActiveCfg = Release|x64
-		{B0992447-DC8F-45E4-A8CA-1DC1DE08D58D}.Release|x64.Build.0 = Release|x64
+		{40557EF4-42B8-4B23-810F-87D61D49AC0F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{40557EF4-42B8-4B23-810F-87D61D49AC0F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{40557EF4-42B8-4B23-810F-87D61D49AC0F}.Debug|x64.ActiveCfg = Debug|x64
+		{40557EF4-42B8-4B23-810F-87D61D49AC0F}.Debug|x64.Build.0 = Debug|x64
+		{40557EF4-42B8-4B23-810F-87D61D49AC0F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{40557EF4-42B8-4B23-810F-87D61D49AC0F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{40557EF4-42B8-4B23-810F-87D61D49AC0F}.Release|x64.ActiveCfg = Release|x64
+		{40557EF4-42B8-4B23-810F-87D61D49AC0F}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
