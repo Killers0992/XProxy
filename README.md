@@ -1,12 +1,14 @@
 ![GitHub Downloads (all assets, all releases)](https://img.shields.io/github/downloads/Killers0992/XProxy/total?label=Downloads&labelColor=2e343e&color=00FFFF&style=for-the-badge)
 [![Discord](https://img.shields.io/discord/1216429195232673964?label=Discord&labelColor=2e343e&color=00FFFF&style=for-the-badge)](https://discord.gg/czQCAsDMHa)
 # XProxy
-Proxy for SCP: Secret Laboratory allowing you to link multiple servres into one!
+Proxy for SCP: Secret Laboratory allowing you to link multiple servers into one!
 
 Features
 - Virtual lobby - Allowing you to select specific server which you want to connect to.
 - Queue system - If server is full you will be added to queue and when system detects if theres free slot and then you will be connected.
 - Fallback system - Server shutdowns or timeouts without any reason you will be connected to available server.
+
+[Builds API](https://killers0992.github.io/XProxy/builds.json)
 
 # Setup
 1. Depending if you use linux or windows download proper build
