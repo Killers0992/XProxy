@@ -1,0 +1,84 @@
+name: Build Release
+
+on: 
+  workflow_dispatch:
+
+env:
+  DEPOT_DOWNLOADER_VERSION: 2.5.0 
+  SL_REFERENCES: "${{ github.workspace }}/References/SCPSL_Data/Managed"
+  UNITY_REFERENCES: "${{ github.workspace }}/References/SCPSL_Data/Managed"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    env:
+      releasePath: "${{ github.workspace }}/main/XProxy"
+    steps:
+    - name: Checkout main repository.
+      uses: actions/checkout@v4
+      with:
+        path: main
+    - name: Download depot downloader
+      shell: pwsh
+      run: |
+        New-Item -ItemType Directory -Force -Path ${{ github.workspace }}/DepotDownloader
+        Invoke-WebRequest -Uri "https://github.com/SteamRE/DepotDownloader/releases/download/DepotDownloader_${{ env.DEPOT_DOWNLOADER_VERSION }}/DepotDownloader-linux-x64.zip" -OutFile "${{ github.workspace }}/depotdownloader.zip"
+        Expand-Archive -Path ${{ github.workspace }}\depotdownloader.zip -PassThru -DestinationPath ${{ github.workspace }}/DepotDownloader
+        New-Item -ItemType Directory -Force -Path ${{ github.workspace }}/References
+    - name: Download SCPSL Refs
+      run: |
+        chmod 777 ${{ github.workspace }}/DepotDownloader/DepotDownloader
+        chmod 777 ${{ github.workspace }}/References
+        ${{ github.workspace }}/DepotDownloader/DepotDownloader -app 996560 -os windows -dir "${{ github.workspace }}/References"
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v2
+      with:
+        dotnet-version: 7.0.x
+    - name: Restore dependencies
+      run: dotnet restore
+    - name: Publish Linux x64
+      run: dotnet publish ${{ github.workspace }}/main/XProxy/XProxy.csproj --configuration Release --self-contained --runtime linux-x64
+    - name: Upload Linux x64
+      uses: actions/upload-artifact@v3
+      with:
+        name: XProxy Linux x64
+        path: ${{ github.workspace }}/main/XProxy/bin/Release/net7/linux-x64/publish
+    - name: Publish Windows x64
+      run: dotnet publish ${{ github.workspace }}/main/XProxy/XProxy.csproj --configuration Release --self-contained --runtime win-x64
+    - name: Upload Windows x64
+      uses: actions/upload-artifact@v3
+      with:
+        name: XProxy Windows x64
+        path: ${{ github.workspace }}/main/XProxy/bin/Release/net7/win-x64/publish
+    - name: Get Release Info
+      id: release-info
+      uses: zoexx/github-action-json-file-properties@b9f36ce6ee6fe2680cd3c32b2c62e22eade7e590
+      with: 
+          file_path: "${{ env.releasePath }}/releaseInfo.json"
+    - name: Set Environment Variables
+      run: |
+        echo "version=${{ steps.release-info.outputs.version }}" >> $GITHUB_ENV
+    - name: Create Tag
+      id: tag_version
+      uses: mathieudutour/github-tag-action@v6.1
+      with:
+        github_token: "${{ secrets.GITHUB_TOKEN }}"
+        tag_prefix: ""
+        custom_tag: "${{ env.version }}"
+    - uses: montudor/action-zip@v1
+      with:
+      args: zip -qq -r ${{ github.workspace }}/main/XProxy_linux64.zip ${{ github.workspace }}/main/XProxy/bin/Release/net7/linux-x64/publish
+    - uses: montudor/action-zip@v1
+      with:
+      args: zip -qq -r ${{ github.workspace }}/main/XProxy_win64.zip ${{ github.workspace }}/main/XProxy/bin/Release/net7/win-x64/publish
+    - name: Make Release
+      uses: softprops/action-gh-release@de2c0eb89ae2a093876385947365aca7b0e5f844
+      with:
+        files: |
+          ${{ github.workspace }}/main/XProxy/bin/Release/net7/linux-x64/publish/XProxy.dll
+          ${{ github.workspace }}/main/XProxy_linux64.zip
+          ${{ github.workspace }}/main/XProxy_win64.zip
+          ${{ env.releasePath }}/releaseInfo.json
+        tag_name: ${{ env.version }}
