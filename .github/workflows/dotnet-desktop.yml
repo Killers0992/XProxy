@@ -32,7 +32,7 @@ jobs:
       shell: pwsh
       run: |
         New-Item -ItemType Directory -Force -Path D:\a\Proxy\SCPSL_REFERENCES
-        Start-Process -NoNewWindow -Wait -FilePath "D:\a\Proxy\DepotDownloader\DepotDownloader.exe" -WorkingDirectory "D:\a\Proxy\DepotDownloader" -ArgumentList '-app 996560','-dir D:\a\Proxy\SCPSL_REFERENCES','-filelist "${{ github.workspace }}\download-files.txt"'
+        Start-Process -NoNewWindow -Wait -FilePath "D:\a\Proxy\DepotDownloader\DepotDownloader.exe" -WorkingDirectory "D:\a\Proxy\DepotDownloader" -ArgumentList '-app 996560','-dir D:\a\Proxy\SCPSL_REFERENCES'
     - name: Restore dependencies
       run: dotnet restore
     - name: Publish Linux x64
@@ -41,11 +41,11 @@ jobs:
       uses: actions/upload-artifact@v3
       with:
         name: XProxy Linux x64
-        path: ${{ github.workspace }}\bin\Release\net7.0-windows10.0.17763.0\linux-x64\publish
+        path: ${{ github.workspace }}\bin\Release\net7\linux-x64\publish
     - name: Publish Windows x64
       run: dotnet publish --configuration Release --self-contained --runtime win-x64
     - name: Upload Windows x64
       uses: actions/upload-artifact@v3
       with:
         name: XProxy Windows x64
-        path: ${{ github.workspace }}\bin\Release\net7.0-windows10.0.17763.0\win-x64\publish
+        path: ${{ github.workspace }}\bin\Release\net7\win-x64\publish
