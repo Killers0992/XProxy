@@ -36,8 +36,6 @@ jobs:
       uses: actions/setup-dotnet@v2
       with:
         dotnet-version: 7.0.x
-    - name: Restore dependencies
-      run: dotnet restore
     - name: Publish Linux x64
       run: dotnet publish ${{ github.workspace }}/main/XProxy/XProxy.csproj --configuration Release --self-contained --runtime linux-x64
     - name: Upload Linux x64
@@ -67,12 +65,11 @@ jobs:
         github_token: "${{ secrets.GITHUB_TOKEN }}"
         tag_prefix: ""
         custom_tag: "${{ env.version }}"
-    - uses: montudor/action-zip@v1
-      with:
-        args: zip -qq -r ${{ github.workspace }}/main/XProxy_linux64.zip ${{ github.workspace }}/main/XProxy/bin/Release/net7/linux-x64/publish
-    - uses: montudor/action-zip@v1
-      with:
-        args: zip -qq -r ${{ github.workspace }}/main/XProxy_win64.zip ${{ github.workspace }}/main/XProxy/bin/Release/net7/win-x64/publish
+    - name: Compress builds
+      shell: pwsh
+      run: |
+        Compress-Archive -Path ${{ github.workspace }}/main/XProxy/bin/Release/net7/linux-x64/publish/* -DestinationPath ${{ github.workspace }}/main/XProxy_linux64.zip
+        Compress-Archive -Path ${{ github.workspace }}/main/XProxy/bin/Release/net7/win-x64/publish/* ${{ github.workspace }}/main/XProxy_win64.zip
     - name: Make Release
       uses: softprops/action-gh-release@de2c0eb89ae2a093876385947365aca7b0e5f844
       with:
