@@ -68,8 +68,8 @@ jobs:
     - name: Compress builds
       shell: pwsh
       run: |
-        Compress-Archive -Path ${{ github.workspace }}/main/XProxy/bin/Release/net7/linux-x64/publish -DestinationPath ${{ github.workspace }}/main/XProxy_linux64.zip
-        Compress-Archive -Path ${{ github.workspace }}/main/XProxy/bin/Release/net7/win-x64/publish ${{ github.workspace }}/main/XProxy_win64.zip
+        Compress-Archive -Path ${{ github.workspace }}/main/XProxy/bin/Release/net7/linux-x64/publish/* -DestinationPath ${{ github.workspace }}/main/XProxy_linux64.zip
+        Compress-Archive -Path ${{ github.workspace }}/main/XProxy/bin/Release/net7/win-x64/publish/* ${{ github.workspace }}/main/XProxy_win64.zip
     - name: Make Release
       uses: softprops/action-gh-release@de2c0eb89ae2a093876385947365aca7b0e5f844
       with:
