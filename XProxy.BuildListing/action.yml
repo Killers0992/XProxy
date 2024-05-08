@@ -1,0 +1,15 @@
+name: "Build listing"
+description: "Generates listing for all builds."
+branding:
+  icon: file
+  color: blue
+inputs:
+  token:
+    description: "GH Token."
+    required: true
+runs:
+  using: "docker"
+  image: "Dockerfile"
+  args:
+    - "--token"
+    - ${{ inputs.token }}

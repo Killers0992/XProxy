@@ -5,6 +5,8 @@ VisualStudioVersion = 17.1.31911.260
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "XProxy", "XProxy\XProxy.csproj", "{40557EF4-42B8-4B23-810F-87D61D49AC0F}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "XProxy.BuildListing", "XProxy.BuildListing\XProxy.BuildListing.csproj", "{9E9AC74C-4756-414B-813F-8C931332739D}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -21,6 +23,14 @@ Global
 		{40557EF4-42B8-4B23-810F-87D61D49AC0F}.Release|Any CPU.Build.0 = Release|Any CPU
 		{40557EF4-42B8-4B23-810F-87D61D49AC0F}.Release|x64.ActiveCfg = Release|x64
 		{40557EF4-42B8-4B23-810F-87D61D49AC0F}.Release|x64.Build.0 = Release|x64
+		{9E9AC74C-4756-414B-813F-8C931332739D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9E9AC74C-4756-414B-813F-8C931332739D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9E9AC74C-4756-414B-813F-8C931332739D}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{9E9AC74C-4756-414B-813F-8C931332739D}.Debug|x64.Build.0 = Debug|Any CPU
+		{9E9AC74C-4756-414B-813F-8C931332739D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9E9AC74C-4756-414B-813F-8C931332739D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{9E9AC74C-4756-414B-813F-8C931332739D}.Release|x64.ActiveCfg = Release|Any CPU
+		{9E9AC74C-4756-414B-813F-8C931332739D}.Release|x64.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
