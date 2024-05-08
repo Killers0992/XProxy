@@ -36,14 +36,14 @@ jobs:
     - name: Restore dependencies
       run: dotnet restore
     - name: Publish Linux x64
-      run: dotnet publish ./XProxy.csproj --configuration Release --self-contained --runtime linux-x64
+      run: dotnet publish XProxy --configuration Release --self-contained --runtime linux-x64
     - name: Upload Linux x64
       uses: actions/upload-artifact@v3
       with:
         name: XProxy Linux x64
         path: ${{ github.workspace }}\XProxy\bin\Release\net7\linux-x64\publish
     - name: Publish Windows x64
-      run: dotnet publish ./XProxy.csproj --configuration Release --self-contained --runtime win-x64
+      run: dotnet publish XProxy --configuration Release --self-contained --runtime win-x64
     - name: Upload Windows x64
       uses: actions/upload-artifact@v3
       with:
