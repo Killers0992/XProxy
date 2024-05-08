@@ -10,7 +10,6 @@ using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Threading;
 using System.Threading.Tasks;
-using UnityEngine.Windows;
 using XProxy.Models;
 
 namespace XProxy.Services
@@ -72,7 +71,7 @@ namespace XProxy.Services
                         if (sendNotifyMessage)
                             Logger.Info(_config.Messages.ProxyIsOutdated.Replace("%version%", _latest.Version), "UpdaterService");
 
-                        if (ProxyService.Singleton.Players.Count == 0)
+                        if (ProxyService.Singleton.Players.Count == 0 && _config.Value.AutoUpdater)
                             await DoUpdate();
                     }
                 }
