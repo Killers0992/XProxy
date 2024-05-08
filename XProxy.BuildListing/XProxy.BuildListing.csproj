@@ -16,11 +16,4 @@
 		<PackageReference Include="Octokit" Version="9.1.2" />
 	</ItemGroup>
 
-	<ItemGroup>
-		<Compile Include="..\XProxy.Shared\Models\BuildInfo.cs" Link="Models\BuildInfo.cs" />
-		<Compile Include="..\XProxy.Shared\Models\BuildFileInfo.cs" Link="Models\BuildFileInfo.cs" />
-		<Compile Include="..\XProxy.Shared\Models\ListingInfo.cs" Link="Models\ListingInfo.cs" />
-		<Compile Include="..\XProxy.Shared\Models\ReleaseInfo.cs" Link="Models\ReleaseInfo.cs" />
-	</ItemGroup>
-
 </Project>

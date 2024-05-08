@@ -1,7 +1,6 @@
 FROM mcr.microsoft.com/dotnet/sdk:7.0 AS build-env
 WORKDIR /app
  
-COPY ["main/XProxy/XProxy.BuildListing", "XProxy.BuildListing/"]
 COPY . ./
 
 RUN dotnet publish -c Release -o out
