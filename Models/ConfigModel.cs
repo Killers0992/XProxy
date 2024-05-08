@@ -26,7 +26,7 @@ namespace XProxy.Models
         public string ServerName { get; set; } = "Example server name.";
 
         [Description("Server information.")]
-        public string Pastebin { get; set; } = "m4DqS5r0";
+        public string Pastebin { get; set; } = "7wV681fT";
 
         [Description("Version of game.")]
         public string GameVersion { get; set; } = "13.4.2";
@@ -62,6 +62,7 @@ namespace XProxy.Models
                     MaxPlayers = 50,
                     ConnectionType = ConnectionType.Simulated,
                     Simulation = "Lobby",
+                    SendIpAddressInPreAuth = false,
                 } 
             },
             { "vanilla", new ServerModel()
