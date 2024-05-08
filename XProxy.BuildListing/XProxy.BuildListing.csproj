@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
 		<OutputType>Exe</OutputType>
@@ -17,7 +17,10 @@
 	</ItemGroup>
 
 	<ItemGroup>
-	  <ProjectReference Include="..\XProxy.Shared\XProxy.Shared.csproj" />
+		<Compile Include="..\XProxy.Shared\Models\BuildInfo.cs" Link="Models\BuildInfo.cs" />
+		<Compile Include="..\XProxy.Shared\Models\BuildFileInfo.cs" Link="Models\BuildFileInfo.cs" />
+		<Compile Include="..\XProxy.Shared\Models\ListingInfo.cs" Link="Models\ListingInfo.cs" />
+		<Compile Include="..\XProxy.Shared\Models\ReleaseInfo.cs" Link="Models\ReleaseInfo.cs" />
 	</ItemGroup>
 
 </Project>
