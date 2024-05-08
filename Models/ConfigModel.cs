@@ -61,7 +61,7 @@ namespace XProxy.Models
                     Port = 7777,
                     MaxPlayers = 50,
                     ConnectionType = ConnectionType.Simulated,
-                    Simulation = "Lobby",
+                    Simulation = "lobby",
                     SendIpAddressInPreAuth = false,
                 } 
             },
