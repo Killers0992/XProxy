@@ -29,7 +29,7 @@ trusted_proxies_ip_addresses:
 | ------------- | ------------- | ------------- |
 | servers  |   |  Sends you back to lobby.  |
 | players  |   |  Shows players playing on servers.  |
-| send | ``all/id@steam``  |  Sends all players or target to specific server.  |
+| send | ``all/id@steam`` ``serverName``  |  Sends all players or target to specific server.  |
 | maintenance toggle  |  |  Toggles maintenance |
 | maintenance servername  | ``name`` |  Changes server name set when maintenance is enabled.  |
 | reload  |   |  Reloads configs.  |
