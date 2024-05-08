@@ -1,4 +1,6 @@
-﻿namespace XProxy.Models
+﻿using System.Text.Json.Serialization;
+
+namespace XProxy.Models
 {
     public class BuildInfo
     {
@@ -6,6 +8,7 @@
 
         public string Version { get; set; }
 
+        [JsonIgnore]
         public Version ParsedVersion
         {
             get
@@ -19,6 +22,7 @@
 
         public string GameVersion { get; set; }
 
+        [JsonIgnore]
         public Version ParsedGameVersion
         {
             get
