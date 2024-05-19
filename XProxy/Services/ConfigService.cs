@@ -54,6 +54,7 @@ namespace XProxy.Services
 
         public void Load()
         {
+            ProxyService.Singleton?.RefreshServers();
             CreateIfMissing();
             Value = YamlParser.Deserializer.Deserialize<ConfigModel>(File.ReadAllText(_configPath));
             Messages = GetMessagesForLanguage(Value.Langauge);

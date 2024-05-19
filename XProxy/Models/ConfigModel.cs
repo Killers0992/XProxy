@@ -38,7 +38,9 @@ namespace XProxy.Models
             {
                 if (_version == null)
                 {
-                    System.Version.TryParse(GameVersion, out _version);
+                    string text = GameVersion.Contains("-") ? GameVersion.Split('-')[0] : GameVersion;
+
+                    System.Version.TryParse(text, out _version);
                 }
 
                 return _version;

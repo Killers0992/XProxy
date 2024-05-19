@@ -153,7 +153,7 @@ namespace XProxy
             return GetServerByName(name);
         }
 
-        void RefreshServers()
+        public void RefreshServers()
         {
             Servers = _config.Value.Servers.ToDictionary(x => x.Key, a => new ServerInfo(a.Key, a.Value.Name, a.Value.Ip, a.Value.Port, a.Value.MaxPlayers, a.Value.SendIpAddressInPreAuth, a.Value.ConnectionType, a.Value.Simulation));
         }
