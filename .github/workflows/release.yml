@@ -14,7 +14,7 @@ jobs:
     permissions:
       contents: write
     env:
-      releasePath: "${{ github.workspace }}/main/XProxy"
+      releasePath: "${{ github.workspace }}/main/XProxy.Shared"
     steps:
     - name: Checkout main repository.
       uses: actions/checkout@v4
