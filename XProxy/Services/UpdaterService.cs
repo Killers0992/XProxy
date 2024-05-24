@@ -30,7 +30,7 @@ namespace XProxy.Shared.Services
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
             _client = new HttpClient();
-            while (true)
+            while (!stoppingToken.IsCancellationRequested)
             {
                 using (var response = await _client.GetAsync(_buildsUrl))
                 {
@@ -58,12 +58,17 @@ namespace XProxy.Shared.Services
 
                         Console.WriteLine($"Proxy is outdated, new version {_latest.Version}");
         
-                        while (!MainProcessService.DoUpdate)
+                        if (MainProcessService.IsWaitingForProcessExit)
                         {
-                            await Task.Delay(10);
+                            Console.WriteLine("Waiting for process to exit...");
+                            while (MainProcessService.IsWaitingForProcessExit)
+                            {
+                                await Task.Delay(10);
+                            }
                         }
 
                         await DoUpdate();
+                        CheckForUpdates = false;
                         MainProcessService.AssemblyUpdated = true;
                         MainProcessService.IsUpdating = false;
                     }
@@ -95,7 +100,7 @@ namespace XProxy.Shared.Services
 
             using(var tempFileStream = new FileStream(_tempFile, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None))
             {
-                CustomProgressReporter reporter = new CustomProgressReporter("Downloading update %percentage%%...", "UpdaterService");
+                CustomProgressReporter reporter = new CustomProgressReporter("Downloading update %percentage%%...", null);
 
                 await _client.DownloadAsync(file.Url, tempFileStream, reporter);
 

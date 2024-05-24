@@ -7,16 +7,17 @@ namespace XProxy.Patcher.Services
 {
     public class MainProcessService : BackgroundService
     {
-        static string Executable => OperatingSystem.IsWindows() ? "XProxy.exe" : "XProxy";
+        static string Executable => OperatingSystem.IsWindows() ? "XProxy.Core.exe" : "XProxy.Core";
         
-        static string AssemblyFile => "XProxy.dll";
+        static string AssemblyFile => "XProxy.Core.dll";
+
         public static Version AssemblyVersion { get; set; } = new Version(0, 0, 0);
         public static bool AssemblyUpdated { get; set; }
 
+        public static bool IsWaitingForProcessExit;
 
         public static bool IsUpdating;
         public static bool DoUpdate;
-        public static bool Exited;
 
         Process _mainProcess;
 
@@ -30,9 +31,18 @@ namespace XProxy.Patcher.Services
             }
             else
             {
-                DoUpdate = true;
                 AssemblyVersion = new Version(0, 0, 0);
             }
+        }
+
+        public override Task StopAsync(CancellationToken cancellationToken)
+        {
+            if (_mainProcess != null)
+                _mainProcess.Kill(true);
+
+            Environment.Exit(0);
+
+            return base.StopAsync(cancellationToken);
         }
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -46,9 +56,7 @@ namespace XProxy.Patcher.Services
                 await Task.Delay(10);
             }
 
-            Console.WriteLine("Start process");
-
-            while (true)
+            while (!stoppingToken.IsCancellationRequested)
             {
                 if (File.Exists(Executable))
                 {
@@ -61,9 +69,9 @@ namespace XProxy.Patcher.Services
                         continue;
                     }
 
-                    Console.WriteLine("Waiting for exit");
-                    await _mainProcess.WaitForExitAsync();
-                    Exited = true;
+                    IsWaitingForProcessExit = true;
+                    await _mainProcess.WaitForExitAsync(stoppingToken);
+                    IsWaitingForProcessExit = false;
 
                     DoUpdate = File.Exists("./update");
                     if (DoUpdate) IsUpdating = true;
@@ -79,6 +87,8 @@ namespace XProxy.Patcher.Services
 
                 await Task.Delay(10);
             }
+
+            _mainProcess.Kill();
         }
 
         void StartProcess()
@@ -86,6 +96,14 @@ namespace XProxy.Patcher.Services
             ProcessStartInfo info = new ProcessStartInfo(Executable);
 
             _mainProcess = Process.Start(info);
+        }
+
+        public override void Dispose()
+        {
+            if (_mainProcess != null)
+                _mainProcess.Dispose();
+
+            base.Dispose();
         }
     }
 }

@@ -9,7 +9,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "XProxy.BuildListing", "XPro
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "XProxy.Shared", "XProxy.Shared\XProxy.Shared.csproj", "{5527DA7F-9BFE-476B-8ED1-6A7AD0E39636}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "XProxy.Patcher", "XProxy.Patcher\XProxy.Patcher.csproj", "{4C4302C1-96D7-4632-86B7-DC8FA346E3B4}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "XProxy.Core", "XProxy.Core\XProxy.Core.csproj", "{08F0C5AA-958D-428E-8BF7-5607A0398A8A}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -43,14 +43,14 @@ Global
 		{5527DA7F-9BFE-476B-8ED1-6A7AD0E39636}.Release|Any CPU.Build.0 = Release|Any CPU
 		{5527DA7F-9BFE-476B-8ED1-6A7AD0E39636}.Release|x64.ActiveCfg = Release|Any CPU
 		{5527DA7F-9BFE-476B-8ED1-6A7AD0E39636}.Release|x64.Build.0 = Release|Any CPU
-		{4C4302C1-96D7-4632-86B7-DC8FA346E3B4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{4C4302C1-96D7-4632-86B7-DC8FA346E3B4}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{4C4302C1-96D7-4632-86B7-DC8FA346E3B4}.Debug|x64.ActiveCfg = Debug|Any CPU
-		{4C4302C1-96D7-4632-86B7-DC8FA346E3B4}.Debug|x64.Build.0 = Debug|Any CPU
-		{4C4302C1-96D7-4632-86B7-DC8FA346E3B4}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{4C4302C1-96D7-4632-86B7-DC8FA346E3B4}.Release|Any CPU.Build.0 = Release|Any CPU
-		{4C4302C1-96D7-4632-86B7-DC8FA346E3B4}.Release|x64.ActiveCfg = Release|Any CPU
-		{4C4302C1-96D7-4632-86B7-DC8FA346E3B4}.Release|x64.Build.0 = Release|Any CPU
+		{08F0C5AA-958D-428E-8BF7-5607A0398A8A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{08F0C5AA-958D-428E-8BF7-5607A0398A8A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{08F0C5AA-958D-428E-8BF7-5607A0398A8A}.Debug|x64.ActiveCfg = Debug|x64
+		{08F0C5AA-958D-428E-8BF7-5607A0398A8A}.Debug|x64.Build.0 = Debug|x64
+		{08F0C5AA-958D-428E-8BF7-5607A0398A8A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{08F0C5AA-958D-428E-8BF7-5607A0398A8A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{08F0C5AA-958D-428E-8BF7-5607A0398A8A}.Release|x64.ActiveCfg = Release|x64
+		{08F0C5AA-958D-428E-8BF7-5607A0398A8A}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
