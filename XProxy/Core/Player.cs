@@ -11,12 +11,9 @@ using XProxy.Enums;
 using RoundRestarting;
 using PlayerRoles;
 using RelativePositioning;
-using UnityEngine;
 using static EncryptedChannelManager;
 using System.Linq;
-using System.Collections.Generic;
-using VoiceChat.Networking;
-using VoiceChat;
+using XProxy.Shared.Enums;
 
 namespace XProxy.Core
 {
@@ -189,7 +186,7 @@ namespace XProxy.Core
             SendMirrorMessage(wri);
         }
 
-        public void SendSpawnMessage(uint netId, bool isLocalPlayer, bool isOwner, ulong sceneId, uint assetId, Vector3 pos, Quaternion rot, Vector3 scale, ArraySegment<byte> payload)
+        public void SendSpawnMessage(uint netId, bool isLocalPlayer, bool isOwner, ulong sceneId, uint assetId, UnityEngine.Vector3 pos, UnityEngine.Quaternion rot, UnityEngine.Vector3 scale, ArraySegment<byte> payload)
         {
             NetworkWriter wr = new NetworkWriter();
 
@@ -218,7 +215,7 @@ namespace XProxy.Core
 
             wr.WriteUInt(NetworkId);
             wr.WriteSByte((sbyte)role);
-            wr.WriteRelativePosition(new RelativePosition(new Vector3(0f, 0f, 0f)));
+            wr.WriteRelativePosition(new RelativePosition(new UnityEngine.Vector3(0f, 0f, 0f)));
             wr.WriteUShort(0);
 
             SendMirrorMessage(wr);
@@ -236,9 +233,9 @@ namespace XProxy.Core
                 false,
                 gameManagerIdentity.SceneID,
                 gameManagerIdentity.AssetID,
-                Vector3.zero,
-                Quaternion.identity,
-                Vector3.one,
+                UnityEngine.Vector3.zero,
+                UnityEngine.Quaternion.identity,
+                UnityEngine.Vector3.one,
                 default(ArraySegment<byte>));
 
             SendSpawnMessage(
@@ -247,9 +244,9 @@ namespace XProxy.Core
                 true,
                 0,
                 playerIdentity.AssetID,
-                new Vector3(0f, 1000f, -42f),
-                Quaternion.identity,
-                Vector3.one,
+                new UnityEngine.Vector3(0f, 1000f, -42f),
+                UnityEngine.Quaternion.identity,
+                UnityEngine.Vector3.one,
                 default(ArraySegment<byte>));
         }
 

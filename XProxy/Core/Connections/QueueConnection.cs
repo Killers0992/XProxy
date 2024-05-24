@@ -1,6 +1,7 @@
 ﻿using System;
 using XProxy.Enums;
 using XProxy.Models;
+using XProxy.Shared.Enums;
 
 namespace XProxy.Core.Connections
 {
