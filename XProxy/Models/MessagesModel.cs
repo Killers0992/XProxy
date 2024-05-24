@@ -5,7 +5,7 @@ namespace XProxy.Models
 {
     public class MessagesModel
     {
-        public string ProxyVersion { get; set; } = "Running version (f=green)%version%(f=white) for game version (f=green)%gameVersion%(f=white)";
+        public string ProxyVersion { get; set; } = "Running version (f=green)%version%(f=white), supported game version (f=green)%gameVersion%(f=white)";
         public string ProxyIsUpToDate { get; set; } = "Proxy is up to date!";
         public string ProxyIsOutdated { get; set; } = "Proxy is outdated, new version (f=green)%version%(f=white)";
         public string DownloadingUpdate { get; set; } = "Downloading update (f=green)%percentage%%(f=white)...";
@@ -16,7 +16,7 @@ namespace XProxy.Models
         public string CurrentServer { get; set; } = "current server";
         public string ServerIsOfflineKickMessage { get; set; } = "Server %server% is offline!";
         public string ProxyStartedListeningMessage { get; set; } = "Listening on server (f=green)0.0.0.0:%port%(f=white)";
-        public string ProxyClientClosedConnectionMessage { get; set; } = "%tag% Client (f=green)%address%(f=white) ((f=green)%userid%(f=white)) closed connection.\"";
+        public string ProxyClientClosedConnectionMessage { get; set; } = "%tag% Client (f=green)%address%(f=white) ((f=green)%userid%(f=white)) closed connection.";
         public string ProxyClientDisconnectedWithReasonMessage { get; set; } = "%tag% Client (f=green)%address%(f=white) ((f=green)%userid%(f=white)) disconnected with reason (f=green)%reason%(f=white).";
         public string CommandRegisteredMessage { get; set; } = "Command (f=green)%name%(f=white) registered!";
         public string CommandAlreadyRegisteredMessage { get; set; } = "Command (f=green)%name%(f=yellow) is already registered!";
@@ -97,5 +97,7 @@ namespace XProxy.Models
         public string OnlineServerNotFoundHint { get; set; } = "<color=yellow><b>XProxy</b></color>\n<color=red>Can't find any online servers, disconnecting...</color>";
         public string ConnectingToServerHint { get; set; } = "<color=yellow><b>XProxy</b></color>\nConnecting to server <color=green>%server%</color>...";
         public string MaintenanceKickMessage { get; set; } = "Server is under maintenance!";
+        public string ProxyIsFull { get; set; } = "Client (f=green)%address%(f=white) ((f=green)%userid%(f=white)) proxy is full!";
+        public string WrongVersion { get; set; } = "Client (f=green)%address%(f=white) ((f=green)%userid%(f=white)) tried joining proxy with wrong version (f=green)%version%(f=white)!";
     }
 }

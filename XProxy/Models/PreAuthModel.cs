@@ -1,7 +1,10 @@
 ﻿using LiteNetLib.Utils;
 using System;
+using System.Diagnostics.Metrics;
 using System.Text;
+using XProxy.Cryptography;
 using XProxy.Enums;
+using XProxy.Services;
 
 namespace XProxy.Models
 {
@@ -66,6 +69,9 @@ namespace XProxy.Models
             failedOn = "Expiration";
             if (!reader.TryGetLong(out long expiration)) return model;
             model.Expiration = expiration;
+            
+            failedOn = "Expiration check";
+            if (DateTimeOffset.UtcNow.ToUnixTimeSeconds() > expiration) return model;
 
             failedOn = "Flags";
             if (!reader.TryGetByte(out byte flags)) return model;
@@ -79,6 +85,10 @@ namespace XProxy.Models
             if (!reader.TryGetBytesWithLength(out byte[] signature)) return model;
             model.Signature = signature;
 
+            failedOn = "Signature check";
+            if (!ECDSA.VerifyBytes($"{userid};{flags};{region};{expiration}", signature, PublicKeyService.PublicKey))
+                return model;
+
             model.IsValid = true;
             return model;
         }
@@ -89,6 +99,7 @@ namespace XProxy.Models
         public byte Major { get; set; }
         public byte Minor { get; set; }
         public byte Revision { get; set; }
+        public string Version => $"{Major}.{Minor}.{Revision}";
         public bool BackwardCompatibility { get; set; }
         public byte BackwardRevision { get; set; }
 

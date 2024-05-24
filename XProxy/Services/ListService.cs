@@ -393,6 +393,8 @@ namespace XProxy.Services
 
                 if (ScheduleTokenRefresh || cycle == 0) RefreshToken();
             }
+
+            Logger.Error("ListService disposed");
         }
     }
 }

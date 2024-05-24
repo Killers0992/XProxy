@@ -186,12 +186,13 @@ namespace XProxy
             if (!preAuth.IsValid)
             {
                 Logger.Warn(_config.Messages.PreAuthIsInvalidMessage.Replace("%address%", $"{request.RemoteEndPoint.Address}").Replace("%failed%", failed), "XProxy");
-                request.Reject();
+                request.RejectForce();
                 return;
             }
 
             if (preAuth.Major != _config.Value.GameVersionParsed.Major || preAuth.Minor != _config.Value.GameVersionParsed.Minor || preAuth.Revision != _config.Value.GameVersionParsed.Build)
             {
+                Logger.Info(_config.Messages.WrongVersion.Replace("%address%", $"{request.RemoteEndPoint.Address}").Replace("%userid%", preAuth.UserID).Replace("%version%", preAuth.Version), "XProxy");
                 request.DisconnectWrongVersion();
                 return;
             }
@@ -200,6 +201,7 @@ namespace XProxy
 
             if (!ignoreSlots && _manager.ConnectedPeersCount >= _config.Value.MaxPlayers)
             {
+                Logger.Info(_config.Messages.ProxyIsFull.Replace("%address%", $"{request.RemoteEndPoint.Address}").Replace("%userid%", preAuth.UserID), "XProxy");
                 request.DisconnectServerFull();
                 return;
             }
@@ -208,8 +210,8 @@ namespace XProxy
 
             if (!ignoreSlots && _config.Value.MaintenanceMode && (model == null || !model.IgnoreMaintenance))
             {
-                request.Disconnect(_config.Messages.MaintenanceKickMessage);
                 Logger.Info(_config.Messages.MaintenanceDisconnectMessage.Replace("%address%", $"{request.RemoteEndPoint.Address}").Replace("%userid%", preAuth.UserID), $"XProxy");
+                request.Disconnect(_config.Messages.MaintenanceKickMessage);
                 return;
             }
 
