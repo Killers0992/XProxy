@@ -78,7 +78,7 @@ jobs:
       uses: softprops/action-gh-release@de2c0eb89ae2a093876385947365aca7b0e5f844
       with:
         files: |
-          ${{ github.workspace }}/main/XProxy.Core/bin/Release/net7/linux-x64/publish/XProxy.dll
+          ${{ github.workspace }}/main/XProxy.Core/bin/Release/net7/linux-x64/publish/XProxy.Core.dll
           ${{ github.workspace }}/main/XProxy/bin/Release/net7/linux-x64/publish/XProxy
           ${{ github.workspace }}/main/XProxy/bin/Release/net7/win-x64/publish/XProxy.exe
           ${{ github.workspace }}/main/XProxy_linux64.zip
