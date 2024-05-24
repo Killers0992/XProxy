@@ -1,26 +1,26 @@
 ﻿using Microsoft.Extensions.Hosting;
 using Newtonsoft.Json;
-using System;
-using System.Diagnostics;
-using System.IO;
 using System.IO.Compression;
-using System.Linq;
-using System.Net.Http;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
-using System.Threading;
-using System.Threading.Tasks;
-using XProxy.Models;
+using XProxy.Patcher.Services;
+using XProxy.Services;
+using XProxy.Shared.Models;
 
-namespace XProxy.Services
+namespace XProxy.Shared.Services
 {
     public class UpdaterService : BackgroundService
     {
+        public static bool ForceReDownload;
+
+        public static bool CheckForUpdates = true;
+
         string _buildsUrl = "https://killers0992.github.io/XProxy/builds.json";
         HttpClient _client;
         ConfigService _config;
         BuildInfo _latest = null;
-        bool notifyUpToDate = false;
+
+        int seconds = 0;
 
         public UpdaterService(ConfigService config)
         {
@@ -38,45 +38,47 @@ namespace XProxy.Services
 
                     ListingInfo listing = JsonConvert.DeserializeObject<ListingInfo>(textResponse);
 
-                    BuildInfo[] latestBuildsForCurrentGameVersion = listing.Versions.Where(x => x.Value.ParsedVersion.CompareTo(ProxyBuildInfo.Version) > 0 && x.Value.GameVersion == _config.Value.GameVersion).Select(x => x.Value).ToArray();
+                    BuildInfo[] latestBuildsForCurrentGameVersion = listing.Versions
+                        .Where(x => x.Value.ParsedVersion.CompareTo(MainProcessService.AssemblyVersion) > 0 && x.Value.GameVersion == _config.Value.GameVersion)
+                        .OrderByDescending(x => x.Value.ParsedVersion)
+                        .Select(x => x.Value)
+                        .ToArray();
 
                     BuildInfo firstLatest = latestBuildsForCurrentGameVersion.FirstOrDefault();
 
-                    if (firstLatest == null)
+                    if (firstLatest != null)
                     {
-                        if (!notifyUpToDate)
-                        {
-                            Logger.Info(_config.Messages.ProxyIsUpToDate, "UpdaterService");
-                            notifyUpToDate = true;
-                        }
-                    }
-                    else
-                    {
-                        bool sendNotifyMessage = false;
-
                         if (_latest != null)
                         {
                             if (_latest.Version != firstLatest.Version)
-                            {
                                 _latest = firstLatest;
-                                sendNotifyMessage = true;
-                            }
                         }
                         else
-                        {
                             _latest = firstLatest;
-                            sendNotifyMessage = true;
+
+                        Console.WriteLine($"Proxy is outdated, new version {_latest.Version}");
+        
+                        while (!MainProcessService.DoUpdate)
+                        {
+                            await Task.Delay(10);
                         }
 
-                        if (sendNotifyMessage)
-                            Logger.Info(_config.Messages.ProxyIsOutdated.Replace("%version%", _latest.Version), "UpdaterService");
-
-                        if (ProxyService.Singleton.Players.Count == 0 && _config.Value.AutoUpdater)
-                            await DoUpdate();
+                        await DoUpdate();
+                        MainProcessService.AssemblyUpdated = true;
+                        MainProcessService.IsUpdating = false;
+                    }
+                    else
+                    {
+                        Console.WriteLine("Proxy is up to date!");
+                        CheckForUpdates = false;
                     }
                 }
 
-                await Task.Delay(30000);
+                while(seconds < 30 && !ForceReDownload)
+                {
+                    await Task.Delay(1000);
+                    seconds++;
+                }
             }
         }
 
@@ -87,14 +89,13 @@ namespace XProxy.Services
             if (!_latest.Files.TryGetValue(targetBuildFile, out BuildFileInfo file))
                 return;
 
-            ProxyService.Singleton._config.Value.MaintenanceMode = true;
-            Logger.Info(_config.Messages.DownloadingUpdate.Replace("%percentage%", "0"), "UpdaterService");
+            Logger.Info($"Downloading update...", "UpdaterService");
 
             string _tempFile = "_update.zip";
 
             using(var tempFileStream = new FileStream(_tempFile, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None))
             {
-                CustomProgressReporter reporter = new CustomProgressReporter(_config.Messages.DownloadingUpdate, "UpdaterService");
+                CustomProgressReporter reporter = new CustomProgressReporter("Downloading update %percentage%%...", "UpdaterService");
 
                 await _client.DownloadAsync(file.Url, tempFileStream, reporter);
 
@@ -164,9 +165,7 @@ namespace XProxy.Services
                 }
             }
 
-            Logger.Info(_config.Messages.DownloadedUpdate, "UpdaterService");
-
-            Process.GetCurrentProcess().Kill();
+            Logger.Info("Update downloaded!");
         }
     }
 }

@@ -4,6 +4,7 @@ using System.Linq;
 using XProxy.Core;
 using XProxy.Enums;
 using XProxy.Services;
+using XProxy.Shared.Enums;
 
 namespace XProxy.Models
 {

@@ -1,6 +1,6 @@
 ﻿using System.Text.Json.Serialization;
 
-namespace XProxy.Models
+namespace XProxy.Shared.Models
 {
     public class BuildInfo
     {

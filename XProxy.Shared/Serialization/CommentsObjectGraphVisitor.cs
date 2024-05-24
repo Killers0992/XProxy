@@ -3,7 +3,7 @@ using YamlDotNet.Serialization.ObjectGraphVisitors;
 using YamlDotNet.Serialization;
 using YamlDotNet.Core.Events;
 
-namespace XProxy.Serialization
+namespace XProxy.Shared.Serialization
 {
     public class CommentsObjectGraphVisitor : ChainedObjectGraphVisitor
     {

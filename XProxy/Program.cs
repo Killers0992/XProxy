@@ -1,8 +1,11 @@
-﻿using System.Threading.Tasks;
+﻿using System.Reflection;
+using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using XProxy.Services;
+
+[assembly: AssemblyVersion("1.0.5")]
 
 namespace XProxy
 {
@@ -30,7 +33,6 @@ namespace XProxy
             services.AddHostedService<PublicKeyService>();
             services.AddHostedService<ListService>();
             services.AddHostedService<ClientsUpdaterService>();
-            services.AddHostedService<UpdaterService>();
             services.AddSingleton<PluginsService>();
             services.AddHostedService<CommandsService>();
         }

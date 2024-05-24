@@ -1,5 +1,4 @@
-﻿using System;
-using XProxy;
+﻿using XProxy.Shared;
 
 public class CustomProgressReporter : IProgress<float>
 {

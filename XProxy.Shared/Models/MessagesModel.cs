@@ -1,7 +1,7 @@
 ﻿using YamlDotNet.Core;
 using YamlDotNet.Serialization;
 
-namespace XProxy.Models
+namespace XProxy.Shared.Models
 {
     public class MessagesModel
     {

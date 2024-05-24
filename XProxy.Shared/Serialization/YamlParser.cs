@@ -2,7 +2,7 @@
 using YamlDotNet.Serialization;
 using YamlDotNet.Core;
 
-namespace XProxy.Serialization
+namespace XProxy.Shared.Serialization
 {
     public static class YamlParser
     {

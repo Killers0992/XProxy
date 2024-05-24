@@ -1,10 +1,9 @@
 ﻿using Newtonsoft.Json;
-using System;
 using System.Text;
-using XProxy.Models;
-using XProxy.Properties;
+using XProxy.Shared.Models;
+using XProxy.Shared.Properties;
 
-namespace XProxy
+namespace XProxy.Shared
 {
     public static class ProxyBuildInfo
     {

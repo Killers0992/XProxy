@@ -1,6 +1,7 @@
 ﻿using System.IO;
-using XProxy.Serialization;
-using XProxy.Models;
+using XProxy.Shared.Serialization;
+using XProxy.Shared.Models;
+using XProxy.Shared;
 
 namespace XProxy.Services
 {
@@ -57,6 +58,7 @@ namespace XProxy.Services
             ProxyService.Singleton?.RefreshServers();
             CreateIfMissing();
             Value = YamlParser.Deserializer.Deserialize<ConfigModel>(File.ReadAllText(_configPath));
+            Logger.DebugMode = Value.Debug;
             Messages = GetMessagesForLanguage(Value.Langauge);
             Save();
             Logger.Debug(Messages.ConfigLoadedMessage, "ConfigService");

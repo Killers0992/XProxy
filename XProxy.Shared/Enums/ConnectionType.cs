@@ -1,4 +1,4 @@
-﻿namespace XProxy.Enums
+﻿namespace XProxy.Shared.Enums
 {
     public enum ConnectionType
     {

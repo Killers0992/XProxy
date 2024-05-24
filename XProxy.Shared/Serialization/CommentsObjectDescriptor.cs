@@ -2,7 +2,7 @@
 using YamlDotNet.Core;
 using YamlDotNet.Serialization;
 
-namespace XProxy.Serialization
+namespace XProxy.Shared.Serialization
 {
     internal sealed class CommentsObjectDescriptor : IObjectDescriptor
     {

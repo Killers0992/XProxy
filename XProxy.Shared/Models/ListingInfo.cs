@@ -1,4 +1,4 @@
-﻿namespace XProxy.Models
+﻿namespace XProxy.Shared.Models
 {
     public class ListingInfo
     {
