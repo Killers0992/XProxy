@@ -5,6 +5,8 @@
     <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
     <TargetFramework>net7</TargetFramework>
     <Platforms>AnyCPU;x64</Platforms>
+
+	<GenerateAssemblyInfo>false</GenerateAssemblyInfo>
   </PropertyGroup>
 
   <ItemGroup>
