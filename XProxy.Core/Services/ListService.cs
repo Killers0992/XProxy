@@ -55,11 +55,11 @@ namespace XProxy.Services
         {
             ScheduleTokenRefresh = false;
 
-            if (!File.Exists("./verkey.txt"))
-                File.WriteAllText("./verkey.txt", "none");
+            if (!File.Exists(Path.Combine(ConfigService.MainDirectory, "verkey.txt")))
+                File.WriteAllText(Path.Combine(ConfigService.MainDirectory, "verkey.txt"), "none");
 
             if (VerKey == null)
-                VerKey = File.ReadAllText("./verkey.txt");
+                VerKey = File.ReadAllText(Path.Combine(ConfigService.MainDirectory, "verkey.txt"));
 
             if (string.IsNullOrEmpty(VerKey))
                 return;
@@ -158,7 +158,7 @@ namespace XProxy.Services
             try
             {
                 VerKey = token;
-                File.WriteAllText("./verkey.txt", token);
+                File.WriteAllText(Path.Combine(ConfigService.MainDirectory, "verkey.txt"), token);
                 Logger.Info(_config.Messages.TokenSavedMessage, $"ListService");
                 Update = true;
                 ScheduleTokenRefresh = true;
@@ -184,7 +184,7 @@ namespace XProxy.Services
                         text = text.Replace(":", string.Empty);
                     }
                     VerKey = text;
-                    File.WriteAllText("./verkey.txt", text);
+                    File.WriteAllText(Path.Combine(ConfigService.MainDirectory, "verkey.txt"), text);
                     Logger.Info(_config.Messages.PasswordSavedMessage, $"ListService");
                     Update = true;
                     return true;
