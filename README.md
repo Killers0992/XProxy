@@ -11,11 +11,11 @@ Features
 [Builds API](https://killers0992.github.io/XProxy/builds.json)
 
 # Setup
-1. Depending if you use linux or windows download proper build
-   - [Windows x64](https://github.com/Killers0992/XProxy/releases/latest/download/XProxy_win64.zip)
-   - [Linux x64](https://github.com/Killers0992/XProxy/releases/latest/download/XProxy_linux64.zip)
+1. Depending if you use linux or windows download proper installer
+   - [Windows x64](https://github.com/Killers0992/XProxy/releases/latest/download/XProxy.exe)
+   - [Linux x64](https://github.com/Killers0992/XProxy/releases/latest/download/XProxy)
 2. Run proxy by using **XProxy.exe** on windows or **XProxy** on linux.
-3. Configure **config.yml**, if you have verkey you need to create **verkey.txt** and put verkey here.
+3. Configure **config.yml** inside **Data** folder, if you have verkey you need to create **verkey.txt** and put verkey here.
 4. Every server under proxy needs to be hidden on serverlist **CENTRAL COMMAND** !private and **config_gameplay.txt** needs to have 
 ```yaml
 enable_proxy_ip_passthrough: true
