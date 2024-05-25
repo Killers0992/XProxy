@@ -1,19 +1,13 @@
-﻿using XProxy.Shared;
-
-public class CustomProgressReporter : IProgress<float>
+﻿public class CustomProgressReporter : IProgress<float>
 {
-    private int reportEvery = 20;
     private int current = 0;
 
     public CustomProgressReporter(string text, string tag)
     {
         Text = text;
-        Tag = tag;
     }
 
-    public string Tag { get; }
     public string Text { get; }
-
 
     public void Report(float value)
     {
@@ -24,7 +18,7 @@ public class CustomProgressReporter : IProgress<float>
         if (current != reportEveryNum) 
         {
             current = reportEveryNum;
-            Logger.Info(Text.Replace("%percentage%", percentage.ToString()), Tag);
+            Console.WriteLine(Text.Replace("%percentage%", percentage.ToString()));
         }
     }
 }

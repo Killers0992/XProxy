@@ -84,6 +84,7 @@ namespace XProxy.Shared.Services
                     await Task.Delay(1000);
                     seconds++;
                 }
+                seconds = 0;
             }
         }
 

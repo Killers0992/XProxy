@@ -1,5 +1,6 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 using XProxy.Patcher.Services;
 using XProxy.Services;
 using XProxy.Shared.Services;
@@ -14,6 +15,8 @@ namespace XProxy.Patcher
         {
             var builder = Host.CreateApplicationBuilder();
 
+            builder.Logging.SetMinimumLevel(LogLevel.None);
+
             SetupServices(builder.Services);
 
             return builder;
@@ -21,9 +24,6 @@ namespace XProxy.Patcher
 
         static void SetupServices(IServiceCollection services)
         {
-            if (!Directory.Exists("Data"))
-                Directory.CreateDirectory("Data");
-
             services.AddSingleton<ConfigService>();
             services.AddHostedService<UpdaterService>();
             services.AddHostedService<MainProcessService>();

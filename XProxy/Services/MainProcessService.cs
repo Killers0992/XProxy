@@ -96,7 +96,7 @@ namespace XProxy.Patcher.Services
         {
             ProcessStartInfo info = new ProcessStartInfo(Executable);
 
-            info.ArgumentList.Add($"-path \"{Path.Combine(Environment.CurrentDirectory, "Data")}\"");
+            info.ArgumentList.Add($"-p {Environment.CurrentDirectory}");
 
             _mainProcess = Process.Start(info);
         }

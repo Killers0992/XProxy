@@ -1,4 +1,5 @@
-﻿using System.IO;
+﻿using System;
+using System.IO;
 using System.Reflection;
 using System.Threading.Tasks;
 using CommandLine;
@@ -26,8 +27,11 @@ namespace XProxy
             Parser.Default.ParseArguments<Options>(args)
             .WithParsed(o =>
             {
-                ConfigService.MainDirectory = o.Path;
+                ConfigService.MainDirectory = o.Path.Trim();
             });
+
+            if (ConfigService.MainDirectory == null)
+                ConfigService.MainDirectory = Environment.CurrentDirectory;
 
             Logger.Ansi = new AnsiVtConsole.NetCore.AnsiVtConsole();
 

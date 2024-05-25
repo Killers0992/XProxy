@@ -11,17 +11,14 @@ namespace XProxy.Services
 
         public static ConfigService Instance { get; private set; }
 
-        string _configPath { get; } = "./config.yml";
-        string _languagesDir { get; set; } = "./Languages";
+        string _configPath { get; } = "config.yml";
+        string _languagesDir { get; set; } = "Languages";
         
-        string _defaultLanguagePath { get; } = "./messages_en.yml";
+        string _defaultLanguagePath { get; } = "messages_en.yml";
 
         public ConfigService()
         {
             Instance = this;
-
-            if (MainDirectory == null)
-                MainDirectory = Environment.CurrentDirectory;
 
             if (!Directory.Exists(Path.Combine(MainDirectory, _languagesDir)))
                 Directory.CreateDirectory(Path.Combine(MainDirectory, _languagesDir));
