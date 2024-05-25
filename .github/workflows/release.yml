@@ -79,8 +79,8 @@ jobs:
       with:
         files: |
           ${{ github.workspace }}/main/XProxy.Core/bin/Release/net7/linux-x64/publish/XProxy.Core.dll
-          ${{ github.workspace }}/main/XProxy/bin/Release/net7/linux-x64/publish/XProxy
-          ${{ github.workspace }}/main/XProxy/bin/Release/net7/win-x64/publish/XProxy.exe
+          ${{ github.workspace }}/main/XProxy/bin/Release/net7.0/linux-x64/publish/XProxy
+          ${{ github.workspace }}/main/XProxy/bin/Release/net7.0/win-x64/publish/XProxy.exe
           ${{ github.workspace }}/main/XProxy_linux64.zip
           ${{ github.workspace }}/main/XProxy_win64.zip
           ${{ env.releasePath }}/releaseInfo.json
