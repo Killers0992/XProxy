@@ -1,12 +1,14 @@
 ﻿using System.IO;
 using XProxy.Shared.Serialization;
 using XProxy.Shared.Models;
-using XProxy.Shared;
+using System;
 
 namespace XProxy.Services
 {
     public class ConfigService
     {
+        public static string MainDirectory;
+
         public static ConfigService Instance { get; private set; }
 
         string _configPath { get; } = "./config.yml";
@@ -17,9 +19,12 @@ namespace XProxy.Services
         public ConfigService()
         {
             Instance = this;
-            
-            if (!Directory.Exists(_languagesDir))
-                Directory.CreateDirectory(_languagesDir);
+
+            if (MainDirectory == null)
+                MainDirectory = Environment.CurrentDirectory;
+
+            if (!Directory.Exists(Path.Combine(MainDirectory, _languagesDir)))
+                Directory.CreateDirectory(Path.Combine(MainDirectory, _languagesDir));
 
             Load();
 
@@ -32,13 +37,13 @@ namespace XProxy.Services
 
         public MessagesModel GetMessagesForLanguage(string language)
         {
-            string path = Path.Combine(this._languagesDir, $"messages_{language}.yml");
+            string path = Path.Combine(MainDirectory, this._languagesDir, $"messages_{language}.yml");
 
             if (!File.Exists(path))
             {
                 // Get fallback.
                 CreateIfMissing();
-                return YamlParser.Deserializer.Deserialize<MessagesModel>(File.ReadAllText(_defaultLanguagePath));
+                return YamlParser.Deserializer.Deserialize<MessagesModel>(File.ReadAllText(Path.Combine(MainDirectory, _defaultLanguagePath)));
             }
 
             return YamlParser.Deserializer.Deserialize<MessagesModel>(File.ReadAllText(path));
@@ -46,18 +51,18 @@ namespace XProxy.Services
 
         void CreateIfMissing()
         {
-            if (!File.Exists(_configPath))
-                File.WriteAllText(_configPath, YamlParser.Serializer.Serialize(new ConfigModel()));
+            if (!File.Exists(Path.Combine(MainDirectory, _configPath)))
+                File.WriteAllText(Path.Combine(MainDirectory, _configPath), YamlParser.Serializer.Serialize(new ConfigModel()));
 
-            if (!File.Exists(Path.Combine(_languagesDir, _defaultLanguagePath)))
-                File.WriteAllText(Path.Combine(_languagesDir, _defaultLanguagePath), YamlParser.Serializer.Serialize(new MessagesModel()));
+            if (!File.Exists(Path.Combine(MainDirectory, _languagesDir, _defaultLanguagePath)))
+                File.WriteAllText(Path.Combine(MainDirectory, _languagesDir, _defaultLanguagePath), YamlParser.Serializer.Serialize(new MessagesModel()));
         }
 
         public void Load()
         {
             ProxyService.Singleton?.RefreshServers();
             CreateIfMissing();
-            Value = YamlParser.Deserializer.Deserialize<ConfigModel>(File.ReadAllText(_configPath));
+            Value = YamlParser.Deserializer.Deserialize<ConfigModel>(File.ReadAllText(Path.Combine(MainDirectory, _configPath)));
             Logger.DebugMode = Value.Debug;
             Messages = GetMessagesForLanguage(Value.Langauge);
             Save();
@@ -66,9 +71,9 @@ namespace XProxy.Services
 
         public void Save()
         {
-            File.WriteAllText(_configPath, YamlParser.Serializer.Serialize(Value));
+            File.WriteAllText(Path.Combine(MainDirectory, _configPath), YamlParser.Serializer.Serialize(Value));
 
-            string path = Path.Combine(this._languagesDir, $"messages_{Value.Langauge}.yml");
+            string path = Path.Combine(MainDirectory, this._languagesDir, $"messages_{Value.Langauge}.yml");
             if (File.Exists(path))
                 File.WriteAllText(path, YamlParser.Serializer.Serialize(Messages));
 

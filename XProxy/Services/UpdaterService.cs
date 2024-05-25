@@ -122,8 +122,8 @@ namespace XProxy.Shared.Services
 
                         if (isDirectory)
                         {
-                            if (!Directory.Exists(name))
-                                Directory.CreateDirectory(name);
+                            if (!Directory.Exists(Path.Combine(MainProcessService.CoreFolder, name)))
+                                Directory.CreateDirectory(Path.Combine(MainProcessService.CoreFolder, name));
                         }
                         else
                         {
@@ -147,11 +147,11 @@ namespace XProxy.Shared.Services
 
                             string targetHash = null;
 
-                            bool fileExists = File.Exists(name);
+                            bool fileExists = File.Exists(Path.Combine(MainProcessService.CoreFolder, name));
 
                             if (fileExists)
                             {
-                                using (var fileStream = File.OpenRead(name))
+                                using (var fileStream = File.OpenRead(Path.Combine(MainProcessService.CoreFolder, name)))
                                 {
                                     targetHash = Convert.ToBase64String(md5.ComputeHash(fileStream));
                                 }
@@ -161,7 +161,7 @@ namespace XProxy.Shared.Services
                             {
                                 try
                                 {
-                                    File.WriteAllBytes(name, data);
+                                    File.WriteAllBytes(Path.Combine(MainProcessService.CoreFolder, name), data);
                                 }
                                 catch (Exception) { }
                             }

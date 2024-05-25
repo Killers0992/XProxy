@@ -21,6 +21,9 @@ namespace XProxy.Patcher
 
         static void SetupServices(IServiceCollection services)
         {
+            if (!Directory.Exists("Data"))
+                Directory.CreateDirectory("Data");
+
             services.AddSingleton<ConfigService>();
             services.AddHostedService<UpdaterService>();
             services.AddHostedService<MainProcessService>();

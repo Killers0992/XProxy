@@ -7,9 +7,10 @@ namespace XProxy.Patcher.Services
 {
     public class MainProcessService : BackgroundService
     {
-        static string Executable => OperatingSystem.IsWindows() ? "XProxy.Core.exe" : "XProxy.Core";
-        
-        static string AssemblyFile => "XProxy.Core.dll";
+        public static string CoreFolder => "Core";
+
+        static string Executable => Path.Combine(CoreFolder, OperatingSystem.IsWindows() ? "XProxy.Core.exe" : "XProxy.Core");
+        static string AssemblyFile => Path.Combine(CoreFolder, "XProxy.Core.dll");
 
         public static Version AssemblyVersion { get; set; } = new Version(0, 0, 0);
         public static bool AssemblyUpdated { get; set; }
@@ -94,6 +95,8 @@ namespace XProxy.Patcher.Services
         void StartProcess()
         {
             ProcessStartInfo info = new ProcessStartInfo(Executable);
+
+            info.ArgumentList.Add($"-path \"{Path.Combine(Environment.CurrentDirectory, "Data")}\"");
 
             _mainProcess = Process.Start(info);
         }

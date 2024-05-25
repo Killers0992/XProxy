@@ -1,5 +1,7 @@
-﻿using System.Reflection;
+﻿using System.IO;
+using System.Reflection;
 using System.Threading.Tasks;
+using CommandLine;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -11,10 +13,22 @@ namespace XProxy
 {
     class Program
     {
-        static async Task Main(string[] args) => await RunApplication(BuildApplication());
-        
-        static HostApplicationBuilder BuildApplication()
+        public class Options
         {
+            [Option('p', "path", Required = false)]
+            public string Path { get; set; }
+        }
+
+        static async Task Main(string[] args) => await RunApplication(BuildApplication(args));
+        
+        static HostApplicationBuilder BuildApplication(string[] args)
+        {
+            Parser.Default.ParseArguments<Options>(args)
+            .WithParsed(o =>
+            {
+                ConfigService.MainDirectory = o.Path;
+            });
+
             Logger.Ansi = new AnsiVtConsole.NetCore.AnsiVtConsole();
 
             var builder = Host.CreateApplicationBuilder();
