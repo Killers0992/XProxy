@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.Hosting;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Reflection;
 using XProxy.Shared.Services;
@@ -98,7 +99,18 @@ namespace XProxy.Patcher.Services
 
             info.ArgumentList.Add($"-p {Environment.CurrentDirectory}");
 
-            _mainProcess = Process.Start(info);
+            try
+            {
+                _mainProcess = Process.Start(info);
+            }
+            catch(Win32Exception winEx)
+            {
+                Console.WriteLine(winEx.Message);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("Error " + ex);
+            }
         }
 
         public override void Dispose()
