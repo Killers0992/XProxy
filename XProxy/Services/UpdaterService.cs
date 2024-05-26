@@ -98,6 +98,15 @@ namespace XProxy.Shared.Services
             if (!_latest.Files.TryGetValue(targetBuildFile, out BuildFileInfo file))
                 return;
 
+            if (!Directory.Exists("Core"))
+                Directory.CreateDirectory("Core");
+
+            else
+            {
+                Directory.Delete("Core", true);
+                Directory.CreateDirectory("Core");
+            }
+
             Logger.Info($"Downloading update...", "XProxy");
 
             string _tempFile = "_update.zip";
