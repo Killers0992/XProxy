@@ -2,6 +2,7 @@
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Reflection;
+using XProxy.Shared;
 using XProxy.Shared.Services;
 
 namespace XProxy.Patcher.Services
@@ -51,7 +52,7 @@ namespace XProxy.Patcher.Services
         {
             GetAssemblyVersion();
 
-            Console.WriteLine("Check for updates");
+            Logger.Info("Check for updates...", "XProxy");
 
             while (UpdaterService.CheckForUpdates)
             {
@@ -66,7 +67,7 @@ namespace XProxy.Patcher.Services
 
                     if (_mainProcess == null)
                     {
-                        Console.WriteLine("Failed to start main process, retrying in 5 seconds...");
+                        Logger.Info("Failed to start main process, retrying in 5 seconds...", "XProxy");
                         await Task.Delay(5000);
                         continue;
                     }
@@ -99,17 +100,20 @@ namespace XProxy.Patcher.Services
 
             info.ArgumentList.Add($"-p {Environment.CurrentDirectory}");
 
+            if (Logger.AnsiDisabled)
+                info.ArgumentList.Add("--ansidisable");
+
             try
             {
                 _mainProcess = Process.Start(info);
             }
             catch(Win32Exception winEx)
             {
-                Console.WriteLine(winEx.Message);
+                Logger.Error(winEx.Message, "XProxy");
             }
             catch (Exception ex)
             {
-                Console.WriteLine("Error " + ex);
+                Logger.Error("Error " + ex, "XProxy");
             }
         }
 

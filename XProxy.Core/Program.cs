@@ -8,7 +8,7 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using XProxy.Services;
 
-[assembly: AssemblyVersion("1.0.5")]
+[assembly: AssemblyVersion("1.0.6")]
 
 namespace XProxy
 {
@@ -18,6 +18,8 @@ namespace XProxy
         {
             [Option('p', "path", Required = false)]
             public string Path { get; set; }
+            [Option("ansidisable", Required = false)]
+            public bool AnsiDisable { get; set; } = false;
         }
 
         static async Task Main(string[] args) => await RunApplication(BuildApplication(args));
@@ -27,13 +29,14 @@ namespace XProxy
             Parser.Default.ParseArguments<Options>(args)
             .WithParsed(o =>
             {
-                ConfigService.MainDirectory = o.Path.Trim();
+                if (o.Path != null)
+                    ConfigService.MainDirectory = o.Path.Trim();
+
+                Logger.AnsiDisabled = o.AnsiDisable;
             });
 
             if (ConfigService.MainDirectory == null)
                 ConfigService.MainDirectory = Environment.CurrentDirectory;
-
-            Logger.Ansi = new AnsiVtConsole.NetCore.AnsiVtConsole();
 
             var builder = Host.CreateApplicationBuilder();
 

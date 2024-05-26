@@ -1,11 +1,12 @@
-﻿using System;
-using System.Text.RegularExpressions;
+﻿using System.Text.RegularExpressions;
 
 namespace XProxy.Shared
 {
     public class Logger
     {
-        public static AnsiVtConsole.NetCore.AnsiVtConsole Ansi { get; set; }
+        public const char ESC = (char)27;
+
+        public static bool AnsiDisabled { get; set; }
         public static bool DebugMode { get; set; }
 
         static string TimeString => DateTime.Now.TimeOfDay
@@ -21,12 +22,61 @@ namespace XProxy.Shared
                 WriteLine($" (f=darkgray){TimeString}(f=white) [(f=yellow)DEBUG(f=white)] {(tag != null ? $"[(f=magenta){tag}(f=white)] " : string.Empty)}(f=yellow){message}");
         }
 
-        static void WriteLine(object message)
+        static void WriteLine(object message) => Console.WriteLine(FormatAnsi(message));
+
+        static string FormatAnsi(object message)
         {
-            if (Ansi != null)
-                Ansi.Out.WriteLine(message);
-            else
-                Console.WriteLine(Regex.Replace(message.ToString(), @"\(.*\)", ""));
+            string text = message.ToString();
+
+            return Regex.Replace(text, @"\(f=(.*?)\)", ev =>
+            {
+                if (AnsiDisabled)
+                    return string.Empty;
+
+                string color = ev.Groups[1].Value.ToLower();
+
+                switch (color)
+                {
+                    case "black":
+                        return $"{ESC}[30m";
+
+                    case "darkred":
+                        return $"{ESC}[31m";
+                    case "darkgreen":
+                        return $"{ESC}[32m";
+                    case "darkyellow":
+                        return $"{ESC}[33m";
+                    case "darkblue":
+                        return $"{ESC}[34m";
+                    case "darkmagenta":
+                        return $"{ESC}[35m";
+                    case "darkcyan":
+                        return $"{ESC}[36m";
+                    case "darkgray":
+                        return $"{ESC}[90m";
+
+                    case "gray":
+                        return $"{ESC}[37m";
+                    case "red":
+                        return $"{ESC}[91m";
+                    case "green":
+                        return $"{ESC}[92m";
+                    case "yellow":
+                        return $"{ESC}[93m";
+                    case "blue":
+                        return $"{ESC}[94m";
+                    case "magenta":
+                        return $"{ESC}[95m";
+                    case "cyan":
+                        return $"{ESC}[96m";
+
+                    case "white":
+                        return $"{ESC}[97m";
+
+                    default:
+                        return $"{ESC}[39m";
+                }
+            });
         }
     }
 }

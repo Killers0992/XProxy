@@ -20,6 +20,7 @@ namespace XProxy.Shared.Services
         ConfigService _config;
         BuildInfo _latest = null;
 
+        bool upToDateNotify = false;
         int seconds = 0;
 
         public UpdaterService(ConfigService config)
@@ -56,11 +57,11 @@ namespace XProxy.Shared.Services
                         else
                             _latest = firstLatest;
 
-                        Console.WriteLine($"Proxy is outdated, new version {_latest.Version}");
+                        Logger.Info($"Proxy is outdated (f=green){MainProcessService.AssemblyVersion.ToString(3)}(f=white), new version (f=green){_latest.Version}(f=white)", "XProxy");
         
                         if (MainProcessService.IsWaitingForProcessExit)
                         {
-                            Console.WriteLine("Waiting for process to exit...");
+                            Logger.Info("If you want to update now press (f=red)CTRL+C(f=white) ( kill process )", "XProxy");
                             while (MainProcessService.IsWaitingForProcessExit)
                             {
                                 await Task.Delay(10);
@@ -72,18 +73,20 @@ namespace XProxy.Shared.Services
                         MainProcessService.AssemblyUpdated = true;
                         MainProcessService.IsUpdating = false;
                     }
-                    else
+                    else if (!upToDateNotify)
                     {
-                        Console.WriteLine("Proxy is up to date!");
+                        Logger.Info("Proxy is up to date!", "XProxy");
+                        upToDateNotify = false;
                         CheckForUpdates = false;
                     }
                 }
 
-                while(seconds < 30 && !ForceReDownload)
+                while(seconds < 30 && !MainProcessService.IsWaitingForProcessExit)
                 {
                     await Task.Delay(1000);
                     seconds++;
                 }
+
                 seconds = 0;
             }
         }
@@ -95,13 +98,13 @@ namespace XProxy.Shared.Services
             if (!_latest.Files.TryGetValue(targetBuildFile, out BuildFileInfo file))
                 return;
 
-            Logger.Info($"Downloading update...", "UpdaterService");
+            Logger.Info($"Downloading update...", "XProxy");
 
             string _tempFile = "_update.zip";
 
             using(var tempFileStream = new FileStream(_tempFile, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None))
             {
-                CustomProgressReporter reporter = new CustomProgressReporter("Downloading update %percentage%%...", null);
+                CustomProgressReporter reporter = new CustomProgressReporter("Downloading update (f=green)%percentage%%(f=white)...", null);
 
                 await _client.DownloadAsync(file.Url, tempFileStream, reporter);
 
@@ -171,7 +174,7 @@ namespace XProxy.Shared.Services
                 }
             }
 
-            Logger.Info("Update downloaded!");
+            Logger.Info("Update downloaded!", "XProxy");
         }
     }
 }

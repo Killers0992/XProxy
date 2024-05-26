@@ -1,4 +1,5 @@
 ﻿using XProxy.Patcher.Models;
+using XProxy.Shared;
 using XProxy.Shared.Models;
 using XProxy.Shared.Serialization;
 
@@ -28,6 +29,7 @@ namespace XProxy.Services
         {
             CreateIfMissing();
             Value = YamlParser.Deserializer.Deserialize<PatcherConfig>(File.ReadAllText(_configPath));
+            Logger.AnsiDisabled = !Value.AnsiColors;
             Save();
         }
 
