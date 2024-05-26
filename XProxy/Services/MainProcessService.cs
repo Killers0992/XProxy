@@ -2,6 +2,8 @@
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Reflection;
+using System.Reflection.Metadata;
+using System.Reflection.PortableExecutable;
 using XProxy.Shared;
 using XProxy.Shared.Services;
 
@@ -59,6 +61,8 @@ namespace XProxy.Patcher.Services
                 await Task.Delay(10);
             }
 
+            if (AssemblyUpdated) GetAssemblyVersion();
+
             while (!stoppingToken.IsCancellationRequested)
             {
                 if (File.Exists(Executable))
@@ -85,8 +89,7 @@ namespace XProxy.Patcher.Services
                     await Task.Delay(10);
                 }
 
-                if (AssemblyUpdated)
-                    GetAssemblyVersion();
+                if (AssemblyUpdated) GetAssemblyVersion();
 
                 await Task.Delay(10);
             }
