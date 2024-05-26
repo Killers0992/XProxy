@@ -76,12 +76,12 @@ namespace XProxy.Shared.Services
                     else if (!upToDateNotify)
                     {
                         Logger.Info("Proxy is up to date!", "XProxy");
-                        upToDateNotify = false;
+                        upToDateNotify = true;
                         CheckForUpdates = false;
                     }
                 }
 
-                while(seconds < 30 && !MainProcessService.IsWaitingForProcessExit)
+                while(seconds < 30 && !MainProcessService.IsUpdating)
                 {
                     await Task.Delay(1000);
                     seconds++;
