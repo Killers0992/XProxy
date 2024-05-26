@@ -69,8 +69,8 @@ namespace XProxy.Shared.Services
                         }
 
                         await DoUpdate();
-                        CheckForUpdates = false;
                         MainProcessService.AssemblyUpdated = true;
+                        CheckForUpdates = false;
                         MainProcessService.IsUpdating = false;
                     }
                     else if (!upToDateNotify)
