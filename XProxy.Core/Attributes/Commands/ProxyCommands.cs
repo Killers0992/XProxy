@@ -1,4 +1,6 @@
-﻿using System.Linq;
+﻿using System.Collections.Generic;
+using System.Formats.Tar;
+using System.Linq;
 using System.Text;
 using XProxy.Attributes;
 using XProxy.Models;
@@ -8,6 +10,19 @@ namespace XProxy.Commands
 {
     public class ProxyCommands
     {
+        [ConsoleCommand("help")]
+        public static void HelpCommand(CommandsService service, string[] args)
+        {
+            string text = $"Available commands:";
+            foreach(var command in CommandsService.Commands)
+            {
+                if (command.Key == "help") continue;
+
+                text += $"\n - {command.Key}";
+            }
+            Logger.Info(text, "help");
+        }
+
         [ConsoleCommand("servers")]
         public static void ServersCommand(CommandsService service, string[] args)
         {
