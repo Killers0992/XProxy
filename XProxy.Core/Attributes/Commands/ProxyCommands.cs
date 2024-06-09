@@ -137,7 +137,7 @@ namespace XProxy.Commands
                     Logger.Info($"Maintenance is now {(service.Config.Value.MaintenanceMode ? "(f=green)enabled(f=white)" : "(f=red)disabled(f=white)")}!", "maintenance");
                     break;
                 case "servername":
-                    if (args.Length == 2)
+                    if (args.Length < 2)
                     {
                         Logger.Info("Syntax: maintenance servername (message)", "maintenance");
                         break;
