@@ -115,7 +115,7 @@ namespace XProxy.Core.Connections
                 bool last = x == Servers.Length - 1;
                 ServerInfo server = Player.Proxy.GetServerByName(Servers[x]);
 
-                string serverLine = Player.Proxy._config.Messages.LobbyServerLine1.Replace("%selectedColor%", $"{(Servers[x] == SelectedServer ? Player.Proxy._config.Messages.SelectedServerColor : Player.Proxy._config.Messages.DefaultServerColor)}").Replace("%server%", server.ServerName);
+                string serverLine = Player.Proxy._config.Messages.LobbyServerLine1.Replace("%selectedColor%", $"{(Servers[x] == SelectedServer ? Player.Proxy._config.Messages.SelectedServerColor : Player.Proxy._config.Messages.DefaultServerColor)}").Replace("%server%", server.ServerDisplayname);
                 int serverLineLength = Regex.Replace(serverLine, @"\<.*\>", "").Length;
 
                 string serverLine2 = Player.Proxy._config.Messages.LobbyServerLine2.Replace("%selectedColor%", $"{(Servers[x] == SelectedServer ? Player.Proxy._config.Messages.SelectedServerColor : Player.Proxy._config.Messages.DefaultServerColor)}").Replace("%onlinePlayers%", $"{server.PlayersOnline}").Replace("%maxPlayers%", $"{server.MaxPlayers}");
@@ -129,9 +129,15 @@ namespace XProxy.Core.Connections
                 line2 += $"{spacing}{serverLine2}{spacing}{(last ? string.Empty : _spacing)}";
             }
 
+            string currentServer = "";
+
+            ServerInfo selected = Player.Proxy.GetServerByName(SelectedServer);
+            if (selected != null)
+                currentServer = selected.ServerDisplayname;
+
             foreach (var line in Player.Proxy._config.Messages.LobbyMainHint)
             {
-                sb.AppendLine(line.Replace("%proxyOnlinePlayers%", $"{Player.Proxy.Players.Count}").Replace("%proxyMaxPlayers%", $"{Player.Proxy._config.Value.MaxPlayers}").Replace("%serversLine1%", line1).Replace("%serversLine2%", line2).Replace("%server%", SelectedServer));
+                sb.AppendLine(line.Replace("%proxyOnlinePlayers%", $"{Player.Proxy.Players.Count}").Replace("%proxyMaxPlayers%", $"{Player.Proxy._config.Value.MaxPlayers}").Replace("%serversLine1%", line1).Replace("%serversLine2%", line2).Replace("%server%", currentServer));
             }
 
             Player.SendHint(sb.ToString(), dur);
