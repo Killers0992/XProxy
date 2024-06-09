@@ -55,13 +55,15 @@ namespace XProxy.Commands
         [ConsoleCommand("send")]
         public static void OnSendCommand(CommandsService service, string[] args)
         {
-            if (args.Length != 2)
+            if (args.Length < 2)
             {
                 Logger.Info("Syntax: send <all/player> <server>", "send");
                 return;
             }
 
-            ServerInfo server = ProxyService.Singleton.GetServerByName(args[1]);
+            string serverName = string.Join(" ", args.Skip(1));
+
+            ServerInfo server = ProxyService.Singleton.GetServerByName(serverName);
 
             if (server == null)
             {
