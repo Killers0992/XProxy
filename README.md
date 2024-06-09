@@ -23,6 +23,11 @@ trusted_proxies_ip_addresses:
  - <IP OF YOUR PROXY>
 ```
   - Replace ``<IP OF YOUR PROXY>`` with public ip if your proxy is not running on same machine or with local ip, if you dont know which ip to set just before adding ip just connect to server via proxy and check console.
+  - 
+# FAQ
+- If you see logs like that ![image](https://github.com/Killers0992/XProxy/assets/38152961/0e7c4374-021a-4618-bb2e-b268286fd3cf) this means your console is not supporting ANSI colors !
+- 
+  Inside ``config_patcher.yml`` change ``AnsiColors`` to ``false`` !
 
 # Console Commands
 | Command  | Arguments | Description |
