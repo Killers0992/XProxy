@@ -125,7 +125,7 @@ namespace XProxy.Commands
                 return;
             }
 
-            switch (args[1].ToLower())
+            switch (args[0].ToLower())
             {
                 default:
                     Logger.Info("Syntax: maintenance toggle/servername", "maintenance");
