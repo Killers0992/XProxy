@@ -29,6 +29,8 @@ trusted_proxies_ip_addresses:
 - 
   Inside ``config_patcher.yml`` change ``AnsiColors`` to ``false`` !
 
+- Make sure to set proper game version in ``config_patcher.yml`` or ``config.yml`` because auto updater will be not downloading proper builds and you will be not able to connect to this server.
+
 # Console Commands
 | Command  | Arguments | Description |
 | ------------- | ------------- | ------------- |
