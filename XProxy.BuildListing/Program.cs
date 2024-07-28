@@ -91,7 +91,10 @@ public class AppCommand
             foreach (var release in releases)
             {
                 if (lInfo.Versions.ContainsKey(release.TagName))
+                {
+                    Console.WriteLine($"Version {release.TagName} is already cached!");
                     continue;
+                }
 
                 ReleaseInfo rInfo = null;
 
@@ -137,6 +140,7 @@ public class AppCommand
                 };
 
                 lInfo.Versions.Add(release.TagName, bInfo);
+                Console.WriteLine($"Add Version {release.TagName}");
             }
 
             File.WriteAllText("./Website/builds.json", JsonConvert.SerializeObject(lInfo, Formatting.Indented));
