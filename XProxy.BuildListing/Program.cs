@@ -75,8 +75,18 @@ public class AppCommand
 
             ListingInfo lInfo = new ListingInfo();
 
-            foreach(var release in releases)
+            if (File.Exists("./Website/builds.json"))
             {
+                var existinglisting = File.ReadAllText("./Website/builds.json");
+
+                lInfo = JsonConvert.DeserializeObject<ListingInfo>(existinglisting);
+            }
+
+            foreach (var release in releases)
+            {
+                if (lInfo.Versions.ContainsKey(release.TagName))
+                    continue;
+
                 ReleaseInfo rInfo = null;
 
                 Dictionary<string, BuildFileInfo> files = new Dictionary<string, BuildFileInfo>();
@@ -120,8 +130,7 @@ public class AppCommand
                     Files = files,
                 };
 
-                if (!lInfo.Versions.ContainsKey(release.TagName))
-                    lInfo.Versions.Add(release.TagName, bInfo);
+                lInfo.Versions.Add(release.TagName, bInfo);
             }
 
             File.WriteAllText("./Website/builds.json", JsonConvert.SerializeObject(lInfo, Formatting.Indented));
