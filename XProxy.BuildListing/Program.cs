@@ -77,9 +77,15 @@ public class AppCommand
 
             if (File.Exists("./Website/builds.json"))
             {
-                var existinglisting = File.ReadAllText("./Website/builds.json");
+                string existinglisting = File.ReadAllText("./Website/builds.json");
 
-                lInfo = JsonConvert.DeserializeObject<ListingInfo>(existinglisting);
+                if (!string.IsNullOrEmpty(existinglisting))
+                {
+                    lInfo = JsonConvert.DeserializeObject<ListingInfo>(existinglisting);
+
+                    if (lInfo == null)
+                        lInfo = new ListingInfo();
+                }
             }
 
             foreach (var release in releases)
