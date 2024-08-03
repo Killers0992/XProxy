@@ -8,7 +8,8 @@ Features
 - Queue system - If server is full you will be added to queue and when system detects if theres free slot and then you will be connected.
 - Fallback system - Server shutdowns or timeouts without any reason you will be connected to available server.
 
-[Builds API](https://killers0992.github.io/XProxy/builds.json)
+**Pterodactyl Egg**
+[proxy.json](https://github.com/Killers0992/XProxy/blob/master/eggs/egg-s-c-p--s-l-proxy.json)
 
 # Setup
 1. Depending if you use linux or windows download proper installer
