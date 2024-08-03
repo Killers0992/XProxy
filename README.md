@@ -9,7 +9,7 @@ Features
 - Fallback system - Server shutdowns or timeouts without any reason you will be connected to available server.
 
 **Pterodactyl Egg**
-[proxy.json](https://github.com/Killers0992/XProxy/blob/master/eggs/egg-s-c-p--s-l-proxy.json)
+[proxy.json](https://github.com/Killers0992/XProxy/blob/master/Storage/egg-s-c-p--s-l-proxy.json)
 
 # Setup
 1. Depending if you use linux or windows download proper installer
