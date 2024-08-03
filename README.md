@@ -8,7 +8,8 @@ Features
 - Queue system - If server is full you will be added to queue and when system detects if theres free slot and then you will be connected.
 - Fallback system - Server shutdowns or timeouts without any reason you will be connected to available server.
 
-[Builds API](https://killers0992.github.io/XProxy/builds.json)
+**Pterodactyl Egg**
+[proxy.json](https://github.com/Killers0992/XProxy/blob/master/Storage/egg-s-c-p--s-l-proxy.json)
 
 # Setup
 1. Depending if you use linux or windows download proper installer
@@ -23,16 +24,17 @@ trusted_proxies_ip_addresses:
  - <IP OF YOUR PROXY>
 ```
   - Replace ``<IP OF YOUR PROXY>`` with public ip if your proxy is not running on same machine or with local ip, if you dont know which ip to set just before adding ip just connect to server via proxy and check console.
-  - 
 # FAQ
 - If you see logs like that ![image](https://github.com/Killers0992/XProxy/assets/38152961/0e7c4374-021a-4618-bb2e-b268286fd3cf) this means your console is not supporting ANSI colors !
 - 
   Inside ``config_patcher.yml`` change ``AnsiColors`` to ``false`` !
 
+- Make sure to set proper game version in ``config_patcher.yml`` or ``config.yml`` because auto updater will be not downloading proper builds and you will be not able to connect to this server.
+
 # Console Commands
 | Command  | Arguments | Description |
 | ------------- | ------------- | ------------- |
-| servers  |   |  Sends you back to lobby.  |
+| servers  |   |  Shows all servers.  |
 | players  |   |  Shows players playing on servers.  |
 | send | ``all/id@steam`` ``serverName``  |  Sends all players or target to specific server.  |
 | maintenance toggle  |  |  Toggles maintenance |
