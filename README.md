@@ -34,7 +34,7 @@ trusted_proxies_ip_addresses:
 # Console Commands
 | Command  | Arguments | Description |
 | ------------- | ------------- | ------------- |
-| servers  |   |  Sends you back to lobby.  |
+| servers  |   |  Shows all servers.  |
 | players  |   |  Shows players playing on servers.  |
 | send | ``all/id@steam`` ``serverName``  |  Sends all players or target to specific server.  |
 | maintenance toggle  |  |  Toggles maintenance |
