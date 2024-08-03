@@ -8,7 +8,7 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using XProxy.Services;
 
-[assembly: AssemblyVersion("1.1.3")]
+[assembly: AssemblyVersion("1.1.4")]
 
 namespace XProxy
 {

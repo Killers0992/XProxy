@@ -10,6 +10,7 @@ namespace XProxy.Core.Connections
 {
     public class LobbyConnection : SimulatedConnection
     {
+        public const ushort NoclipToggleId = 48298;
         public const ushort VoiceMessageId = 41876;
 
         private const string _spacing = "           ";
@@ -42,6 +43,8 @@ namespace XProxy.Core.Connections
         public override void OnAddPlayer()
         {
             Player.Spawn();
+            Player.SetRole(PlayerRoles.RoleTypeId.Tutorial);
+            Player.SetHealth(100f);
         }
 
         int _timer = 3;
@@ -143,22 +146,19 @@ namespace XProxy.Core.Connections
             Player.SendHint(sb.ToString(), dur);
         }
 
-        public DateTime LastReceive = DateTime.MinValue;
-        public int Counter;
-
-        public bool IsHolding;
-        public bool IgnoreFirst;
-
         public override void OnReceiveGameConsoleCommand(string command, string[] args)
         {
             switch (command.ToLower())
             {
+                case "gsh":
+                    Player.SendGameConsoleMessage("Syntax: .connect IP:PORT", "green");
+                    break;
                 case "servers":
                     string text = $"Servers: " + string.Join(", ", Player.Proxy.Servers.Select(x => $"<color=orange>{x.Key}</color> (<color=white>{x.Value.PlayersOnline}/{x.Value.MaxPlayers}</color>)"));
                     Player.SendGameConsoleMessage(text, "green");
                     break;
                 case "connect":
-                    if (args.Length == 0)
+                    if (args.Length == 0 || string.IsNullOrEmpty(args[0]))
                     {
                         Player.SendGameConsoleMessage("Syntax: connect <serverName>", "red");
                         return;
@@ -166,7 +166,7 @@ namespace XProxy.Core.Connections
 
                     ServerInfo serv;
                     if (args[0].Contains(":"))
-                        serv = Player.Proxy.GetServerByIp(args[0]);
+                        serv = Player.Proxy.GetServerByPublicIp(args[0]);
                     else
                         serv = Player.Proxy.GetServerByName(args[0]);
 
@@ -193,43 +193,18 @@ namespace XProxy.Core.Connections
 
         public override void OnReceiveMirrorDataFromProxy(uint key, NetworkReader reader)
         {
+            if (key == 3034 || key == 53182)
+                return;
+
             switch (key)
             {
+                case NoclipToggleId:
+                    CurrentIndex = Servers.Length == CurrentIndex + 1 ? 0 : CurrentIndex + 1;
+                    SelectedServer = Servers[CurrentIndex];
+                    SendInfoHint(2f);
+                    break;
                 case VoiceMessageId:
-                    TimeSpan time = (DateTime.Now - LastReceive);
-
-                    if (time.TotalMilliseconds < 100)
-                    {
-                        Counter++;
-                        LastReceive = DateTime.Now;
-                        if (Counter > 30)
-                        {
-                            IsHolding = true;
-                            IgnoreFirst = false;
-                        }
-                    }
-                    else
-                    {
-                        IsHolding = false;
-                        Counter = 0;
-
-                        if (IgnoreFirst)
-                        {
-                            CurrentIndex = Servers.Length == CurrentIndex + 1 ? 0 : CurrentIndex + 1;
-                            SelectedServer = Servers[CurrentIndex];
-                            SendInfoHint(2f);
-                            IgnoreFirst = false;
-                        }
-                        else
-                            IgnoreFirst = true;
-                    }
-
-                    if (IsHolding)
-                    {
-                        connect = true;
-                    }
-
-                    LastReceive = DateTime.Now;
+                    connect = true;
                     break;
             }
         }

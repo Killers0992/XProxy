@@ -1,10 +1,12 @@
-﻿using System.Collections.Generic;
+﻿using Mirror;
+using System.Collections.Generic;
 using System.Formats.Tar;
 using System.Linq;
 using System.Text;
 using XProxy.Attributes;
 using XProxy.Models;
 using XProxy.Services;
+using static System.Net.Mime.MediaTypeNames;
 
 namespace XProxy.Commands
 {
@@ -21,6 +23,24 @@ namespace XProxy.Commands
                 text += $"\n - {command.Key}";
             }
             Logger.Info(text, "help");
+        }
+
+        [ConsoleCommand("texttohash")]
+        public static void TextToHashCommand(CommandsService service, string[] args)
+        {
+            if (args.Length == 0)
+            {
+                Logger.Info("Syntax: texttohash <fullName>", "send");
+                return;
+            }
+
+            int hash = 23;
+            foreach (char c in args[0])
+            {
+                hash = hash * 31 + c;
+            }
+
+            Logger.Info((ushort)hash, "texttohash");
         }
 
         [ConsoleCommand("servers")]

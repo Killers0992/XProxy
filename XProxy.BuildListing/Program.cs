@@ -12,6 +12,8 @@ await Host.CreateDefaultBuilder()
 [Command(Description = "Runs builder.")]
 public class AppCommand
 {
+    public const float KillDamage = float.PositiveInfinity;
+
     private GitHubClient _gitHubClient;
     public GitHubClient Client
     {

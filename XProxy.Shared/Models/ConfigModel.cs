@@ -28,7 +28,7 @@ namespace XProxy.Shared.Models
         public string Pastebin { get; set; } = "7wV681fT";
 
         [Description("Version of game.")]
-        public string GameVersion { get; set; } = "13.4.2";
+        public string GameVersion { get; set; } = "13.5.1";
 
         [YamlIgnore]
         public System.Version GameVersionParsed
@@ -59,6 +59,7 @@ namespace XProxy.Shared.Models
                 {
                     Name = "Lobby",
                     Ip = "127.0.0.1",
+                    PublicIp = "127.0.0.1",
                     Port = 7777,
                     MaxPlayers = 50,
                     ConnectionType = ConnectionType.Simulated,
@@ -70,6 +71,7 @@ namespace XProxy.Shared.Models
                 {
                     Name = "Vanilla",
                     Ip = "127.0.0.1",
+                    PublicIp = "127.0.0.1",
                     Port = 7778,
                 }
             }
@@ -97,8 +99,13 @@ namespace XProxy.Shared.Models
     {
         [Description("Name of server.")]
         public string Name { get; set; }
+
         [Description("IP Address of target server.")]
-        public string Ip { get; set; }
+        public string Ip { get; set; } = "0.0.0.0";
+
+        [Description("IP Address used for connecting to server via providing public ip in .connect command ( for GLOBAL MODERATION, STUDIO STAFF )")]
+        public string PublicIp { get; set; } = "0.0.0.0";
+
         [Description("Port of target server.")]
         public ushort Port { get; set; }
 

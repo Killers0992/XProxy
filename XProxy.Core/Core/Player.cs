@@ -14,6 +14,7 @@ using RelativePositioning;
 using static EncryptedChannelManager;
 using System.Linq;
 using XProxy.Shared.Enums;
+using static PlayerStatsSystem.SyncedStatMessages;
 
 namespace XProxy.Core
 {
@@ -30,6 +31,7 @@ namespace XProxy.Core
 
         public const ushort HintMessageId = 46055;
 
+        public const ushort StatMessageId = 32410;
         public const ushort DisconnectErrorId = 55061;
         public const ushort RoleSyncInfoMessageId = 38952;
         public const ushort VcPrivacyMessageId = 3611;
@@ -217,6 +219,27 @@ namespace XProxy.Core
             wr.WriteSByte((sbyte)role);
             wr.WriteRelativePosition(new RelativePosition(new UnityEngine.Vector3(0f, 0f, 0f)));
             wr.WriteUShort(0);
+
+            SendMirrorMessage(wr);
+        }
+
+        public void SetHealth(float value)
+        {
+            NetworkWriter wr = new NetworkWriter();
+            wr.WriteUShort(StatMessageId);
+
+            wr.WriteUInt(NetworkId);
+
+            // 0 HealthStat
+            // 1 AhpStat
+            // 2 StaminaStat
+            // 3 AdminFlagsStat
+            // 4 HumeShieldStat
+            // 5 Vigor Stat
+            wr.WriteByte(0);
+
+            int clampedValue = UnityEngine.Mathf.Clamp(UnityEngine.Mathf.CeilToInt(value), 0, 65535);
+            wr.WriteUShort((ushort)clampedValue);
 
             SendMirrorMessage(wr);
         }

@@ -10,11 +10,12 @@ namespace XProxy.Models
 {
     public class ServerInfo
     {
-        public ServerInfo(string serverName, string serverDisplayname, string serverIp, int serverPort, int maxPlayers, bool sendIpAddressInPreAuth, ConnectionType connectionType, string simulation)
+        public ServerInfo(string serverName, string serverDisplayname, string publicIp, string serverIp, int serverPort, int maxPlayers, bool sendIpAddressInPreAuth, ConnectionType connectionType, string simulation)
         {
             ServerName = serverName;
             ServerDisplayname = serverDisplayname;
             ServerIp = serverIp;
+            ServerPublicIp = publicIp;
             ServerPort = serverPort;
             MaxPlayers = maxPlayers;
 
@@ -26,6 +27,7 @@ namespace XProxy.Models
         public string ServerName { get;  }
         public string ServerDisplayname { get; }
         public string ServerIp { get; }
+        public string ServerPublicIp { get; }
         public int ServerPort { get; }
         public int PlayersOnline => PlayersIds.Count;
         public int MaxPlayers { get; }

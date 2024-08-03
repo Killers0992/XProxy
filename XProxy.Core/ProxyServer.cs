@@ -91,6 +91,20 @@ namespace XProxy
             return Servers.Values.Where(x => x.ServerIp == ipPart && x.ServerPort == port).FirstOrDefault();
         }
 
+        public ServerInfo GetServerByPublicIp(string ip)
+        {
+            string[] ipParse = ip.Split(':');
+
+            if (ipParse.Length != 2) return null;
+
+            string ipPart = ipParse[0];
+
+            if (!int.TryParse(ipParse[1], out int port))
+                return null;
+
+            return Servers.Values.Where(x => x.ServerPublicIp == ipPart && x.ServerPort == port).FirstOrDefault();
+        }
+
         public ServerInfo GetServerByName(string name)
         {
             if (Servers.TryGetValue(name, out ServerInfo info))
@@ -156,7 +170,7 @@ namespace XProxy
 
         public void RefreshServers()
         {
-            Servers = _config.Value.Servers.ToDictionary(x => x.Key, a => new ServerInfo(a.Key, a.Value.Name, a.Value.Ip, a.Value.Port, a.Value.MaxPlayers, a.Value.SendIpAddressInPreAuth, a.Value.ConnectionType, a.Value.Simulation));
+            Servers = _config.Value.Servers.ToDictionary(x => x.Key, a => new ServerInfo(a.Key, a.Value.Name, a.Value.PublicIp, a.Value.Ip, a.Value.Port, a.Value.MaxPlayers, a.Value.SendIpAddressInPreAuth, a.Value.ConnectionType, a.Value.Simulation));
         }
 
         public async Task Run()

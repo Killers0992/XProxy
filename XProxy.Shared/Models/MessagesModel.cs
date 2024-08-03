@@ -1,7 +1,4 @@
-﻿using YamlDotNet.Core;
-using YamlDotNet.Serialization;
-
-namespace XProxy.Shared.Models
+﻿namespace XProxy.Shared.Models
 {
     public class MessagesModel
     {
@@ -84,7 +81,7 @@ namespace XProxy.Shared.Models
             "",
             "You will join server <color=green>%server%</color>",
             "",
-            "Press <color=orange>Q</color> to change server which you want to join, hold <color=orange><b>Q</b></color> to join."
+            "Press <color=orange>LeftAlt</color> to change server which you want to join, hold <color=orange><b>Q</b></color> to join."
         };
         public string LobbyServerLine1 { get; set; } = "<color=%selectedColor%>%server%</color>";
         public string SelectedServerColor { get; set; } = "green";
