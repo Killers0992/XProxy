@@ -23,7 +23,9 @@ namespace XProxy.Shared.Models
 
         [Description("Server name.")]
         [YamlMember(ScalarStyle = YamlDotNet.Core.ScalarStyle.Literal)]
-        public string ServerName { get; set; } = "Example server name.";
+        public string ServerName { get; set; } = 
+@" Example server name.
+  Proxy Server";
 
         [Description("Server information.")]
         public string Pastebin { get; set; } = "7wV681fT";
@@ -92,7 +94,9 @@ namespace XProxy.Shared.Models
         public bool MaintenanceMode { get; set; }
         [Description("Name of server visbile on serverlist when maintenance mode is enabled.")]
         [YamlMember(ScalarStyle = YamlDotNet.Core.ScalarStyle.Literal)]
-        public string MaintenanceServerName { get; set; } = "Maintenance mode";
+        public string MaintenanceServerName { get; set; } = 
+@" Example server name - Maintenance
+  Proxy Server";
         [Description("Auto updates proxy if needed.")]
         public bool AutoUpdater { get; set; } = true;
     }
