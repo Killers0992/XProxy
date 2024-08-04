@@ -22,6 +22,7 @@ namespace XProxy.Shared.Models
         public string Email { get; set; } = "example@gmail.com";
 
         [Description("Server name.")]
+        [YamlMember(ScalarStyle = YamlDotNet.Core.ScalarStyle.Literal)]
         public string ServerName { get; set; } = "Example server name.";
 
         [Description("Server information.")]
@@ -90,6 +91,7 @@ namespace XProxy.Shared.Models
         [Description("If maintenance mode is enabled.")]
         public bool MaintenanceMode { get; set; }
         [Description("Name of server visbile on serverlist when maintenance mode is enabled.")]
+        [YamlMember(ScalarStyle = YamlDotNet.Core.ScalarStyle.Literal)]
         public string MaintenanceServerName { get; set; } = "Maintenance mode";
         [Description("Auto updates proxy if needed.")]
         public bool AutoUpdater { get; set; } = true;

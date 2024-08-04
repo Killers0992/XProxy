@@ -1,7 +1,7 @@
 {
   "name": "com.killers0992.xproxy",
   "displayName": "XProxy",
-  "version": "1.1.4",
+  "version": "1.1.5",
   "buildType": "release",
   "gameVersion": "13.5.1"
 }
