@@ -16,6 +16,10 @@ namespace XProxy.Shared.Services
         public static bool CheckForUpdates = true;
 
         string _buildsUrl = "https://killers0992.github.io/XProxy/builds.json";
+
+        string _verionsUrl = "https://raw.githubusercontent.com/Killers0992/XProxy/master/Storage/gameVersions.json";
+        string[] _remoteVersions = new string[0];
+
         HttpClient _client;
         ConfigService _config;
         BuildInfo _latest = null;
@@ -31,6 +35,36 @@ namespace XProxy.Shared.Services
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
             _client = new HttpClient();
+
+            using (var response = await _client.GetAsync(_verionsUrl))
+            {
+                string textResponse = await response.Content.ReadAsStringAsync();
+
+                string[] versions = JsonConvert.DeserializeObject<string[]>(textResponse);
+
+                if (versions != null)
+                    _remoteVersions = versions;
+            }
+
+            int currentVersionPosition = Array.IndexOf(_remoteVersions, _config.Value.GameVersion);
+
+            if (currentVersionPosition != -1)
+            {
+                if (currentVersionPosition == 0)
+                {
+                    Logger.Info($"Using latest game version (f=green){_config.Value.GameVersion}(f=white) supported by XProxy!", "XProxy");
+                }
+                else
+                {
+                    Logger.Info($"New game version (f=green){_remoteVersions[0]}(f=white) is supported by XProxy, if you want to update change (f=cyan)gameVersion(f=white) in (f=cyan)config_patcher.yml(f=white)!", "XProxy");
+                }
+            }
+            else
+            {
+                Logger.Warn($"Game version (f=green){_config.Value.GameVersion}(f=yellow) is not supported by XProxy!", "XProxy");
+                Logger.Info($"Supported versions (f=green){(string.Join("(f=white), (f=green)", _remoteVersions))}(f=white)", "XProxy");
+            }
+
             while (!stoppingToken.IsCancellationRequested)
             {
                 using (var response = await _client.GetAsync(_buildsUrl))
@@ -44,6 +78,8 @@ namespace XProxy.Shared.Services
                         .OrderByDescending(x => x.Value.ParsedVersion)
                         .Select(x => x.Value)
                         .ToArray();
+
+                    bool anyBuildsExists = listing.Versions.Any(x => x.Value.GameVersion == _config.Value.GameVersion);
 
                     BuildInfo firstLatest = latestBuildsForCurrentGameVersion.FirstOrDefault();
 
@@ -75,13 +111,21 @@ namespace XProxy.Shared.Services
                     }
                     else if (!upToDateNotify)
                     {
-                        Logger.Info("Proxy is up to date!", "XProxy");
+                        if (anyBuildsExists)
+                        {
+                            Logger.Info("Proxy is up to date!", "XProxy");
+                        }
+                        else
+                        {
+                            Logger.Warn($"Game version (f=red){_config.Value.GameVersion}(f=yellow) don't have any builds! ( this game version is not supported )", "XProxy");
+                        }
+
                         upToDateNotify = true;
                         CheckForUpdates = false;
                     }
                 }
 
-                while(seconds < 30 && !MainProcessService.IsUpdating)
+                while (seconds < 30 && !MainProcessService.IsUpdating)
                 {
                     await Task.Delay(1000);
                     seconds++;

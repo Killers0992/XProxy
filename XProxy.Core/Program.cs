@@ -1,14 +1,16 @@
 ﻿using System;
 using System.IO;
 using System.Reflection;
+using System.Threading;
 using System.Threading.Tasks;
 using CommandLine;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using XProxy.Services;
+using XProxy.Shared.Models;
 
-[assembly: AssemblyVersion("1.1.5")]
+[assembly: AssemblyVersion("1.1.6")]
 
 namespace XProxy
 {
@@ -16,8 +18,12 @@ namespace XProxy
     {
         public class Options
         {
+            [Option('g', "gameversion", Required = true)]
+            public string GameVersion { get; set; }
+
             [Option('p', "path", Required = false)]
             public string Path { get; set; }
+
             [Option("ansidisable", Required = false)]
             public bool AnsiDisable { get; set; } = false;
         }
@@ -33,7 +39,19 @@ namespace XProxy
                     ConfigService.MainDirectory = o.Path.Trim();
 
                 Logger.AnsiDisabled = o.AnsiDisable;
+
+                ConfigModel.GameVersion = o.GameVersion;
             });
+
+            if (string.IsNullOrWhiteSpace(ConfigModel.GameVersion))
+            {
+                Logger.Info("Game version provided in commandline is empty!");
+                Logger.Info(" 1) Make sure you have latest XProxy or XProxy.exe from https://github.com/Killers0992/XProxy#setup!");
+                Logger.Info("    - If you use Pterodactyl EGG just reinstall server!");
+                Logger.Info("");
+                Thread.Sleep(5000);
+                return null;
+            }
 
             if (ConfigService.MainDirectory == null)
                 ConfigService.MainDirectory = Environment.CurrentDirectory;
@@ -60,6 +78,8 @@ namespace XProxy
 
         static async Task RunApplication(HostApplicationBuilder app)
         {
+            if (app == null) return;
+
             IHost host = app.Build();
 
             await host.RunAsync();

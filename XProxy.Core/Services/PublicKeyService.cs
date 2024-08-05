@@ -7,6 +7,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using XProxy.Cryptography;
 using XProxy.Models;
+using XProxy.Shared.Models;
 
 namespace XProxy.Services
 {
@@ -25,7 +26,7 @@ namespace XProxy.Services
         {
             Client = new HttpClient();
             Client.DefaultRequestHeaders.Add("User-Agent", "SCP SL");
-            Client.DefaultRequestHeaders.Add("Game-Version", $"{_config.Value.GameVersion}");
+            Client.DefaultRequestHeaders.Add("Game-Version", $"{ConfigModel.GameVersion}");
 
             string text = CentralServerKeyCache.ReadCache();
             string text2 = string.Empty;

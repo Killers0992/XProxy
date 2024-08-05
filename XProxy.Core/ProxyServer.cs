@@ -73,7 +73,7 @@ namespace XProxy
             _manager.MaxConnectAttempts = 2;
             _manager.Start(_config.Value.Port);
 
-            Logger.Info($"{_config.Messages.ProxyStartedListeningMessage.Replace("%port%", $"{Port}")}", $"XProxy");
+            Logger.Info($"{_config.Messages.ProxyStartedListeningMessage.Replace("%port%", $"{Port}").Replace("%version%", ConfigModel.GameVersion)}", $"XProxy");
             Logger.Info("");
         }
 

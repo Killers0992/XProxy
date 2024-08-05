@@ -9,6 +9,9 @@ namespace XProxy.Shared.Models
     public class ConfigModel
     {
         [YamlIgnore]
+        public static string GameVersion;
+
+        [YamlIgnore]
         private System.Version _version;
 
         [Description("Enables debug logs.")]
@@ -29,9 +32,6 @@ namespace XProxy.Shared.Models
 
         [Description("Server information.")]
         public string Pastebin { get; set; } = "7wV681fT";
-
-        [Description("Version of game.")]
-        public string GameVersion { get; set; } = "13.5.1";
 
         [YamlIgnore]
         public System.Version GameVersionParsed

@@ -2,8 +2,7 @@
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Reflection;
-using System.Reflection.Metadata;
-using System.Reflection.PortableExecutable;
+using XProxy.Services;
 using XProxy.Shared;
 using XProxy.Shared.Services;
 
@@ -25,6 +24,13 @@ namespace XProxy.Patcher.Services
         public static bool DoUpdate;
 
         Process _mainProcess;
+
+        private ConfigService _config;
+
+        public MainProcessService(ConfigService config)
+        {
+            _config = config;
+        }
 
         void GetAssemblyVersion()
         {
@@ -105,6 +111,8 @@ namespace XProxy.Patcher.Services
 
             if (Logger.AnsiDisabled)
                 info.ArgumentList.Add("--ansidisable");
+
+            info.ArgumentList.Add($"-g {_config.Value.GameVersion}");
 
             try
             {

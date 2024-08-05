@@ -15,6 +15,7 @@ using System.IO;
 using XProxy.Models;
 using System.Drawing;
 using static System.Net.Mime.MediaTypeNames;
+using XProxy.Shared.Models;
 
 namespace XProxy.Services
 {
@@ -28,10 +29,10 @@ namespace XProxy.Services
         }
 
         public static bool Disposing;
-        public HttpClient Client;
+        public static HttpClient Client;
 
-        public string PublicIp;
-        public string Password;
+        public static string PublicIp;
+        public static string Password;
         public bool Update;
         public bool ScheduleTokenRefresh;
         public string VerKey;
@@ -80,29 +81,6 @@ namespace XProxy.Services
 
         internal static readonly PlayerListSerializedModel PlayersListRaw = new PlayerListSerializedModel();
         internal static string _verificationPlayersList = string.Empty;
-
-        public async Task RunCentralServerCommand(string cmd, string args)
-        {
-            cmd = cmd.ToLower();
-
-            Dictionary<string, string> data = new Dictionary<string, string>()
-            {
-                { "ip", PublicIp },
-                { "port", $"{_config.Value.Port}" },
-                { "cmd", Base64Encode(cmd) },
-                { "args", Base64Encode(args) },
-            };
-
-            if (!string.IsNullOrEmpty(Password))
-                data.Add("passcode", Password);
-
-            using (var response = await Client.PostAsync($"https://api.scpslgame.com/centralcommands/{cmd}.php", new FormUrlEncodedContent(data)))
-            {
-                string text = await response.Content.ReadAsStringAsync();
-
-                Logger.Info(_config.Messages.CentralCommandMessage.Replace("%command%", cmd).Replace("%message%", text), $"ListService");
-            }
-        }
 
         public async Task<bool> SendData(Dictionary<string, string> data)
         {
@@ -215,7 +193,7 @@ namespace XProxy.Services
             {
                 string text2 = response.Substring(response.IndexOf(":Message - ", StringComparison.Ordinal) + 11);
                 text2 = text2.Substring(0, text2.IndexOf(":::", StringComparison.Ordinal));
-                Logger.Info(_config.Messages.CentralCommandMessage.Replace("%message%", text2), $"ListService");
+                Logger.Info(_config.Messages.CentralCommandMessage.Replace("%message%", text2), $"CommandService");
             }
             else if (response.Contains(":GetContactAddress:"))
             {
@@ -310,7 +288,7 @@ namespace XProxy.Services
         {
             Client = new HttpClient();
             Client.DefaultRequestHeaders.Add("User-Agent", "SCP SL");
-            Client.DefaultRequestHeaders.Add("Game-Version", _config.Value.GameVersion);
+            Client.DefaultRequestHeaders.Add("Game-Version", ConfigModel.GameVersion);
 
             PublicIp = await GetPublicIp();
 
@@ -344,7 +322,7 @@ namespace XProxy.Services
                             { "newPlayers", str },
                             { "port", $"{_config.Value.Port}" },
                             { "pastebin", _config.Value.Pastebin },
-                            { "gameVersion", _config.Value.GameVersion },
+                            { "gameVersion", ConfigModel.GameVersion },
                             { "version", "2" },
                             { "update", "1" },
                             { "info", Base64Encode(_config.Value.MaintenanceMode ? _config.Value.MaintenanceServerName : _config.Value.ServerName).Replace('+', '-') },
