@@ -10,7 +10,7 @@ using Microsoft.Extensions.Logging;
 using XProxy.Services;
 using XProxy.Shared.Models;
 
-[assembly: AssemblyVersion("1.1.8")]
+[assembly: AssemblyVersion("1.1.9")]
 
 namespace XProxy
 {

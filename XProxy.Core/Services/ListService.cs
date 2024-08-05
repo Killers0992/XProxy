@@ -325,7 +325,7 @@ namespace XProxy.Services
                             { "gameVersion", ConfigModel.GameVersion },
                             { "version", "2" },
                             { "update", "1" },
-                            { "info", Base64Encode((_config.Value.MaintenanceMode ? _config.Value.MaintenanceServerName : _config.Value.ServerName).Replace('+', '-')) + $"<color=#00000000><size=1>XProxy {ProxyBuildInfo.ReleaseInfo.Version}</size></color>" },
+                            { "info", Base64Encode((_config.Value.MaintenanceMode ? _config.Value.MaintenanceServerName : _config.Value.ServerName).Replace('+', '-') + $"<color=#00000000><size=1>XProxy {ProxyBuildInfo.ReleaseInfo.Version}</size></color>") },
                             { "privateBeta", "false" },
                             { "staffRA", "false" },
                             { "friendlyFire", "false" },
