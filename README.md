@@ -69,7 +69,7 @@ serverName: 'Example server name.'
 # Server information.
 pastebin: 'm4DqS5r0'
 # Version of game.
-gameVersion: '13.4.2'
+gameVersion: '13.5.1'
 # Maximum amount of players which can connect to your proxy.
 maxPlayers: 50
 # Priority servers used for first connection and fallback servers.
