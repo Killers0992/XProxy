@@ -10,7 +10,7 @@ using Microsoft.Extensions.Logging;
 using XProxy.Services;
 using XProxy.Shared.Models;
 
-[assembly: AssemblyVersion("1.1.6")]
+[assembly: AssemblyVersion("1.1.7")]
 
 namespace XProxy
 {
@@ -40,10 +40,11 @@ namespace XProxy
 
                 Logger.AnsiDisabled = o.AnsiDisable;
 
-                ConfigModel.GameVersion = o.GameVersion;
+                if (o.GameVersion != null)
+                    ConfigModel.GameVersion = o.GameVersion.Trim();
             });
 
-            if (string.IsNullOrWhiteSpace(ConfigModel.GameVersion))
+            if (string.IsNullOrEmpty(ConfigModel.GameVersion))
             {
                 Logger.Info("Game version provided in commandline is empty!");
                 Logger.Info(" 1) Make sure you have latest XProxy or XProxy.exe from https://github.com/Killers0992/XProxy#setup!");
