@@ -29,7 +29,14 @@ trusted_proxies_ip_addresses:
 - 
   Inside ``config_patcher.yml`` change ``AnsiColors`` to ``false`` !
 
-- Make sure to set proper game version in ``config_patcher.yml`` or ``config.yml`` because auto updater will be not downloading proper builds and you will be not able to connect to this server.
+- Make sure to set proper game version in ``config_patcher.yml`` because auto updater will be not downloading proper builds and you will be not able to connect to this server.
+
+# Central Commands
+| Command  | Arguments | Description |
+| ------------- | ------------- | ------------- |
+| !public  |   |  Shows your server on serverlist.  |
+| !private  |   |  Hides your server from serverlist.  |
+| !api | ``show``/``reset``/``clear``  |  Manage your SCP: SL api key.  |
 
 # Console Commands
 | Command  | Arguments | Description |
