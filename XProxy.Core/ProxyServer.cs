@@ -189,7 +189,7 @@ namespace XProxy
                     Logger.Error(ex);
                 }
 
-                await Task.Delay(16);
+                await Task.Delay(1);
             }
         }
 
