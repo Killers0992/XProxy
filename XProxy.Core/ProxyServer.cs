@@ -119,6 +119,7 @@ namespace XProxy
                     .Where(x => _config.Value.Priorities.Contains(x.Key))
                     .OrderBy(pair => _config.Value.Priorities.IndexOf(pair.Key))
                     .Select(pair => pair.Value)
+                    .Where(x => !x.IsServerFull)
                     .ToList()
                     .FirstOrDefault();
 
@@ -244,6 +245,13 @@ namespace XProxy
                 target = GetSavedLastServerAndClear(preAuth.UserID);
             else
                 target = GetRandomServerFromPriorities();
+
+            if (target == null)
+            {
+                Logger.Info(_config.Messages.ProxyIsFull.Replace("%address%", $"{request.RemoteEndPoint.Address}").Replace("%userid%", preAuth.UserID), "XProxy");
+                request.DisconnectServerFull();
+                return;
+            }
 
             PlayerAssignTargetServer ev2 = new PlayerAssignTargetServer(player, target);
 
