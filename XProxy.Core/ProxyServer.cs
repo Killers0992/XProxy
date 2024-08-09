@@ -212,7 +212,7 @@ namespace XProxy
                 return;
             }
 
-            bool ignoreSlots = preAuth.Flags.HasFlagFast(CentralAuthPreauthFlags.ReservedSlot);
+            bool ignoreSlots = preAuth.Flags.HasFlagFast(CentralAuthPreauthFlags.ReservedSlot) || preAuth.Flags.HasFlagFast(CentralAuthPreauthFlags.NorthwoodStaff) && _config.Value.NorthwoodStaffIgnoresSlots;
 
             if (!ignoreSlots && _manager.ConnectedPeersCount >= _config.Value.MaxPlayers)
             {

@@ -52,6 +52,9 @@ namespace XProxy.Shared.Models
         [Description("Maximum amount of players which can connect to your proxy.")]
         public int MaxPlayers { get; set; } = 50;
 
+        [Description("Northwood staff ignores maximum amount of players which can connect to proxy.")]
+        public bool NorthwoodStaffIgnoresSlots { get; set; } = false;
+
         [Description("Priority servers used for first connection and fallback servers.")]
         public List<string> Priorities { get; set; } = new List<string>() { "lobby" };
 
