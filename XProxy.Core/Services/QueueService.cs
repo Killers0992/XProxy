@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using XProxy.Models;
@@ -32,6 +33,8 @@ namespace XProxy.Core.Services
 
                 for (int x = 0; x < que.Length; x++)
                 {
+                    if (que[x] == null) continue;
+
                     if (que[x] == plr)
                         return position;
 
@@ -47,16 +50,16 @@ namespace XProxy.Core.Services
         public static int GetPlayersInQueueCount(ServerInfo serverInfo)
         {
             if (PlayersInQueue.TryGetValue(serverInfo, out List<Player> plrs))
-                return plrs.Count;
+                return plrs.Where(x => x != null).Count();
 
             return 0;
         }
 
         public static void PlayerLeft(Player plr)
         {
-            if (PlayersInQueue.TryGetValue(plr.ServerInfo, out List<Player> players))
+            foreach(var server in PlayersInQueue)
             {
-                players.Remove(plr);
+                server.Value.Remove(plr);
             }
         }
 

@@ -11,7 +11,7 @@ using XProxy.Core.Services;
 using XProxy.Services;
 using XProxy.Shared.Models;
 
-[assembly: AssemblyVersion("1.2.9")]
+[assembly: AssemblyVersion("1.3.0")]
 
 namespace XProxy
 {
