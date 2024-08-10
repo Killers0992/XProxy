@@ -1,5 +1,6 @@
 ﻿using LiteNetLib;
 using Mirror;
+using Org.BouncyCastle.Asn1.Cms;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -106,6 +107,8 @@ namespace XProxy
 
         public ServerInfo GetServerByName(string name)
         {
+            if (name == null) return null;
+
             if (Servers.TryGetValue(name, out ServerInfo info))
                 return info;
 

@@ -66,6 +66,8 @@ namespace XProxy.Core.Connections
 
         public override void Update()
         {
+            if (string.IsNullOrEmpty(SelectedServer)) return;
+
             if (connect)
             {
                 if (checkIfCanJoin)
