@@ -15,6 +15,7 @@ using static EncryptedChannelManager;
 using System.Linq;
 using XProxy.Shared.Enums;
 using static PlayerStatsSystem.SyncedStatMessages;
+using XProxy.Services;
 
 namespace XProxy.Core
 {
@@ -539,6 +540,21 @@ namespace XProxy.Core
                     _netManager.Connect(ServerInfo.ServerIp, ServerInfo.ServerPort, PreAuth.RawPreAuth);
                     break;
                 case ConnectionType.Simulated:
+                    if (ServerInfo.Simulation == "lobby")
+                    {
+                        if (ProxyService.Singleton._config.Value.AutoJoinQueueInLobby)
+                        {
+                            var targetServer = ProxyService.Singleton.GetFirstServerFromPriorities();
+
+                            if (targetServer != null)
+                            {
+                                ServerInfo = targetServer;
+                                Connection = new QueueConnection(this);
+                                break;
+                            }
+                        }
+                    }
+
                     if (ProxyServer.Simulations.TryGetValue(ServerInfo.Simulation, out Type simType))
                     {
                         Connection = (SimulatedConnection)Activator.CreateInstance(simType, args: this);

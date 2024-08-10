@@ -24,18 +24,6 @@ namespace XProxy.Core.Connections
 
         public LobbyConnection(Player plr) : base(plr)
         {
-            if (ProxyService.Singleton._config.Value.AutoJoinQueueInLobby)
-            {
-                var targetServer = ProxyService.Singleton.GetFirstServerFromPriorities();
-
-                if (targetServer != null)
-                {
-                    Player.ServerInfo = targetServer;
-                    Player.Connection = new QueueConnection(Player);
-                    return;
-                }
-            }
-
             Servers = ProxyService.Singleton.Servers.Keys.Where(x => x != plr.ServerInfo.ServerName).ToArray();
             SelectedServer = Servers[0];
         }
@@ -209,10 +197,10 @@ namespace XProxy.Core.Connections
         {
             if (key == 3034 || key == 53182)
                 return;
-
+                
             switch (key)
             {
-                case NoclipToggleId:
+                case NoclipToggleId when Servers != null && Servers.Length > 0:
                     CurrentIndex = Servers.Length == CurrentIndex + 1 ? 0 : CurrentIndex + 1;
                     SelectedServer = Servers[CurrentIndex];
                     SendInfoHint(2f);
