@@ -64,16 +64,21 @@ namespace XProxy.Core.Services
         {
             while (true)
             {
-                while(PlayersAddToQueue.Count > 0)
+                try
                 {
-                    if (PlayersAddToQueue.TryDequeue(out Player plr))
+                    while (PlayersAddToQueue.Count > 0)
                     {
-                        if (PlayersInQueue.ContainsKey(plr.ServerInfo))
-                            PlayersInQueue[plr.ServerInfo].Add(plr);
-                        else
-                            PlayersInQueue.TryAdd(plr.ServerInfo, new List<Player>() { plr });
+                        if (PlayersAddToQueue.TryDequeue(out Player plr))
+                        {
+                            if (PlayersInQueue.ContainsKey(plr.ServerInfo))
+                                PlayersInQueue[plr.ServerInfo].Add(plr);
+                            else
+                                PlayersInQueue.TryAdd(plr.ServerInfo, new List<Player>() { plr });
+                        }
                     }
+
                 }
+                catch (Exception) { }
 
                 await Task.Delay(10);
             }

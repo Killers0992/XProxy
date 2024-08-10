@@ -7,10 +7,11 @@ using CommandLine;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using XProxy.Core.Services;
 using XProxy.Services;
 using XProxy.Shared.Models;
 
-[assembly: AssemblyVersion("1.2.8")]
+[assembly: AssemblyVersion("1.2.9")]
 
 namespace XProxy
 {
@@ -72,6 +73,7 @@ namespace XProxy
             services.AddHostedService<ProxyService>();
             services.AddHostedService<PublicKeyService>();
             services.AddHostedService<ListService>();
+            services.AddHostedService<QueueService>();
             services.AddHostedService<ClientsUpdaterService>();
             services.AddSingleton<PluginsService>();
             services.AddHostedService<CommandsService>();

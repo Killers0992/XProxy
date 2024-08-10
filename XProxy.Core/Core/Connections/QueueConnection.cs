@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using XProxy.Core.Services;
 using XProxy.Enums;
 using XProxy.Models;
@@ -34,7 +35,8 @@ namespace XProxy.Core.Connections
 
             if (pos == -1)
             {
-                QueueService.PlayersAddToQueue.Enqueue(Player);
+                if (!QueueService.PlayersAddToQueue.Contains(Player))
+                    QueueService.PlayersAddToQueue.Enqueue(Player);
                 return;
             }
 
