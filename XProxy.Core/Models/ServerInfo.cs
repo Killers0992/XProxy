@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using XProxy.Core;
+using XProxy.Core.Services;
 using XProxy.Enums;
 using XProxy.Services;
 using XProxy.Shared.Enums;
@@ -29,7 +30,8 @@ namespace XProxy.Models
         public string ServerIp { get; }
         public string ServerPublicIp { get; }
         public int ServerPort { get; }
-        public int PlayersOnline => PlayersIds.Count;
+        public int PlayersOnline => Math.Clamp(PlayersIds.Count - PlayersInQueue, 0, int.MaxValue);
+        public int PlayersInQueue => QueueService.GetPlayersInQueueCount(this);
         public int MaxPlayers { get; }
         public ConnectionType ConnectionType { get; }
         public string Simulation { get; }
@@ -38,37 +40,10 @@ namespace XProxy.Models
 
         public List<int> PlayersIds = new List<int>();
         public List<Player> Players => ProxyService.Singleton.Players.Where(x => PlayersIds.Contains(x.Key)).Select(x => x.Value).ToList();
+
         public DateTime LastRespondTime { get; private set; } = DateTime.MinValue;
-        public List<string> PlayersInQueue = new List<string>();
 
         public bool IsServerFull => PlayersOnline >= MaxPlayers;
-
-        public void RemoveFromQueue(Player player)
-        {
-            PlayersInQueue.Remove(player.UserId);
-        }
-
-        public void AddToQueue(Player player)
-        {
-            if (!PlayersInQueue.Contains(player.UserId))
-                PlayersInQueue.Add(player.UserId);
-        }
-
-        public int GetPositionInQueue(Player player)
-        {
-            int position = 1;
-
-            var que = PlayersInQueue.ToArray();
-
-            for (int x = 0; x < que.Length; x++)
-            {
-                if (que[x] == player.UserId)
-                    return position;
-                position++;
-            }
-
-            return -1;
-        }
 
         public bool CanPlayerJoin(Player player)
         {
@@ -87,7 +62,6 @@ namespace XProxy.Models
         public void SetOffline() => LastRespondTime = DateTime.MinValue;
 
         public void SetOnline() => LastRespondTime = DateTime.Now;
-
 
         public override string ToString()
         {

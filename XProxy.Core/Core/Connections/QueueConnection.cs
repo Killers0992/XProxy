@@ -1,4 +1,5 @@
 ﻿using System;
+using XProxy.Core.Services;
 using XProxy.Enums;
 using XProxy.Models;
 using XProxy.Shared.Enums;
@@ -29,11 +30,11 @@ namespace XProxy.Core.Connections
 
         public override void Update()
         {
-            int pos = Player.ServerInfo.GetPositionInQueue(Player);
+            int pos = Player.PositionInQueue;
 
             if (pos == -1)
             {
-                Player.ServerInfo.AddToQueue(Player);
+                QueueService.PlayersAddToQueue.Enqueue(Player);
                 return;
             }
 
@@ -41,17 +42,16 @@ namespace XProxy.Core.Connections
             {
                 if (Player.ServerInfo.CanPlayerJoin(Player))
                 {
-                    Player.ServerInfo.RemoveFromQueue(Player);
                     Player.RedirectTo(Player.ServerInfo);
                 }
                 else
                 {
-                    Player.SendHint(Player.Proxy._config.Messages.FirstPositionInQueue.Replace("%position%", $"{pos}").Replace("%totalInQueue%", $"{Player.ServerInfo.PlayersInQueue.Count}"), 1);
+                    Player.SendHint(Player.Proxy._config.Messages.FirstPositionInQueue.Replace("%position%", $"{pos}").Replace("%totalInQueue%", $"{Player.ServerInfo.PlayersInQueue}"), 1);
                 }
             }
             else
             {
-                Player.SendHint(Player.Proxy._config.Messages.PositionInQueue.Replace("%position%", $"{pos}").Replace("%totalInQueue%", $"{Player.ServerInfo.PlayersInQueue.Count}"), 1);
+                Player.SendHint(Player.Proxy._config.Messages.PositionInQueue.Replace("%position%", $"{pos}").Replace("%totalInQueue%", $"{Player.ServerInfo.PlayersInQueue}"), 1);
             }
         }
 

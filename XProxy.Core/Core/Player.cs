@@ -16,6 +16,7 @@ using System.Linq;
 using XProxy.Shared.Enums;
 using static PlayerStatsSystem.SyncedStatMessages;
 using XProxy.Services;
+using XProxy.Core.Services;
 
 namespace XProxy.Core
 {
@@ -73,6 +74,8 @@ namespace XProxy.Core
         public bool IsConnectedToCurrentServer => _netManager != null && _netManager.FirstPeer != null;
         public bool ProcessMirrorMessagesFromProxy { get; set; }
         public bool ProcessMirrorMessagesFromCurrentServer { get; set; }
+        public bool IsInQueue => QueueService.IsPlayerInQueue(this);
+        public int PositionInQueue => QueueService.GetPositionInQueue(this);
         public ProxyServer Proxy { get; private set; }
         public PreAuthModel PreAuth { get; private set; }
         public BaseConnection Connection { get; set; }
@@ -614,6 +617,8 @@ namespace XProxy.Core
 
         internal void InternalDestroy()
         {
+            QueueService.PlayerLeft(this);
+
             InternalDestroyNetwork();
 
             ServerInfo.PlayersIds.Remove(Id);
