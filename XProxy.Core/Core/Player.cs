@@ -52,9 +52,10 @@ namespace XProxy.Core
 
         private DateTime _nextUpdate = DateTime.Now;
 
-        public Player(ProxyServer proxy)
+        public Player(ProxyServer proxy, PreAuthModel preAuth)
         {
             Proxy = proxy;
+            PreAuth = preAuth;
         }
 
         public int Id { get; private set; } = -1;
@@ -514,9 +515,8 @@ namespace XProxy.Core
                 Connection.OnReceiveDataFromProxy(reader, method);
         }
 
-        internal void InternalSetup(ConnectionRequest request, PreAuthModel preAuth, ServerInfo info)
+        internal void InternalSetup(ConnectionRequest request, ServerInfo info)
         {
-            PreAuth = preAuth;
             ServerInfo = info;
 
             _connectionRequest = request;

@@ -263,7 +263,7 @@ namespace XProxy
             if (ev.IsCancelled)
                 return;
 
-            Player player = new Player(this);
+            Player player = new Player(this, preAuth);
 
             ServerInfo target;
             if (HasSavedLastServer(preAuth.UserID))
@@ -285,7 +285,7 @@ namespace XProxy
             if (target.SendIpAddressInPreAuth)
                 preAuth.RawPreAuth.Put(ip);
 
-            player.InternalSetup(request, preAuth, target);
+            player.InternalSetup(request, target);
             player.InternalConnect();
         }
 
