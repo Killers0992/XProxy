@@ -313,11 +313,21 @@ namespace XProxy.Services
 
                     string str = JsonConvert.SerializeObject(new AuthPlayersModel() { Players = list.ToArray() });
 
+                    var serverWithUseSlots = _config.Value.Servers.FirstOrDefault(x => x.Value.UseSlotsForServerListPlayersCount);
+
+                    string playersStr = $"{ProxyService.Singleton.Players.Count}/{_config.Value.MaxPlayers}";
+
+                    if (serverWithUseSlots.Value != null)
+                    {
+                        var targetServer = ProxyService.Singleton.GetServerByName(serverWithUseSlots.Key);
+                        playersStr = $"{targetServer.PlayersOnline}/{targetServer.MaxPlayers}";
+                    }
+
                     Dictionary<string, string> upd = Update ?
                         new Dictionary<string, string>()
                         {
                             { "ip", PublicIp },
-                            { "players", $"{ProxyService.Singleton.Players.Count}/{_config.Value.MaxPlayers}" },
+                            { "players", playersStr },
                             { "playersList", _verificationPlayersList },
                             { "newPlayers", str },
                             { "port", $"{_config.Value.Port}" },
@@ -342,7 +352,7 @@ namespace XProxy.Services
                         new Dictionary<string, string>()
                         {
                             { "ip", PublicIp },
-                            { "players", $"{ProxyService.Singleton.Players.Count}/{_config.Value.MaxPlayers}" },
+                            { "players", playersStr },
                             { "newPlayers", str },
                             { "port", $"{_config.Value.Port}" },
                             { "version", "2" },

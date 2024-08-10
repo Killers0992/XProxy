@@ -78,6 +78,9 @@ namespace XProxy.Models
             if (player.PreAuth.Flags.HasFlagFast(CentralAuthPreauthFlags.ReservedSlot))
                 return true;
 
+            if (player.PreAuth.Flags.HasFlagFast(CentralAuthPreauthFlags.NorthwoodStaff) && ConfigService.Instance.Value.NorthwoodStaffIgnoresSlots)
+                return true;
+
             return !IsServerFull;
         }
 

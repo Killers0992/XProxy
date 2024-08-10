@@ -50,7 +50,7 @@ namespace XProxy.Commands
             sb.AppendLine("Servers:");
             foreach (var server in ProxyService.Singleton.Servers)
             {
-                sb.AppendLine($" - (f=cyan){server.Value.ServerName}(f=white) [ (f=green){server.Value.PlayersOnline}(f=white) ] ((f=darkcyan){server.Value}(f=white))");
+                sb.AppendLine($" - (f=cyan){server.Value.ServerName}(f=white) [ (f=green){server.Value.PlayersOnline}/{server.Value.MaxPlayers}(f=white) ] ((f=darkcyan){server.Value}(f=white))");
             }
             Logger.Info(sb.ToString(), "servers");
         }
@@ -62,13 +62,13 @@ namespace XProxy.Commands
             sb.AppendLine("Players on servers:");
             foreach(var server in ProxyService.Singleton.Servers)
             {
-                sb.AppendLine($" - Server (f=cyan){server.Value.ServerName}(f=white) [ (f=green){server.Value.PlayersOnline}(f=white) ] ((f=darkcyan){server.Value}(f=white))");
+                sb.AppendLine($" - Server (f=cyan){server.Value.ServerName}(f=white) [ (f=green){server.Value.PlayersOnline}/{server.Value.MaxPlayers}(f=white) ] ((f=darkcyan){server.Value}(f=white))");
                 foreach(var player in server.Value.Players)
                 {
                     sb.AppendLine($"  -  [(f=green){player.Id}(f=white)] (f=cyan){player.UserId}(f=white) connection time (f=darkcyan){player.Connectiontime.ToReadableString()}(f=white)");
                 }
             }
-            sb.AppendLine($" Total online players (f=green){ProxyService.Singleton.Players.Count}(f=white)!");
+            sb.AppendLine($" Total online players (f=green){ProxyService.Singleton.Players.Count}/{service.Config.Value.MaxPlayers}(f=white)!");
             Logger.Info(sb.ToString(), "players");
         }
 

@@ -55,7 +55,6 @@ namespace XProxy
                     MessageIdToName.Add(key, message.FullName);
             }
 
-
             _config = config;
             RefreshServers();
 
@@ -113,13 +112,13 @@ namespace XProxy
             return null;
         }
 
-        public ServerInfo GetRandomServerFromPriorities()
+        public ServerInfo GetRandomServerFromPriorities(Player plr = null)
         {
             ServerInfo random = Servers
                     .Where(x => _config.Value.Priorities.Contains(x.Key))
                     .OrderBy(pair => _config.Value.Priorities.IndexOf(pair.Key))
                     .Select(pair => pair.Value)
-                    .Where(x => !x.IsServerFull)
+                    .Where(x => plr != null ? x.CanPlayerJoin(plr) : !x.IsServerFull)
                     .ToList()
                     .FirstOrDefault();
 
@@ -171,7 +170,21 @@ namespace XProxy
 
         public void RefreshServers()
         {
-            Servers = _config.Value.Servers.ToDictionary(x => x.Key, a => new ServerInfo(a.Key, a.Value.Name, a.Value.PublicIp, a.Value.Ip, a.Value.Port, a.Value.MaxPlayers, a.Value.SendIpAddressInPreAuth, a.Value.ConnectionType, a.Value.Simulation));
+            Servers = _config.Value.Servers.ToDictionary(
+                x => 
+                    x.Key, 
+                a => 
+                    new ServerInfo(
+                        a.Key, 
+                        a.Value.Name, 
+                        a.Value.PublicIp, 
+                        a.Value.Ip, 
+                        a.Value.Port, 
+                        a.Value.MaxPlayers, 
+                        a.Value.SendIpAddressInPreAuth, 
+                        a.Value.ConnectionType, 
+                        a.Value.Simulation
+                    ));
         }
 
         public async Task Run()
