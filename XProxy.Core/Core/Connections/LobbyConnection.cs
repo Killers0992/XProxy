@@ -24,6 +24,18 @@ namespace XProxy.Core.Connections
 
         public LobbyConnection(Player plr) : base(plr)
         {
+            if (ProxyService.Singleton._config.Value.AutoJoinQueueInLobby)
+            {
+                var targetServer = ProxyService.Singleton.GetFirstServerFromPriorities();
+
+                if (targetServer != null)
+                {
+                    Player.ServerInfo = targetServer;
+                    Player.Connection = new QueueConnection(Player);
+                    return;
+                }
+            }
+
             Servers = ProxyService.Singleton.Servers.Keys.Where(x => x != plr.ServerInfo.ServerName).ToArray();
             SelectedServer = Servers[0];
         }

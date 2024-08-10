@@ -112,6 +112,18 @@ namespace XProxy
             return null;
         }
 
+        public ServerInfo GetFirstServerFromPriorities()
+        {
+            ServerInfo first = Servers
+                    .Where(x => _config.Value.Priorities.Contains(x.Key))
+                    .OrderBy(pair => _config.Value.Priorities.IndexOf(pair.Key))
+                    .Select(pair => pair.Value)
+                    .ToList()
+                    .FirstOrDefault();
+
+            return first;
+        }
+
         public ServerInfo GetRandomServerFromPriorities(Player plr = null)
         {
             ServerInfo random = Servers
@@ -257,7 +269,7 @@ namespace XProxy
             if (HasSavedLastServer(preAuth.UserID))
                 target = GetSavedLastServerAndClear(preAuth.UserID);
             else
-                target = GetRandomServerFromPriorities();
+                target = GetRandomServerFromPriorities(player);
 
             if (target == null)
             {

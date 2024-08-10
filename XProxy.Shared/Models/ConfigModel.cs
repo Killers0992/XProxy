@@ -1,6 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel;
+﻿using System.ComponentModel;
 using XProxy.Shared.Enums;
 using YamlDotNet.Serialization;
 
@@ -100,6 +98,10 @@ namespace XProxy.Shared.Models
         public string MaintenanceServerName { get; set; } = 
 @" Example server name - Maintenance
   Proxy Server";
+
+        [Description("Player will be added to queue for first server from priorities if its full.")]
+        public bool AutoJoinQueueInLobby { get; set; } = false;
+
         [Description("Auto updates proxy if needed.")]
         public bool AutoUpdater { get; set; } = true;
     }
