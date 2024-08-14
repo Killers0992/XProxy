@@ -2,19 +2,15 @@
 using Newtonsoft.Json;
 using System;
 using System.Buffers;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using static Org.BouncyCastle.Math.EC.ECCurve;
 using XProxy.Cryptography;
 using System.IO;
 using XProxy.Models;
-using System.Drawing;
-using static System.Net.Mime.MediaTypeNames;
 using XProxy.Shared.Models;
 
 namespace XProxy.Services
@@ -28,7 +24,6 @@ namespace XProxy.Services
             _config = config;
         }
 
-        public static bool Disposing;
         public static HttpClient Client;
 
         public static string PublicIp;
@@ -86,13 +81,20 @@ namespace XProxy.Services
         public async Task<bool> SendData(Dictionary<string, string> data)
         {
             FormUrlEncodedContent content = new FormUrlEncodedContent(data);
-            using (var response = await Client.PostAsync("https://api.scpslgame.com/v4/authenticator.php", content))
+
+            try
             {
-                string str = await response.Content.ReadAsStringAsync();
+                using (var response = await Client.PostAsync("https://api.scpslgame.com/v4/authenticator.php", content))
+                {
+                    string str = await response.Content.ReadAsStringAsync();
 
-                Logger.Debug($"Send\n{str}", "ListService");
-
-                return (str.StartsWith("{\"") ? await ProcessResponse(str) : await ProcessLegacyResponse(str));
+                    return (str.StartsWith("{\"") ? await ProcessResponse(str) : await ProcessLegacyResponse(str));
+                }
+            }
+            catch(Exception ex)
+            {
+                Logger.Error(ex, "ListService");
+                return false;
             }
         }
 
@@ -144,9 +146,9 @@ namespace XProxy.Services
                 Update = true;
                 ScheduleTokenRefresh = true;
             }
-            catch (Exception ex2)
+            catch (Exception ex)
             {
-                Logger.Error(_config.Messages.TokenFailedToSaveMessage.Replace("%error%", ex2.Message), $"ListService");
+                Logger.Error(_config.Messages.TokenFailedToSaveMessage.Replace("%error%", ex.Message), $"ListService");
             }
         }
 
@@ -245,43 +247,65 @@ namespace XProxy.Services
             if (!string.IsNullOrEmpty(Password))
                 data.Add("passcode", Password);
 
-            using (var response = await Client.PostAsync("https://api.scpslgame.com/v4/contactaddress.php", new FormUrlEncodedContent(data)))
+            try
             {
-                string text = await response.Content.ReadAsStringAsync();
-                Console.WriteLine(text);
+                using (var response = await Client.PostAsync("https://api.scpslgame.com/v4/contactaddress.php", new FormUrlEncodedContent(data)))
+                {
+                    string text = await response.Content.ReadAsStringAsync();
+                    Console.WriteLine(text);
+                }
+            }
+            catch(Exception ex)
+            {
+                Logger.Error(ex, "ListService");
             }
         }
 
         public async Task RefreshPublicKeyOnce()
         {
-            using (var response = await Client.GetAsync("https://api.scpslgame.com/v4/publickey.php"))
+            try
             {
-                string text = await response.Content.ReadAsStringAsync();
+                using (var response = await Client.GetAsync("https://api.scpslgame.com/v4/publickey.php"))
+                {
+                    string text = await response.Content.ReadAsStringAsync();
 
-                PublicKeyResponseModel publicKeyResponse = JsonConvert.DeserializeObject<PublicKeyResponseModel>(text);
-                if (!ECDSA.Verify(publicKeyResponse.Key, publicKeyResponse.Signature, CentralServerKeyCache.MasterKey))
-                {
-                    Logger.Error(_config.Messages.CantRefreshPublicKeyMessage, $"ListService");
+                    PublicKeyResponseModel publicKeyResponse = JsonConvert.DeserializeObject<PublicKeyResponseModel>(text);
+                    if (!ECDSA.Verify(publicKeyResponse.Key, publicKeyResponse.Signature, CentralServerKeyCache.MasterKey))
+                    {
+                        Logger.Error(_config.Messages.CantRefreshPublicKeyMessage, $"ListService");
+                    }
+                    else
+                    {
+                        PublicKeyService.PublicKey = ECDSA.PublicKeyFromString(publicKeyResponse.Key);
+                        Logger.Debug(_config.Messages.ObtainedPublicKeyMessage, $"ListService");
+                        CentralServerKeyCache.SaveCache(publicKeyResponse.Key, publicKeyResponse.Signature);
+                    }
                 }
-                else
-                {
-                    PublicKeyService.PublicKey = ECDSA.PublicKeyFromString(publicKeyResponse.Key);
-                    Logger.Debug(_config.Messages.ObtainedPublicKeyMessage, $"ListService");
-                    CentralServerKeyCache.SaveCache(publicKeyResponse.Key, publicKeyResponse.Signature);
-                }
+            }
+            catch(Exception ex)
+            {
+                Logger.Error(ex, "ListService");
             }
         }
 
 
         public async Task<string> GetPublicIp()
         {
-            using (var response = await Client.GetAsync("https://api.scpslgame.com/ip.php"))
+            try
             {
-                string str = await response.Content.ReadAsStringAsync();
+                using (var response = await Client.GetAsync("https://api.scpslgame.com/ip.php"))
+                {
+                    string str = await response.Content.ReadAsStringAsync();
 
-                str = (str.EndsWith(".") ? str.Remove(str.Length - 1) : str);
+                    str = (str.EndsWith(".") ? str.Remove(str.Length - 1) : str);
 
-                return str;
+                    return str;
+                }
+            }
+            catch(Exception ex)
+            {
+                Logger.Error(ex, "ListService");
+                return null;
             }
         }
 
@@ -300,7 +324,7 @@ namespace XProxy.Services
 
             RefreshToken(true);
 
-            while (!Disposing)
+            while (!stoppingToken.IsCancellationRequested)
             {
                 try
                 {
@@ -315,8 +339,6 @@ namespace XProxy.Services
 
                 if (ScheduleTokenRefresh || cycle == 0) RefreshToken();
             }
-
-            Logger.Error("ListService disposed", "ListService");
         }
 
         async Task DoCycle()
@@ -324,7 +346,6 @@ namespace XProxy.Services
             cycle += 1;
             if (!init && string.IsNullOrEmpty(Password) && cycle < 15)
             {
-                Logger.Debug($"Cycle {cycle}", "ListService");
                 if (cycle == 5 || cycle == 12 || ScheduleTokenRefresh)
                 {
                     RefreshToken(false);
@@ -350,29 +371,28 @@ namespace XProxy.Services
                 Dictionary<string, string> upd = Update ?
                     new Dictionary<string, string>()
                     {
-                            { "ip", PublicIp },
-                            { "players", playersStr },
-                            { "playersList", _verificationPlayersList },
-                            { "newPlayers", str },
-                            { "port", $"{_config.Value.Port}" },
-                            { "pastebin", _config.Value.Pastebin },
-                            { "gameVersion", ConfigModel.GameVersion },
-                            { "version", "2" },
-                            { "update", "1" },
-                            { "info", Base64Encode((_config.Value.MaintenanceMode ? _config.Value.MaintenanceServerName : _config.Value.ServerName).Replace('+', '-') + $"<color=#00000000><size=1>XProxy {ProxyBuildInfo.ReleaseInfo.Version}</size></color>") },
-                            { "privateBeta", "false" },
-                            { "staffRA", "false" },
-                            { "friendlyFire", "false" },
-                            { "geoblocking", $"{(byte)0}" },
-                            { "modded", "true" },
-                            { "cgs", "true" },
-                            { "whitelist", "false" },
-                            { "accessRestriction", "false" },
-                            { "emailSet", "true" },
-                            { "enforceSameIp", "true" },
-                            { "enforceSameAsn", "true" }
-                    }
-                    :
+                        { "ip", PublicIp },
+                        { "players", playersStr },
+                        { "playersList", _verificationPlayersList },
+                        { "newPlayers", str },
+                        { "port", $"{_config.Value.Port}" },
+                        { "pastebin", _config.Value.Pastebin },
+                        { "gameVersion", ConfigModel.GameVersion },
+                        { "version", "2" },
+                        { "update", "1" },
+                        { "info", Base64Encode((_config.Value.MaintenanceMode ? _config.Value.MaintenanceServerName : _config.Value.ServerName).Replace('+', '-') + $"<color=#00000000><size=1>XProxy {ProxyBuildInfo.ReleaseInfo.Version}</size></color>") },
+                        { "privateBeta", "false" },
+                        { "staffRA", "false" },
+                        { "friendlyFire", "false" },
+                        { "geoblocking", $"{(byte)0}" },
+                        { "modded", "true" },
+                        { "cgs", "true" },
+                        { "whitelist", "false" },
+                        { "accessRestriction", "false" },
+                        { "emailSet", "true" },
+                        { "enforceSameIp", "true" },
+                        { "enforceSameAsn", "true" }
+                    } :
                     new Dictionary<string, string>()
                     {
                             { "ip", PublicIp },
@@ -389,11 +409,7 @@ namespace XProxy.Services
 
                 Update = false;
 
-                Logger.Debug($"Send update data", "ListService");
-
                 bool result = await SendData(upd);
-
-                Logger.Debug($"Result {result}", "ListService");
 
                 if (result && !_verifyNotice)
                 {
