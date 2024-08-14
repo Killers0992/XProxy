@@ -54,6 +54,7 @@ namespace XProxy.Services
 
         public void RefreshToken(bool init = false)
         {
+            Logger.Debug("Refresh Token");
             ScheduleTokenRefresh = false;
 
             if (!File.Exists(Path.Combine(ConfigService.MainDirectory, "verkey.txt")))
@@ -88,6 +89,8 @@ namespace XProxy.Services
             using (var response = await Client.PostAsync("https://api.scpslgame.com/v4/authenticator.php", content))
             {
                 string str = await response.Content.ReadAsStringAsync();
+
+                Logger.Debug($"Send\n{str}", "ListService");
 
                 return (str.StartsWith("{\"") ? await ProcessResponse(str) : await ProcessLegacyResponse(str));
             }
@@ -302,7 +305,11 @@ namespace XProxy.Services
                 cycle += 1;
                 if (!init && string.IsNullOrEmpty(Password) && cycle < 15)
                 {
-                    if (cycle == 5 || cycle == 12 || ScheduleTokenRefresh) RefreshToken(false);
+                    Logger.Debug($"Cycle {cycle}", "ListService");
+                    if (cycle == 5 || cycle == 12 || ScheduleTokenRefresh)
+                    {
+                        RefreshToken(false);
+                    }
                 }
                 else
                 {
@@ -365,7 +372,11 @@ namespace XProxy.Services
 
                     Update = false;
 
+                    Logger.Debug($"Send update data", "ListService");
+
                     bool result = await SendData(upd);
+
+                    Logger.Debug($"Result {result}", "ListService");
 
                     if (result && !_verifyNotice)
                     {

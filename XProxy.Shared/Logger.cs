@@ -9,6 +9,8 @@ namespace XProxy.Shared
         public static bool AnsiDisabled { get; set; }
         public static bool DebugMode { get; set; }
 
+        public static DateTime SessionTime = DateTime.Now;
+
         static string TimeString => DateTime.Now.TimeOfDay
             .ToString("hh\\:mm\\:ss")
             .ToString();
@@ -22,15 +24,27 @@ namespace XProxy.Shared
                 WriteLine($" (f=darkgray){TimeString}(f=white) [(f=yellow)DEBUG(f=white)] {(tag != null ? $"[(f=magenta){tag}(f=white)] " : string.Empty)}(f=yellow){message}");
         }
 
-        static void WriteLine(object message) => Console.WriteLine(FormatAnsi(message));
+        static void WriteLogToFile(object message)
+        {
+            if (!Directory.Exists("logs"))
+                Directory.CreateDirectory("logs");
 
-        static string FormatAnsi(object message)
+            File.AppendAllLines($"logs/log_{SessionTime.ToString("dd_MM_yyyy_hh_mm_ss")}.txt", new string[1] { message.ToString() });
+        }
+
+        static void WriteLine(object message)
+        {
+            WriteLogToFile(FormatAnsi(message, true));
+            Console.WriteLine(FormatAnsi(message));
+        }
+
+        static string FormatAnsi(object message, bool forceRemove = false)
         {
             string text = message.ToString();
 
             return Regex.Replace(text, @"\(f=(.*?)\)", ev =>
             {
-                if (AnsiDisabled)
+                if (AnsiDisabled || forceRemove)
                     return string.Empty;
 
                 string color = ev.Groups[1].Value.ToLower();

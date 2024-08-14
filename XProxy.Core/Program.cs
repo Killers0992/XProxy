@@ -1,5 +1,4 @@
 ﻿using System;
-using System.IO;
 using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
@@ -11,7 +10,7 @@ using XProxy.Core.Services;
 using XProxy.Services;
 using XProxy.Shared.Models;
 
-[assembly: AssemblyVersion("1.3.0")]
+[assembly: AssemblyVersion("1.3.1")]
 
 namespace XProxy
 {
@@ -45,6 +44,10 @@ namespace XProxy
                     ConfigModel.GameVersion = o.GameVersion.Trim();
             });
 
+#if DEBUG
+            ConfigModel.GameVersion = "13.5.1";
+#endif
+
             if (string.IsNullOrEmpty(ConfigModel.GameVersion))
             {
                 Logger.Info("Game version provided in commandline is empty!");
@@ -75,6 +78,7 @@ namespace XProxy
             services.AddHostedService<ListService>();
             services.AddHostedService<QueueService>();
             services.AddHostedService<ClientsUpdaterService>();
+            services.AddHostedService<CleanupService>();
             services.AddSingleton<PluginsService>();
             services.AddHostedService<CommandsService>();
         }

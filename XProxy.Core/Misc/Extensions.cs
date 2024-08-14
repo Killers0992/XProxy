@@ -2,11 +2,6 @@
 using LiteNetLib.Utils;
 using Mirror;
 using System;
-using System.IO;
-using System.Net.Http;
-using System.Threading.Tasks;
-using System.Threading;
-using XProxy;
 using XProxy.Core.Events;
 using static XProxy.Core.Events.EventManager;
 

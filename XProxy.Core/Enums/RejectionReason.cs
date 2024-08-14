@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace XProxy.Enums
+﻿namespace XProxy.Enums
 {
 	public enum RejectionReason : byte
 	{

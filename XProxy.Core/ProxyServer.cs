@@ -29,7 +29,7 @@ namespace XProxy
         public ConcurrentDictionary<int, Player> Players { get; private set; } = new ConcurrentDictionary<int, Player>();
         public Dictionary<string, ServerInfo> Servers { get; private set; } = new Dictionary<string, ServerInfo>();
 
-        public Dictionary<string, LastServerInfo> ForceServerForUserID { get; set; } = new Dictionary<string, LastServerInfo>();
+        public static ConcurrentDictionary<string, LastServerInfo> ForceServerForUserID { get; set; } = new ConcurrentDictionary<string, LastServerInfo>();
 
         public static Dictionary<uint, string> MessageIdToName = new Dictionary<uint, string>();
 
@@ -151,12 +151,12 @@ namespace XProxy
             if (ForceServerForUserID.ContainsKey(userid))
                 ForceServerForUserID[userid] = newInfo;
             else
-                ForceServerForUserID.Add(userid, newInfo);
+                ForceServerForUserID.TryAdd(userid, newInfo);
         }
 
         public void ClearSavedLastServer(string userid)
         {
-            ForceServerForUserID.Remove(userid);
+            ForceServerForUserID.Remove(userid, out LastServerInfo _);
         }
 
         public bool HasSavedLastServer(string userId)
@@ -225,7 +225,12 @@ namespace XProxy
         {
             string failed = string.Empty;
             string ip = $"{request.RemoteEndPoint.Address}";
+
+            Logger.Debug($"[{request.RemoteEndPoint.Address}] Connection request, read preAuth...");
+
             var preAuth = PreAuthModel.ReadPreAuth(ip, request.Data, ref failed);
+
+            Logger.Debug($"[{request.RemoteEndPoint.Address}] Connection request, preAuth\n{preAuth}");
 
             if (!preAuth.IsValid)
             {
@@ -266,7 +271,11 @@ namespace XProxy
             if (ev.IsCancelled)
                 return;
 
+            Logger.Debug($"[{request.RemoteEndPoint.Address}] Create player");
+
             Player player = new Player(this, preAuth);
+
+            Logger.Debug($"[{request.RemoteEndPoint.Address}] Get last server");
 
             ServerInfo target;
             if (HasSavedLastServer(preAuth.UserID))
@@ -287,6 +296,8 @@ namespace XProxy
 
             if (target.SendIpAddressInPreAuth)
                 preAuth.RawPreAuth.Put(ip);
+
+            Logger.Debug($"[{request.RemoteEndPoint.Address}] Internal setup -> connect");
 
             player.InternalSetup(request, target);
             player.InternalConnect();
