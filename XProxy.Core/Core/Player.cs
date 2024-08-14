@@ -86,7 +86,7 @@ namespace XProxy.Core
         public CustomUnbatcher UnbatcherCurrentServer { get; private set; } = new CustomUnbatcher();
         public CustomUnbatcher UnbatcherProxy { get; private set; } = new CustomUnbatcher();
 
-        public Batcher Batcher { get; private set; } = new Batcher(65535 * (NetConstants.MaxPacketSize - 6));
+        public CustomBatcher Batcher { get; private set; } = new CustomBatcher(65535 * (NetConstants.MaxPacketSize - 6));
 
         public IPEndPoint ClientEndPoint => _connectionRequest != null ? _connectionRequest.RemoteEndPoint : _proxyPeer.EndPoint;
 

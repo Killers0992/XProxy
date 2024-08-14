@@ -63,7 +63,7 @@ namespace XProxy.Commands
             foreach(var server in ProxyService.Singleton.Servers)
             {
                 sb.AppendLine($" - Server (f=cyan){server.Value.ServerName}(f=white) [ (f=green){server.Value.PlayersOnline}/{server.Value.MaxPlayers}(f=white) ] ((f=darkcyan){server.Value}(f=white)){(server.Value.PlayersInQueue > 0 ? $" [ in queue (f=green){server.Value.PlayersInQueue}(f=white) ]" : string.Empty)}");
-                foreach(var player in server.Value.Players.OrderBy(x => x.IsInQueue))
+                foreach(var player in server.Value.Players.OrderBy(x => x.IsInQueue).OrderBy(x => x.PositionInQueue))
                 {
                     sb.AppendLine($"  - {(player.IsInQueue ? $"[(f=red)Queue (f=white) (f=green){player.PositionInQueue}(f=white)/(f=yellow){player.ServerInfo.PlayersInQueue}(f=white)] " : string.Empty)}[(f=green){player.Id}(f=white)] (f=cyan){player.UserId}(f=white) connection time (f=darkcyan){player.Connectiontime.ToReadableString()}(f=white)");
                 }
