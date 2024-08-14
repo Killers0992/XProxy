@@ -10,6 +10,6 @@ namespace XProxy.Models
     public class AuthPlayersModel
     {
         [JsonPropertyName("objects")]
-        public AuthPlayerModel[] Players { get; set; }
+        public AuthPlayerModel[] Players { get; set; } = new AuthPlayerModel[0];
     }
 }

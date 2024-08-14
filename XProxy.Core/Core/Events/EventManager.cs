@@ -1,4 +1,5 @@
-﻿using XProxy.Core.Events.Args;
+﻿using XProxy.Core.Core.Events.Args;
+using XProxy.Core.Events.Args;
 using static XProxy.Core.Events.EventManager;
 
 namespace XProxy.Core.Events
@@ -15,6 +16,9 @@ namespace XProxy.Core.Events
     {
         public event CustomEventHandler<ProxyConnectionRequest> ConnectionRequest;
         public void InvokeConnectionRequest(ProxyConnectionRequest ev) => ConnectionRequest?.InvokeWithExceptionHandler(ev);
+
+        public event CustomEventHandler<ProxyStartedListening> StartedListening;
+        public void InvokeStartedListening(ProxyStartedListening ev) => StartedListening?.InvokeWithExceptionHandler(ev);
     }
 
     public class PlayerEvents

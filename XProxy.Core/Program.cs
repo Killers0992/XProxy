@@ -72,14 +72,13 @@ namespace XProxy
 
         static void SetupServices(IServiceCollection services)
         {
-            services.AddSingleton<ConfigService>(); 
+            services.AddSingleton<ConfigService>();
             services.AddHostedService<ProxyService>();
             services.AddHostedService<PublicKeyService>();
             services.AddHostedService<ListService>();
             services.AddHostedService<QueueService>();
             services.AddHostedService<ClientsUpdaterService>();
             services.AddHostedService<CleanupService>();
-            services.AddSingleton<PluginsService>();
             services.AddHostedService<CommandsService>();
         }
 

@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using XProxy.Core;
 using XProxy.Core.Services;
-using XProxy.Enums;
 using XProxy.Services;
 using XProxy.Shared.Enums;
 

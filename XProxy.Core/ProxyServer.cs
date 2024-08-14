@@ -8,6 +8,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using XProxy.Core;
 using XProxy.Core.Connections;
+using XProxy.Core.Core.Events.Args;
 using XProxy.Core.Events;
 using XProxy.Core.Events.Args;
 using XProxy.Models;
@@ -71,6 +72,8 @@ namespace XProxy
             _manager.ReconnectDelay = 400;
             _manager.MaxConnectAttempts = 2;
             _manager.Start(_config.Value.Port);
+
+            EventManager.Proxy.InvokeStartedListening(new ProxyStartedListening(this, _config.Value.Port));
 
             Logger.Info($"{_config.Messages.ProxyStartedListeningMessage.Replace("%port%", $"{Port}").Replace("%version%", ConfigModel.GameVersion)}", $"XProxy");
             Logger.Info("");

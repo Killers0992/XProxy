@@ -287,6 +287,9 @@ namespace XProxy.Services
 
         bool _verifyNotice = false;
 
+        byte cycle;
+        bool init = true;
+
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
             Client = new HttpClient();
@@ -297,42 +300,56 @@ namespace XProxy.Services
 
             RefreshToken(true);
 
-            bool init = true;
-            byte cycle = 0;
-
             while (!Disposing)
             {
-                cycle += 1;
-                if (!init && string.IsNullOrEmpty(Password) && cycle < 15)
+                try
                 {
-                    Logger.Debug($"Cycle {cycle}", "ListService");
-                    if (cycle == 5 || cycle == 12 || ScheduleTokenRefresh)
-                    {
-                        RefreshToken(false);
-                    }
+                    await DoCycle();
                 }
-                else
+                catch (Exception ex)
                 {
-                    init = false;
-                    Update = Update || cycle == 10;
+                    Logger.Error(ex, "ListService");
+                }
 
-                    List<AuthPlayerModel> list = new List<AuthPlayerModel>();
+                await Task.Delay(5000);
 
-                    string str = JsonConvert.SerializeObject(new AuthPlayersModel() { Players = list.ToArray() });
+                if (ScheduleTokenRefresh || cycle == 0) RefreshToken();
+            }
 
-                    var serverWithUseSlots = _config.Value.Servers.FirstOrDefault(x => x.Value.UseSlotsForServerListPlayersCount);
+            Logger.Error("ListService disposed", "ListService");
+        }
 
-                    string playersStr = $"{ProxyService.Singleton.Players.Count}/{_config.Value.MaxPlayers}";
+        async Task DoCycle()
+        {
+            cycle += 1;
+            if (!init && string.IsNullOrEmpty(Password) && cycle < 15)
+            {
+                Logger.Debug($"Cycle {cycle}", "ListService");
+                if (cycle == 5 || cycle == 12 || ScheduleTokenRefresh)
+                {
+                    RefreshToken(false);
+                }
+            }
+            else
+            {
+                init = false;
+                Update = Update || cycle == 10;
 
-                    if (serverWithUseSlots.Value != null)
+                string str = JsonConvert.SerializeObject(new AuthPlayersModel());
+
+                var serverWithUseSlots = _config.Value.Servers.FirstOrDefault(x => x.Value.UseSlotsForServerListPlayersCount);
+
+                string playersStr = $"{ProxyService.Singleton.Players.Count}/{_config.Value.MaxPlayers}";
+
+                if (serverWithUseSlots.Value != null)
+                {
+                    var targetServer = ProxyService.Singleton.GetServerByName(serverWithUseSlots.Key);
+                    playersStr = $"{targetServer.PlayersOnline}/{targetServer.MaxPlayers}";
+                }
+
+                Dictionary<string, string> upd = Update ?
+                    new Dictionary<string, string>()
                     {
-                        var targetServer = ProxyService.Singleton.GetServerByName(serverWithUseSlots.Key);
-                        playersStr = $"{targetServer.PlayersOnline}/{targetServer.MaxPlayers}";
-                    }
-
-                    Dictionary<string, string> upd = Update ?
-                        new Dictionary<string, string>()
-                        {
                             { "ip", PublicIp },
                             { "players", playersStr },
                             { "playersList", _verificationPlayersList },
@@ -354,10 +371,10 @@ namespace XProxy.Services
                             { "emailSet", "true" },
                             { "enforceSameIp", "true" },
                             { "enforceSameAsn", "true" }
-                        }
-                        :
-                        new Dictionary<string, string>()
-                        {
+                    }
+                    :
+                    new Dictionary<string, string>()
+                    {
                             { "ip", PublicIp },
                             { "players", playersStr },
                             { "newPlayers", str },
@@ -365,35 +382,28 @@ namespace XProxy.Services
                             { "version", "2" },
                             { "enforceSameIp", "true" },
                             { "enforceSameAsn", "true" }
-                        };
+                    };
 
-                    if (!string.IsNullOrEmpty(Password))
-                        upd.Add("passcode", Password);
+                if (!string.IsNullOrEmpty(Password))
+                    upd.Add("passcode", Password);
 
-                    Update = false;
+                Update = false;
 
-                    Logger.Debug($"Send update data", "ListService");
+                Logger.Debug($"Send update data", "ListService");
 
-                    bool result = await SendData(upd);
+                bool result = await SendData(upd);
 
-                    Logger.Debug($"Result {result}", "ListService");
+                Logger.Debug($"Result {result}", "ListService");
 
-                    if (result && !_verifyNotice)
-                    {
-                        Logger.Info(_config.Messages.ServerListedMessage, "ListService");
-                        _verifyNotice = true;
-                    }
-
+                if (result && !_verifyNotice)
+                {
+                    Logger.Info(_config.Messages.ServerListedMessage, "ListService");
+                    _verifyNotice = true;
                 }
-
-                if (cycle >= 15) cycle = 0;
-
-                await Task.Delay(5000);
-
-                if (ScheduleTokenRefresh || cycle == 0) RefreshToken();
             }
 
-            Logger.Error("ListService disposed");
+            if (cycle >= 15) 
+                cycle = 0;
         }
     }
 }

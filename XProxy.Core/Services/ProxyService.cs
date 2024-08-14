@@ -1,5 +1,4 @@
 ﻿using Microsoft.Extensions.Hosting;
-using System;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -11,9 +10,12 @@ namespace XProxy.Services
 
         private ConfigService _config;
 
+        private PluginsService _plugins;
+
         public ProxyService(ConfigService config)
         {
             _config = config;
+            _plugins = new PluginsService();
             Singleton = new ProxyServer(_config);
         }
 
