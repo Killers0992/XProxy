@@ -623,7 +623,7 @@ namespace XProxy.Core
             if (PositionInQueue != -1)
             {
                 if (!QueueService.PlayersInQueueDict.ContainsKey(this.UserId))
-                    QueueService.PlayerLeft(this);
+                    QueueService.RemoveFromQueue(this, false);
 
             }
 
