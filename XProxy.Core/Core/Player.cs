@@ -326,10 +326,13 @@ namespace XProxy.Core
             return RedirectTo(serv);
         }
 
-        public bool RedirectTo(ServerInfo server)
+        public bool RedirectTo(ServerInfo server, bool queue = false)
         {
             if (!server.CanPlayerJoin(this))
                 return false;
+
+            if (queue)
+                QueueService.UpdatePlayerInQueue(this);
 
             IsRedirecting = true;
             Logger.Info(Proxy._config.Messages.PlayerRedirectToMessage.Replace("%tag%", Tag).Replace("%address%", $"{ClientEndPoint}").Replace("%userid%", UserId).Replace("%server%", server.ServerName), $"Player");
@@ -617,7 +620,12 @@ namespace XProxy.Core
 
         internal void InternalDestroy()
         {
-            QueueService.PlayerLeft(this);
+            if (PositionInQueue != -1)
+            {
+                if (!QueueService.PlayersInQueueDict.ContainsKey(this.UserId))
+                    QueueService.PlayerLeft(this);
+
+            }
 
             InternalDestroyNetwork();
 
@@ -707,6 +715,7 @@ namespace XProxy.Core
         void OnConnected(NetPeer peer)
         {
             Connection = new ProxiedConnection(this);
+            QueueService.RemoveFromQueue(this, true);
         }
 
         void OnReceiveData(NetPeer peer, NetPacketReader reader, byte channel, DeliveryMethod deliveryMethod)

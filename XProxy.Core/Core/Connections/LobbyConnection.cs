@@ -66,8 +66,12 @@ namespace XProxy.Core.Connections
 
                     if (!canJoin)
                     {
-                        Player.ServerInfo = server;
-                        Player.Connection = new QueueConnection(Player);
+                        if (server.QueueSlots > server.PlayersInQueue)
+                        {
+                            Player.ServerInfo = server;
+                            Player.Connection = new QueueConnection(Player);
+                        }
+
                         return;
                     }
 
@@ -180,10 +184,17 @@ namespace XProxy.Core.Connections
 
                     if (!serv.CanPlayerJoin(Player))
                     {
-                        Player.ServerInfo = serv;
-                        Player.Connection = new QueueConnection(Player);
+                        if (serv.QueueSlots > serv.PlayersInQueue)
+                        {
+                            Player.ServerInfo = serv;
+                            Player.Connection = new QueueConnection(Player);
 
-                        Player.SendGameConsoleMessage($"Joined queue...", "red");
+                            Player.SendGameConsoleMessage($"Joined queue...", "red");
+                        }
+                        else
+                        {
+                            Player.SendGameConsoleMessage($"Server is full!", "red");
+                        }
                         return;
                     }
 

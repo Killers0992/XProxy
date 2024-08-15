@@ -101,9 +101,8 @@ namespace XProxy.Shared.Models
 
         [Description("Player will be added to queue for first server from priorities if its full.")]
         public bool AutoJoinQueueInLobby { get; set; } = false;
-
-        [Description("Auto updates proxy if needed.")]
-        public bool AutoUpdater { get; set; } = true;
+        [Description("For how long queue slot will be valid for player upon joining target server. ( started connecting to target server >-( TIME IN SECONDS )-> connected to target server ) ")]
+        public int QueueTicketLifetime { get; set; } = 15;
     }
 
     public class ServerModel
@@ -122,6 +121,9 @@ namespace XProxy.Shared.Models
 
         [Description("Maximum amount of players which can connect to server.")]
         public int MaxPlayers { get; set; } = 20;
+
+        [Description("Maximum amount of players which can be in queue for this server.")]
+        public int QueueSlots { get; set; } = 50;
 
         [Description("Connection type set to Proxied will connect players to specific server, simulation needs to have Simulation set to specific type example lobby")]
         public ConnectionType ConnectionType { get; set; } = ConnectionType.Proxied;

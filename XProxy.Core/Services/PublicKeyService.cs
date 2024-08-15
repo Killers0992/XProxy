@@ -40,7 +40,7 @@ namespace XProxy.Services
             }
 
             Logger.Debug(_config.Messages.DownloadPublicKeyFromCentrals, "PublicKeyService");
-            while (!ListService.Disposing)
+            while (!stoppingToken.IsCancellationRequested)
             {
                 string responseText = "";
                 try

@@ -200,7 +200,8 @@ namespace XProxy
                         a.Value.MaxPlayers, 
                         a.Value.SendIpAddressInPreAuth, 
                         a.Value.ConnectionType, 
-                        a.Value.Simulation
+                        a.Value.Simulation,
+                        a.Value.QueueSlots
                     ));
         }
 

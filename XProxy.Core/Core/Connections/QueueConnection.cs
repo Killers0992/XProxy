@@ -1,8 +1,5 @@
 ﻿using System;
-using System.Linq;
 using XProxy.Core.Services;
-using XProxy.Enums;
-using XProxy.Models;
 using XProxy.Shared.Enums;
 
 namespace XProxy.Core.Connections
@@ -29,22 +26,26 @@ namespace XProxy.Core.Connections
             Player.Spawn();
         }
 
+        bool _addedToQueue = false;
+
         public override void Update()
         {
             int pos = Player.PositionInQueue;
 
             if (pos == -1)
             {
-                if (!QueueService.PlayersAddToQueue.Contains(Player))
-                    QueueService.PlayersAddToQueue.Enqueue(Player);
+                if (!_addedToQueue)
+                {
+                    QueueService.AddPlayerToQueue(Player);
+                    _addedToQueue = true;
+                }
                 return;
             }
 
             if (pos == 1)
             {
-                if (Player.ServerInfo.CanPlayerJoin(Player))
+                if (Player.RedirectTo(Player.ServerInfo, true))
                 {
-                    Player.RedirectTo(Player.ServerInfo);
                 }
                 else
                 {

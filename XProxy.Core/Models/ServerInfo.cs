@@ -10,7 +10,7 @@ namespace XProxy.Models
 {
     public class ServerInfo
     {
-        public ServerInfo(string serverName, string serverDisplayname, string publicIp, string serverIp, int serverPort, int maxPlayers, bool sendIpAddressInPreAuth, ConnectionType connectionType, string simulation)
+        public ServerInfo(string serverName, string serverDisplayname, string publicIp, string serverIp, int serverPort, int maxPlayers, bool sendIpAddressInPreAuth, ConnectionType connectionType, string simulation, int queueSlots)
         {
             ServerName = serverName;
             ServerDisplayname = serverDisplayname;
@@ -22,12 +22,14 @@ namespace XProxy.Models
             ConnectionType = connectionType;
             Simulation = simulation;
             SendIpAddressInPreAuth = sendIpAddressInPreAuth;
+            QueueSlots = queueSlots;
         }
 
         public string ServerName { get;  }
         public string ServerDisplayname { get; }
         public string ServerIp { get; }
         public string ServerPublicIp { get; }
+        public int QueueSlots { get; }
         public int ServerPort { get; }
         public int PlayersOnline => Math.Clamp(PlayersIds.Count - PlayersInQueue, 0, int.MaxValue);
         public int PlayersInQueue => QueueService.GetPlayersInQueueCount(this);
@@ -53,6 +55,15 @@ namespace XProxy.Models
                 return true;
 
             if (player.PreAuth.Flags.HasFlagFast(CentralAuthPreauthFlags.NorthwoodStaff) && ConfigService.Instance.Value.NorthwoodStaffIgnoresSlots)
+                return true;
+
+            if (player.PositionInQueue == 1)
+                return !IsServerFull;
+
+            if (player.PositionInQueue > 0)
+                return false;
+
+            if (QueueSlots > PlayersInQueue)
                 return true;
 
             return !IsServerFull;
