@@ -31,6 +31,14 @@ trusted_proxies_ip_addresses:
 
 - Make sure to set proper game version in ``config_patcher.yml`` because auto updater will be not downloading proper builds and you will be not able to connect to this server.
 
+# Servers using XProxy
+ - If you want to test how proxy works on existing servers you can try joining these:
+
+| IP | Name |
+| ------------- | ------------- |
+| 193.164.18.36:7777 | [RUS] Официальный Сервер Welcome To Hell #1 |
+| 45.79.40.209:9000 | (barely) Safe For Work | US Server Balanced Mods - FF-On - Pink Candy! - Proxy Server |
+
 # Central Commands
 | Command  | Arguments | Description |
 | ------------- | ------------- | ------------- |
