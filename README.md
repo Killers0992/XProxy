@@ -36,8 +36,8 @@ trusted_proxies_ip_addresses:
 
 | IP | Name |
 | ------------- | ------------- |
-| 193.164.18.36:7777 | [RUS] Официальный Сервер Welcome To Hell #1 |
-| 45.79.40.209:9000 | (barely) Safe For Work | US Server Balanced Mods - FF-On - Pink Candy! - Proxy Server |
+| 193.164.18.36:7777 | ![image](https://github.com/user-attachments/assets/72eaabd6-a02b-4d11-b3a6-eeac56437087) |
+| 45.79.40.209:9000 | ![image](https://github.com/user-attachments/assets/df0bb6a8-e5b9-422f-a686-2a313ed7bc44) |
 
 # Central Commands
 | Command  | Arguments | Description |
