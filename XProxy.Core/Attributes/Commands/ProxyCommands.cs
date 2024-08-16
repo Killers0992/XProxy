@@ -1,4 +1,5 @@
-﻿using System.Linq;
+﻿using System;
+using System.Linq;
 using System.Text;
 using XProxy.Attributes;
 using XProxy.Core;
@@ -13,7 +14,7 @@ namespace XProxy.Commands
         public static void HelpCommand(CommandsService service, string[] args)
         {
             string text = $"Available commands:";
-            foreach(var command in CommandsService.Commands)
+            foreach (var command in CommandsService.Commands)
             {
                 if (command.Key == "help") continue;
 
@@ -57,7 +58,7 @@ namespace XProxy.Commands
         {
             StringBuilder sb = new StringBuilder();
             sb.AppendLine("Players on servers:");
-            foreach(var server in ProxyService.Singleton.Servers)
+            foreach (var server in ProxyService.Singleton.Servers)
             {
                 sb.AppendLine($" - Server (f=cyan){server.Value.ServerName}(f=white) [ (f=green){server.Value.PlayersOnline}/{server.Value.MaxPlayers}(f=white) ] ((f=darkcyan){server.Value}(f=white))");
                 sb.AppendLine($"  -> On Server  ");
@@ -73,7 +74,7 @@ namespace XProxy.Commands
                     {
                         var plr = ProxyService.Singleton.GetPlayerByUserId(queuePlayers.Key);
 
-                        sb.AppendLine($"  [(f=green){plr.PositionInQueue}(f=white)/(f=green){server.Value.PlayersInQueueCount}(f=white)] (f=cyan){queuePlayers.Key}(f=white) {(plr == null ? $"(f=darkred)OFFLINE(f=white) ( slot expires in few seconds )" : $"connection time (f=darkcyan){plr.Connectiontime.ToReadableString()}(f=white)")}");
+                        sb.AppendLine($"  [(f=green){queuePlayers.Value.Position}(f=white)/(f=green){server.Value.PlayersInQueueCount}(f=white)] (f=cyan){queuePlayers.Key}(f=white) {(plr == null ? $"(f=darkred)OFFLINE(f=white) ( slot expires in few seconds )" : $"connection time (f=darkcyan){plr.Connectiontime.ToReadableString()}(f=white)")}");
                     }
                 }
             }
@@ -104,7 +105,7 @@ namespace XProxy.Commands
             {
                 case "all":
                     int sent = 0;
-                    foreach(var player in ProxyService.Singleton.Players.Values)
+                    foreach (var player in ProxyService.Singleton.Players.Values)
                     {
                         if (player.ServerInfo == server) continue;
 
