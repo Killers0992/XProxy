@@ -31,6 +31,14 @@ trusted_proxies_ip_addresses:
 
 - Make sure to set proper game version in ``config_patcher.yml`` because auto updater will be not downloading proper builds and you will be not able to connect to this server.
 
+# Servers using XProxy
+ - If you want to test how proxy works on existing servers you can try joining these:
+
+| IP | Name |
+| ------------- | ------------- |
+| 193.164.18.36:7777 | ![image](https://github.com/user-attachments/assets/72eaabd6-a02b-4d11-b3a6-eeac56437087) |
+| 45.79.40.209:9000 | ![image](https://github.com/user-attachments/assets/df0bb6a8-e5b9-422f-a686-2a313ed7bc44) |
+
 # Central Commands
 | Command  | Arguments | Description |
 | ------------- | ------------- | ------------- |
