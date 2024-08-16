@@ -1,11 +1,12 @@
 ﻿using System;
-using XProxy.Core.Services;
 using XProxy.Shared.Enums;
 
 namespace XProxy.Core.Connections
 {
     public class QueueConnection : SimulatedConnection
     {
+        public override bool AddToOnlinePlayers => false;
+
         public QueueConnection(Player plr) : base(plr)
         {
         }
@@ -26,19 +27,13 @@ namespace XProxy.Core.Connections
             Player.Spawn();
         }
 
-        bool _addedToQueue = false;
-
         public override void Update()
         {
             int pos = Player.PositionInQueue;
 
-            if (pos == -1)
+            if (!Player.IsInQueue)
             {
-                if (!_addedToQueue)
-                {
-                    QueueService.AddPlayerToQueue(Player);
-                    _addedToQueue = true;
-                }
+                Player.JoinQueue();
                 return;
             }
 
@@ -49,12 +44,12 @@ namespace XProxy.Core.Connections
                 }
                 else
                 {
-                    Player.SendHint(Player.Proxy._config.Messages.FirstPositionInQueue.Replace("%position%", $"{pos}").Replace("%totalInQueue%", $"{Player.ServerInfo.PlayersInQueue}"), 1);
+                    Player.SendHint(Player.Proxy._config.Messages.FirstPositionInQueue.Replace("%position%", $"{pos}").Replace("%totalInQueue%", $"{Player.ServerInfo.PlayersInQueueCount}"), 1);
                 }
             }
             else
             {
-                Player.SendHint(Player.Proxy._config.Messages.PositionInQueue.Replace("%position%", $"{pos}").Replace("%totalInQueue%", $"{Player.ServerInfo.PlayersInQueue}"), 1);
+                Player.SendHint(Player.Proxy._config.Messages.PositionInQueue.Replace("%position%", $"{pos}").Replace("%totalInQueue%", $"{Player.ServerInfo.PlayersInQueueCount}"), 1);
             }
         }
 

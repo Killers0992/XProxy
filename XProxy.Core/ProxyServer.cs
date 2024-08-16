@@ -27,6 +27,8 @@ namespace XProxy
         public ushort Port => _config.Value.Port;
 
         public ConcurrentDictionary<int, Player> Players { get; private set; } = new ConcurrentDictionary<int, Player>();
+        public ConcurrentDictionary<string, int> PlayersByUserId { get; private set; } = new ConcurrentDictionary<string, int>();
+
         public Dictionary<string, ServerInfo> Servers { get; private set; } = new Dictionary<string, ServerInfo>();
 
         public static ConcurrentDictionary<string, LastServerInfo> ForceServerForUserID { get; set; } = new ConcurrentDictionary<string, LastServerInfo>();
@@ -77,6 +79,17 @@ namespace XProxy
 
             Logger.Info($"{_config.Messages.ProxyStartedListeningMessage.Replace("%port%", $"{Port}").Replace("%version%", ConfigModel.GameVersion)}", $"XProxy");
             Logger.Info("");
+        }
+
+        public Player GetPlayerByUserId(string userId)
+        {
+            if (!PlayersByUserId.TryGetValue(userId, out int playerId))
+                return null;
+
+            if (!Players.TryGetValue(playerId, out Player plr))
+                return null;
+
+            return plr;
         }
 
         public ServerInfo GetServerByIp(string ip)

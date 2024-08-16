@@ -1,8 +1,9 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using XProxy.Core;
-using XProxy.Core.Services;
+using XProxy.Core.Models;
 using XProxy.Services;
 using XProxy.Shared.Enums;
 
@@ -31,20 +32,61 @@ namespace XProxy.Models
         public string ServerPublicIp { get; }
         public int QueueSlots { get; }
         public int ServerPort { get; }
-        public int PlayersOnline => Math.Clamp(PlayersIds.Count - PlayersInQueue, 0, int.MaxValue);
-        public int PlayersInQueue => QueueService.GetPlayersInQueueCount(this);
+
+        public int PlayersOnline => PlayersIds.Count;
         public int MaxPlayers { get; }
         public ConnectionType ConnectionType { get; }
         public string Simulation { get; }
         public bool SendIpAddressInPreAuth { get; }
-        public bool IsOnline => (DateTime.Now - LastRespondTime).TotalSeconds < 20;
 
         public List<int> PlayersIds = new List<int>();
         public List<Player> Players => ProxyService.Singleton.Players.Where(x => PlayersIds.Contains(x.Key)).Select(x => x.Value).ToList();
 
-        public DateTime LastRespondTime { get; private set; } = DateTime.MinValue;
-
         public bool IsServerFull => PlayersOnline >= MaxPlayers;
+
+        // QUEUE SYSTEM
+
+        public List<string> PlayersInQueueByUserId = new List<string>();
+
+        public ConcurrentDictionary<string, QueueTicket> PlayersInQueue { get; set; } = new ConcurrentDictionary<string, QueueTicket>();
+
+        public int PlayersInQueueCount => PlayersInQueue.Count;
+
+        public bool IsPlayerInQueue(Player plr)
+        {
+            return PlayersInQueue.ContainsKey(plr.UserId);
+        }
+
+        public int GetPlayerPositionInQueue(Player plr)
+        {
+            if (PlayersInQueue.TryGetValue(plr.UserId, out QueueTicket ticket))
+                return ticket.Position;
+
+            return -1;
+        }
+
+        public bool AddPlayerToQueue(Player plr)
+        {
+            if (PlayersInQueue.TryAdd(plr.UserId, new QueueTicket(plr.UserId, this)))
+            {
+                PlayersInQueueByUserId.Add(plr.UserId);
+                Logger.Info($"Added player {plr.UserId} to queue because {ServerName} is full!, pos {GetPlayerPositionInQueue(plr)}/{PlayersInQueueCount}", "QueueService");
+                return true;
+            }
+
+            return false;
+        }
+
+        public void MarkPlayerInQueueAsConnecting(Player plr)
+        {
+            if (!PlayersInQueue.TryGetValue(plr.UserId, out QueueTicket ticket))
+                return;
+
+            ticket.MarkAsConnecting();
+            Logger.Info($"{plr.UserId} is connecting from queue to {ServerName}!", "QueueService");
+        }
+
+        // Methods
 
         public bool CanPlayerJoin(Player player)
         {
@@ -57,21 +99,21 @@ namespace XProxy.Models
             if (player.PreAuth.Flags.HasFlagFast(CentralAuthPreauthFlags.NorthwoodStaff) && ConfigService.Instance.Value.NorthwoodStaffIgnoresSlots)
                 return true;
 
-            if (player.PositionInQueue == 1)
-                return !IsServerFull;
-
-            if (player.PositionInQueue > 0)
-                return false;
-
-            if (QueueSlots > PlayersInQueue)
+            if (player.IsInQueue)
+            {
+                if (player.PositionInQueue == 1)
+                    return !IsServerFull;
+                else
+                    return false;
+            }
+            else if (player.CanJoinQueue(this))
                 return true;
+
+            if (PlayersInQueueCount > 0)
+                return false;
 
             return !IsServerFull;
         }
-
-        public void SetOffline() => LastRespondTime = DateTime.MinValue;
-
-        public void SetOnline() => LastRespondTime = DateTime.Now;
 
         public override string ToString()
         {

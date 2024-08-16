@@ -17,6 +17,7 @@ using XProxy.Shared.Enums;
 using static PlayerStatsSystem.SyncedStatMessages;
 using XProxy.Services;
 using XProxy.Core.Services;
+using XProxy.Core.Models;
 
 namespace XProxy.Core
 {
@@ -74,8 +75,8 @@ namespace XProxy.Core
         public bool IsConnectedToCurrentServer => _netManager != null && _netManager.FirstPeer != null;
         public bool ProcessMirrorMessagesFromProxy { get; set; }
         public bool ProcessMirrorMessagesFromCurrentServer { get; set; }
-        public bool IsInQueue => QueueService.IsPlayerInQueue(this);
-        public int PositionInQueue => QueueService.GetPositionInQueue(this);
+        public bool IsInQueue => ServerInfo == null ? false : ServerInfo.IsPlayerInQueue(this);
+        public int PositionInQueue => ServerInfo == null ? -1 : ServerInfo.GetPlayerPositionInQueue(this);
         public ProxyServer Proxy { get; private set; }
         public PreAuthModel PreAuth { get; private set; }
         public BaseConnection Connection { get; set; }
@@ -92,6 +93,39 @@ namespace XProxy.Core
 
         public string Tag => Proxy._config.Messages.PlayerTag.Replace("%serverIpPort%", ServerInfo.ToString()).Replace("%server%", ServerInfo.ServerName);
         public string ErrorTag => Proxy._config.Messages.PlayerErrorTag.Replace("%serverIpPort%", ServerInfo.ToString()).Replace("%server%", ServerInfo.ServerName);
+
+        // QUEUE SYSTEM
+
+        public bool CanJoinQueue(ServerInfo server = null)
+        {
+            ServerInfo targetServer = server ?? ServerInfo;
+
+            if (targetServer == null)
+                return false;
+
+            if (!targetServer.IsServerFull)
+                return false;
+
+            return targetServer.PlayersInQueueCount < targetServer.QueueSlots;
+        }
+
+        public void JoinQueue(ServerInfo server = null)
+        {
+            ServerInfo targetServer = server ?? ServerInfo;
+
+            if (targetServer == null)
+                return;
+
+            ServerInfo = targetServer;
+            Connection = new QueueConnection(this);
+
+            if (targetServer.IsPlayerInQueue(this))
+                return;
+
+            targetServer.AddPlayerToQueue(this);
+        }
+
+        // METHODS
 
         public void Roundrestart(float time = 0.1f)
         {
@@ -332,7 +366,7 @@ namespace XProxy.Core
                 return false;
 
             if (queue)
-                QueueService.UpdatePlayerInQueue(this);
+                ServerInfo.MarkPlayerInQueueAsConnecting(this);
 
             IsRedirecting = true;
             Logger.Info(Proxy._config.Messages.PlayerRedirectToMessage.Replace("%tag%", Tag).Replace("%address%", $"{ClientEndPoint}").Replace("%userid%", UserId).Replace("%server%", server.ServerName), $"Player");
@@ -554,8 +588,10 @@ namespace XProxy.Core
 
                             if (targetServer != null)
                             {
-                                ServerInfo = targetServer;
-                                Connection = new QueueConnection(this);
+                                if (CanJoinQueue(targetServer))
+                                {
+                                    JoinQueue(targetServer);
+                                }
                                 break;
                             }
                         }
@@ -586,14 +622,20 @@ namespace XProxy.Core
             }
         }
 
-        internal void InternalAcceptConnection(BaseConnection connection = null)
+        internal void InternalAcceptConnection(BaseConnection connection = null, bool addToOnlinePlayers = true)
         {
             if (_connectionRequest == null) return;
 
             _proxyPeer = _connectionRequest.Accept();
 
             Id = _proxyPeer.Id;
-            ServerInfo.PlayersIds.Add(Id);
+
+            if (!Proxy.PlayersByUserId.ContainsKey(UserId))
+                Proxy.PlayersByUserId.TryAdd(UserId, Id);
+
+            if (addToOnlinePlayers)
+                ServerInfo.PlayersIds.Add(Id);
+
             Proxy.Players.TryAdd(Id, this);
 
             _connectionRequest = null;
@@ -620,12 +662,7 @@ namespace XProxy.Core
 
         internal void InternalDestroy()
         {
-            if (PositionInQueue != -1)
-            {
-                if (!QueueService.PlayersInQueueDict.ContainsKey(this.UserId))
-                    QueueService.RemoveFromQueue(this, false);
-
-            }
+            Proxy.PlayersByUserId.TryRemove(UserId, out _);
 
             InternalDestroyNetwork();
 
@@ -715,7 +752,6 @@ namespace XProxy.Core
         void OnConnected(NetPeer peer)
         {
             Connection = new ProxiedConnection(this);
-            QueueService.RemoveFromQueue(this, true);
         }
 
         void OnReceiveData(NetPeer peer, NetPacketReader reader, byte channel, DeliveryMethod deliveryMethod)
@@ -729,7 +765,6 @@ namespace XProxy.Core
                 try
                 {
                     SendDataToProxy(reader.RawData, reader.Position, reader.AvailableBytes, deliveryMethod);
-                    ServerInfo.SetOnline();
                 }
                 catch (Exception ex)
                 {
@@ -745,79 +780,79 @@ namespace XProxy.Core
             switch (disconnectInfo.Reason)
             {
                 case DisconnectReason.ConnectionFailed when disconnectInfo.AdditionalData.RawData == null:
-                    ServerInfo.SetOffline();
-
                     DisconnectFromProxy(Proxy._config.Messages.ServerIsOfflineKickMessage.Replace("%server%", ServerInfo.ServerName));
                     Logger.Info(Proxy._config.Messages.PlayerServerIsOfflineMessage.Replace("%tag%", Tag).Replace("%address%", $"{ClientEndPoint}").Replace("%userid%", UserId), $"Player");
                     return;
-                case DisconnectReason.ConnectionRejected when disconnectInfo.AdditionalData.RawData != null:
-                    ServerInfo.SetOnline();
 
+                case DisconnectReason.ConnectionRejected when disconnectInfo.AdditionalData.RawData != null:
                     NetDataWriter rejectedData = NetDataWriter.FromBytes(disconnectInfo.AdditionalData.RawData, disconnectInfo.AdditionalData.UserDataOffset, disconnectInfo.AdditionalData.UserDataSize);
 
-                    if (disconnectInfo.AdditionalData.TryGetByte(out byte lastRejectionReason))
+                    if (!disconnectInfo.AdditionalData.TryGetByte(out byte lastRejectionReason))
+                        break;
+
+                    RejectionReason reason = (RejectionReason)lastRejectionReason;
+
+                    bool cancel = false;
+
+                    switch (reason)
                     {
-                        RejectionReason reason = (RejectionReason)lastRejectionReason;
+                        case RejectionReason.Delay:
+                            if (disconnectInfo.AdditionalData.TryGetByte(out byte offset))
+                            {
+                                SaveCurrentServerForNextSession(offset + 10f);
+                                Logger.Info(Proxy._config.Messages.PlayerDelayedConnectionMessage.Replace("%tag%", Tag).Replace("%address%", $"{ClientEndPoint}").Replace("%userid%", UserId).Replace("%time%", $"{offset}"), $"Player");
+                            }
+                            break;
 
-                        switch (reason)
-                        {
-                            case RejectionReason.Delay:
-                                if (disconnectInfo.AdditionalData.TryGetByte(out byte offset))
-                                {
-                                    SaveCurrentServerForNextSession(offset + 10f);
-                                    Logger.Info(Proxy._config.Messages.PlayerDelayedConnectionMessage.Replace("%tag%", Tag).Replace("%address%", $"{ClientEndPoint}").Replace("%userid%", UserId).Replace("%time%", $"{offset}"), $"Player");
-                                }
-                                break;
+                        case RejectionReason.ServerFull:
+                            Logger.Info(Proxy._config.Messages.PlayerServerIsFullMessage.Replace("%tag%", Tag).Replace("%address%", $"{ClientEndPoint}").Replace("%userid%", UserId), $"Player");
 
-                            case RejectionReason.ServerFull:
-                                Logger.Info(Proxy._config.Messages.PlayerServerIsFullMessage.Replace("%tag%", Tag).Replace("%address%", $"{ClientEndPoint}").Replace("%userid%", UserId), $"Player");
-                                Connection = new QueueConnection(this);
-                                break;
+                            if (CanJoinQueue())
+                            {
+                                JoinQueue();
+                                cancel = true;
+                            }
+                            break;
 
-                            case RejectionReason.Banned:
-                                long expireTime = disconnectInfo.AdditionalData.GetLong();
-                                string banReason = disconnectInfo.AdditionalData.GetString();
+                        case RejectionReason.Banned:
+                            long expireTime = disconnectInfo.AdditionalData.GetLong();
+                            string banReason = disconnectInfo.AdditionalData.GetString();
 
-                                var date = new DateTime(expireTime, DateTimeKind.Utc).ToLocalTime();
+                            var date = new DateTime(expireTime, DateTimeKind.Utc).ToLocalTime();
 
-                                Logger.Info(Proxy._config.Messages.PlayerBannedMessage.Replace("%tag%", Tag).Replace("%address%", $"{ClientEndPoint}").Replace("%userid%", UserId).Replace("%reason%", banReason).Replace("%date%", date.ToShortDateString()).Replace("%time%", date.ToLongTimeString()), $"Player");
-                                break;
+                            Logger.Info(Proxy._config.Messages.PlayerBannedMessage.Replace("%tag%", Tag).Replace("%address%", $"{ClientEndPoint}").Replace("%userid%", UserId).Replace("%reason%", banReason).Replace("%date%", date.ToShortDateString()).Replace("%time%", date.ToLongTimeString()), $"Player");
+                            break;
 
-                            case RejectionReason.Challenge:
-                                //We need to save current server because after client tries to reconnect it will connect to random server from priority list.
-                                SaveCurrentServerForNextSession();
-                                Logger.Info(Proxy._config.Messages.PlayerReceivedChallengeMessage.Replace("%tag%", Tag).Replace("%address%", $"{ClientEndPoint}").Replace("%userid%", UserId), "Player");
-                                break;
+                        case RejectionReason.Challenge:
+                            //We need to save current server because after client tries to reconnect it will connect to random server from priority list.
+                            SaveCurrentServerForNextSession();
+                            Logger.Info(Proxy._config.Messages.PlayerReceivedChallengeMessage.Replace("%tag%", Tag).Replace("%address%", $"{ClientEndPoint}").Replace("%userid%", UserId), "Player");
+                            break;
 
-                            default:
-                                Logger.Info(Proxy._config.Messages.PlayerDisconnectedMessage.Replace("%tag%", Tag).Replace("%address%", $"{ClientEndPoint}").Replace("%userid%", UserId).Replace("%reason%", $"{reason}"), $"Player");
-                                break;
-                        }
-
-                        RejectFromProxy(rejectedData);
-                        return;
+                        default:
+                            Logger.Info(Proxy._config.Messages.PlayerDisconnectedMessage.Replace("%tag%", Tag).Replace("%address%", $"{ClientEndPoint}").Replace("%userid%", UserId).Replace("%reason%", $"{reason}"), $"Player");
+                            break;
                     }
-                    break;
+
+                    if (!cancel)
+                        RejectFromProxy(rejectedData);
+                    return;
 
                 case DisconnectReason.Timeout:
                 case DisconnectReason.PeerNotFound:
                     Connection = new LostConnection(this, LostConnectionType.Timeout);
-
-                    ServerInfo.SetOffline();
-
                     Logger.Info(Proxy._config.Messages.PlayerServerTimeoutMessage.Replace("%tag%", Tag).Replace("%address%", $"{ClientEndPoint}").Replace("%userid%", UserId), $"Player");
                     return;
+
                 case DisconnectReason.RemoteConnectionClose when _forceDisconnect:
                     Logger.Info(Proxy._config.Messages.PlayerDisconnectedWithReasonMessage.Replace("%tag%", Tag).Replace("%address%", $"{ClientEndPoint}").Replace("%userid%", UserId).Replace("%reason%", _forceDisconnectReason), $"Player");
                     break;
 
                 case DisconnectReason.RemoteConnectionClose when !_forceDisconnect:
                     Connection = new LostConnection(this, LostConnectionType.Shutdown);
-
-                    ServerInfo.SetOffline();
-
                     Logger.Info(Proxy._config.Messages.PlayerServerShutdownMessage.Replace("%tag%", Tag).Replace("%address%", $"{ClientEndPoint}").Replace("%userid%", UserId), $"Player");
                     return;
+
             }
 
             DisconnectFromProxy();

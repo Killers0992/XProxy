@@ -1,12 +1,9 @@
-﻿using Mirror;
-using System.Collections.Generic;
-using System.Formats.Tar;
-using System.Linq;
+﻿using System.Linq;
 using System.Text;
 using XProxy.Attributes;
+using XProxy.Core;
 using XProxy.Models;
 using XProxy.Services;
-using static System.Net.Mime.MediaTypeNames;
 
 namespace XProxy.Commands
 {
@@ -62,10 +59,22 @@ namespace XProxy.Commands
             sb.AppendLine("Players on servers:");
             foreach(var server in ProxyService.Singleton.Servers)
             {
-                sb.AppendLine($" - Server (f=cyan){server.Value.ServerName}(f=white) [ (f=green){server.Value.PlayersOnline}/{server.Value.MaxPlayers}(f=white) ] ((f=darkcyan){server.Value}(f=white)){(server.Value.PlayersInQueue > 0 ? $" [ in queue (f=green){server.Value.PlayersInQueue}(f=white) ]" : string.Empty)}");
-                foreach(var player in server.Value.Players.OrderBy(x => x.IsInQueue).OrderBy(x => x.PositionInQueue))
+                sb.AppendLine($" - Server (f=cyan){server.Value.ServerName}(f=white) [ (f=green){server.Value.PlayersOnline}/{server.Value.MaxPlayers}(f=white) ] ((f=darkcyan){server.Value}(f=white))");
+                sb.AppendLine($"  -> On Server  ");
+                foreach (var player in server.Value.Players.OrderBy(x => x.IsInQueue).OrderBy(x => x.PositionInQueue))
                 {
-                    sb.AppendLine($"  - {(player.IsInQueue ? $"[(f=red)Queue (f=white) (f=green){player.PositionInQueue}(f=white)/(f=yellow){player.ServerInfo.PlayersInQueue}(f=white)] " : string.Empty)}[(f=green){player.Id}(f=white)] (f=cyan){player.UserId}(f=white) connection time (f=darkcyan){player.Connectiontime.ToReadableString()}(f=white)");
+                    sb.AppendLine($"  [(f=green){player.Id}(f=white)] (f=cyan){player.UserId}(f=white) connection time (f=darkcyan){player.Connectiontime.ToReadableString()}(f=white)");
+                }
+
+                if (server.Value.PlayersInQueueCount > 0)
+                {
+                    sb.AppendLine($"  -> In Queue  ");
+                    foreach (var queuePlayers in server.Value.PlayersInQueue.OrderBy(x => x.Value.Position))
+                    {
+                        var plr = ProxyService.Singleton.GetPlayerByUserId(queuePlayers.Key);
+
+                        sb.AppendLine($"  [(f=green){plr.PositionInQueue}(f=white)/(f=green){server.Value.PlayersInQueueCount}(f=white)] (f=cyan){queuePlayers.Key}(f=white) {(plr == null ? $"(f=darkred)OFFLINE(f=white) ( slot expires in few seconds )" : $"connection time (f=darkcyan){plr.Connectiontime.ToReadableString()}(f=white)")}");
+                    }
                 }
             }
             sb.AppendLine($" Total online players (f=green){ProxyService.Singleton.Players.Count}/{service.Config.Value.MaxPlayers}(f=white)!");
