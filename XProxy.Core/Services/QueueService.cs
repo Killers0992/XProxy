@@ -20,7 +20,16 @@ namespace XProxy.Core.Services
                         {
                             if (!ticket.Value.IsTicketExpired()) continue;
 
-                            Logger.Info($"Queue slot for {ticket.Key} expired! ( server {server.ServerName} )", "QueueService");
+                            if (ticket.Value.IsConnecting)
+                            {
+                                Logger.Info($"Player {ticket.Key} joined server {server.ServerName} from queue successfully! ( freed slot )", "QueueService");
+
+                            }
+                            else
+                            {
+                                Logger.Info($"Queue slot for {ticket.Key} expired! ( server {server.ServerName} )", "QueueService");
+                            }
+
                             server.PlayersInQueueByUserId.Remove(ticket.Value.UserId);
                             server.PlayersInQueue.TryRemove(ticket.Key, out _);
                         }

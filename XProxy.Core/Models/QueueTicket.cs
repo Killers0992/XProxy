@@ -24,6 +24,18 @@ namespace XProxy.Core.Models
         public bool IsPlayerOffline => !ProxyService.Singleton.PlayersByUserId.ContainsKey(UserId);
         public TimeSpan OfflineTime => DateTime.Now - _offlineFor;
 
+        public bool IsPlayerConnected
+        {
+            get
+            {
+                var plr = ProxyService.Singleton.GetPlayerByUserId(UserId);
+
+                if (plr == null) return false;
+
+                return plr.IsConnectedToCurrentServer;
+            }
+        }
+
         public bool IsTicketExpired()
         {
             if (IsConnecting)
@@ -42,6 +54,8 @@ namespace XProxy.Core.Models
                     return false;
                 }
             }
+            else if (IsPlayerConnected)
+                return true;
             else
                 _lastOfflineStatus = null;
 
