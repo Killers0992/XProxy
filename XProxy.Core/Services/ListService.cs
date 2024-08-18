@@ -384,7 +384,7 @@ namespace XProxy.Services
                         { "privateBeta", "false" },
                         { "staffRA", "false" },
                         { "friendlyFire", "false" },
-                        { "geoblocking", $"{(byte)0}" },
+                        { "geoblocking", "0" },
                         { "modded", "true" },
                         { "cgs", "true" },
                         { "whitelist", "false" },
@@ -395,13 +395,13 @@ namespace XProxy.Services
                     } :
                     new Dictionary<string, string>()
                     {
-                            { "ip", PublicIp },
-                            { "players", playersStr },
-                            { "newPlayers", str },
-                            { "port", $"{_config.Value.Port}" },
-                            { "version", "2" },
-                            { "enforceSameIp", "true" },
-                            { "enforceSameAsn", "true" }
+                        { "ip", PublicIp },
+                        { "players", playersStr },
+                        { "newPlayers", str },
+                        { "port", $"{_config.Value.Port}" },
+                        { "version", "2" },
+                        { "enforceSameIp", "true" },
+                        { "enforceSameAsn", "true" }
                     };
 
                 if (!string.IsNullOrEmpty(Password))

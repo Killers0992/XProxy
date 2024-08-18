@@ -10,7 +10,7 @@ using XProxy.Core.Services;
 using XProxy.Services;
 using XProxy.Shared.Models;
 
-[assembly: AssemblyVersion("1.3.8")]
+[assembly: AssemblyVersion("1.3.9")]
 
 namespace XProxy
 {
@@ -88,7 +88,14 @@ namespace XProxy
 
             IHost host = app.Build();
 
-            await host.RunAsync();
+            try
+            {
+                await host.RunAsync();
+            }
+            catch (Exception ex)
+            {
+                Logger.Error(ex, "XProxy");
+            }
         }
     }
 }
