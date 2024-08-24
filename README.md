@@ -24,6 +24,8 @@ Features
 4. Configure **config.yml** inside **Data** folder, if you have verkey you need to create **verkey.txt** and put verkey here.
 5. Every server under proxy needs to be hidden on serverlist **CENTRAL COMMAND** !private and **config_gameplay.txt** needs to have 
 ```yaml
+enable_ip_ratelimit: false
+
 enable_proxy_ip_passthrough: true
 trusted_proxies_ip_addresses:
  - <IP OF YOUR PROXY>
