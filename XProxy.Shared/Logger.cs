@@ -1,9 +1,12 @@
-﻿using System.Text.RegularExpressions;
+﻿using System.Collections.Concurrent;
+using System.Text.RegularExpressions;
 
 namespace XProxy.Shared
 {
     public class Logger
     {
+        public static ConcurrentQueue<string> NewLogEntry = new ConcurrentQueue<string>();
+
         public const char ESC = (char)27;
 
         public static bool AnsiDisabled { get; set; }
@@ -24,21 +27,12 @@ namespace XProxy.Shared
                 WriteLine($" (f=darkgray){TimeString}(f=white) [(f=yellow)DEBUG(f=white)] {(tag != null ? $"[(f=magenta){tag}(f=white)] " : string.Empty)}(f=yellow){message}");
         }
 
-        static void WriteLogToFile(object message)
-        {
-            if (!Directory.Exists("logs"))
-                Directory.CreateDirectory("logs");
-
-            File.AppendAllLines($"logs/log_{SessionTime.ToString("dd_MM_yyyy_hh_mm_ss")}.txt", new string[1] { message.ToString() });
-        }
-
         static void WriteLine(object message)
         {
-            WriteLogToFile(FormatAnsi(message, true));
-            Console.WriteLine(FormatAnsi(message));
+            NewLogEntry.Enqueue(message.ToString());
         }
 
-        static string FormatAnsi(object message, bool forceRemove = false)
+        public static string FormatAnsi(object message, bool forceRemove = false)
         {
             string text = message.ToString();
 

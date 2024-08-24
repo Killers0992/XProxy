@@ -77,6 +77,7 @@ namespace XProxy
             ConfigService.Singleton = new ConfigService();
             _plugins = new PluginsService(services);
 
+            services.AddHostedService<LoggingService>();
             services.AddHostedService<ProxyService>();
             services.AddHostedService<PublicKeyService>();
             services.AddHostedService<ListService>();

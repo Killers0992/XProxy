@@ -25,6 +25,7 @@ namespace XProxy.Patcher
         static void SetupServices(IServiceCollection services)
         {
             services.AddSingleton<ConfigService>();
+            services.AddHostedService<LoggingService>();
             services.AddHostedService<UpdaterService>();
             services.AddHostedService<MainProcessService>();
         }
