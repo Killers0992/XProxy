@@ -15,9 +15,14 @@ Features
 1. Depending if you use linux or windows download proper installer
    - [Windows x64](https://github.com/Killers0992/XProxy/releases/latest/download/XProxy.exe)
    - [Linux x64](https://github.com/Killers0992/XProxy/releases/latest/download/XProxy)
-2. Run proxy by using **XProxy.exe** on windows or **XProxy** on linux.
-3. Configure **config.yml** inside **Data** folder, if you have verkey you need to create **verkey.txt** and put verkey here.
-4. Every server under proxy needs to be hidden on serverlist **CENTRAL COMMAND** !private and **config_gameplay.txt** needs to have 
+
+2. Make sure you have Dotnet 7.0 Runtime installed
+   - [Windows](https://aka.ms/dotnet-core-applaunch?missing_runtime=true&arch=x64&rid=win10-x64&apphost_version=7.0.2)
+   - [Linux](https://learn.microsoft.com/dotnet/core/install/linux?WT.mc_id=dotnet-35129-website)
+
+3. Run proxy by using **XProxy.exe** on windows or **XProxy** on linux.
+4. Configure **config.yml** inside **Data** folder, if you have verkey you need to create **verkey.txt** and put verkey here.
+5. Every server under proxy needs to be hidden on serverlist **CENTRAL COMMAND** !private and **config_gameplay.txt** needs to have 
 ```yaml
 enable_proxy_ip_passthrough: true
 trusted_proxies_ip_addresses:
