@@ -37,10 +37,11 @@ These placeholders can be used in lobby hint or server name.
 
 | Placeholder | Desc |
 | ------------- | ------------- |
-| ``%onlineplayers_<server>%`` | Shows amount of online players on specific server. |
-| ``%maxplayers_<server>%`` | Shows amount of maximum players on specific  |
-| ``%proxyonlineplayers%`` | Shows total amount of connected players to proxy. |
-| ``%proxymaxplayers%`` | Shows maximum amount of player which can connect to proxy. |
+| ``%playersInQueue_<server>%`` | Shows amount of players in queue to specific server. |
+| ``%onlinePlayers_<server>%`` | Shows amount of online players on specific server. |
+| ``%maxPlayers_<server>%`` | Shows amount of maximum players on specific  |
+| ``%proxyOnlinePlayers%`` | Shows total amount of connected players to proxy. |
+| ``%proxyMaxPlayers%`` | Shows maximum amount of player which can connect to proxy. |
 
 # FAQ
 - If you see logs like that ![image](https://github.com/Killers0992/XProxy/assets/38152961/0e7c4374-021a-4618-bb2e-b268286fd3cf) this means your console is not supporting ANSI colors !
