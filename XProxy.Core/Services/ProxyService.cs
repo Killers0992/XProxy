@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.Hosting;
+﻿using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -8,15 +9,9 @@ namespace XProxy.Services
     {
         public static ProxyServer Singleton { get; private set; }
 
-        private ConfigService _config;
-
-        private PluginsService _plugins;
-
-        public ProxyService(ConfigService config)
+        public ProxyService()
         {
-            _config = config;
-            _plugins = new PluginsService();
-            Singleton = new ProxyServer(_config);
+            Singleton = new ProxyServer();
         }
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)

@@ -22,7 +22,7 @@ namespace XProxy
         private NetManager _manager;
         private EventBasedNetListener _listener;
 
-        internal ConfigService _config;
+        internal ConfigService _config => ConfigService.Singleton;
 
         public ushort Port => _config.Value.Port;
 
@@ -40,7 +40,7 @@ namespace XProxy
             { "lobby", typeof(LobbyConnection) }
         };
 
-        public ProxyServer(ConfigService config)
+        public ProxyServer()
         {
             foreach(var message in typeof(GameConsoleTransmission).Assembly.GetTypes().Where(x => x.GetInterface("NetworkMessage") != null))
             {
@@ -58,7 +58,6 @@ namespace XProxy
                     MessageIdToName.Add(key, message.FullName);
             }
 
-            _config = config;
             RefreshServers();
 
             _listener = new EventBasedNetListener();

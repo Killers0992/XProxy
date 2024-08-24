@@ -78,7 +78,7 @@ namespace XProxy.Commands
                     }
                 }
             }
-            sb.AppendLine($" Total online players (f=green){ProxyService.Singleton.Players.Count}/{service.Config.Value.MaxPlayers}(f=white)!");
+            sb.AppendLine($" Total online players (f=green){ProxyService.Singleton.Players.Count}/{ConfigService.Singleton.Value.MaxPlayers}(f=white)!");
             Logger.Info(sb.ToString(), "players");
         }
 
@@ -161,10 +161,10 @@ namespace XProxy.Commands
                     Logger.Info("Syntax: maintenance toggle/servername", "maintenance");
                     break;
                 case "toggle":
-                    service.Config.Value.MaintenanceMode = !service.Config.Value.MaintenanceMode;
-                    service.Config.Save();
+                    ConfigService.Singleton.Value.MaintenanceMode = !ConfigService.Singleton.Value.MaintenanceMode;
+                    ConfigService.Singleton.Save();
 
-                    Logger.Info($"Maintenance is now {(service.Config.Value.MaintenanceMode ? "(f=green)enabled(f=white)" : "(f=red)disabled(f=white)")}!", "maintenance");
+                    Logger.Info($"Maintenance is now {(ConfigService.Singleton.Value.MaintenanceMode ? "(f=green)enabled(f=white)" : "(f=red)disabled(f=white)")}!", "maintenance");
                     break;
                 case "servername":
                     if (args.Length < 2)
@@ -175,8 +175,8 @@ namespace XProxy.Commands
 
                     string name = string.Join(" ", args.Skip(1));
 
-                    service.Config.Value.MaintenanceServerName = name;
-                    service.Config.Save();
+                    ConfigService.Singleton.Value.MaintenanceServerName = name;
+                    ConfigService.Singleton.Save();
 
                     Logger.Info($"Maintenance server name set to {name}", "maintenance");
                     break;
@@ -186,7 +186,7 @@ namespace XProxy.Commands
         [ConsoleCommand("reload")]
         public static void ReloadCommand(CommandsService service, string[] args)
         {
-            service.Config.Load();
+            ConfigService.Singleton.Load();
             Logger.Info($"Reloaded proxy.", "reload");
         }
 

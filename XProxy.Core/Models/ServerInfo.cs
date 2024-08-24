@@ -3,6 +3,8 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using XProxy.Core;
+using XProxy.Core.Core.Events.Args;
+using XProxy.Core.Events;
 using XProxy.Core.Models;
 using XProxy.Services;
 using XProxy.Shared.Enums;
@@ -89,14 +91,24 @@ namespace XProxy.Models
         // Methods
 
         public bool CanPlayerJoin(Player player)
-        {
+        {            
+            //
+            PlayerCanJoinEvent ev = new PlayerCanJoinEvent(player, this);
+            EventManager.Player.InvokeCanJoin(ev);
+            if (ev.ForceDeny)
+                return false;
+
+            if (ev.ForceAllow)
+                return true;
+            //
+
             if (ConnectionType == ConnectionType.Simulated)
                 return true;
 
             if (player.PreAuth.Flags.HasFlagFast(CentralAuthPreauthFlags.ReservedSlot))
                 return true;
 
-            if (player.PreAuth.Flags.HasFlagFast(CentralAuthPreauthFlags.NorthwoodStaff) && ConfigService.Instance.Value.NorthwoodStaffIgnoresSlots)
+            if (player.PreAuth.Flags.HasFlagFast(CentralAuthPreauthFlags.NorthwoodStaff) && ConfigService.Singleton.Value.NorthwoodStaffIgnoresSlots)
                 return true;
 
             if (player.IsInQueue)

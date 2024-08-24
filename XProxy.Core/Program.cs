@@ -10,7 +10,7 @@ using XProxy.Core.Services;
 using XProxy.Services;
 using XProxy.Shared.Models;
 
-[assembly: AssemblyVersion("1.3.9")]
+[assembly: AssemblyVersion("1.4.0")]
 
 namespace XProxy
 {
@@ -70,9 +70,13 @@ namespace XProxy
             return builder;
         }
 
+        static PluginsService _plugins;
+
         static void SetupServices(IServiceCollection services)
         {
-            services.AddSingleton<ConfigService>();
+            ConfigService.Singleton = new ConfigService();
+            _plugins = new PluginsService(services);
+
             services.AddHostedService<ProxyService>();
             services.AddHostedService<PublicKeyService>();
             services.AddHostedService<ListService>();

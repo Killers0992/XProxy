@@ -15,13 +15,7 @@ namespace XProxy.Services
     {
         public delegate void CommandDelegate(CommandsService service, string[] args);
 
-        public ConfigService Config { get; private set; }
         public static Dictionary<string, Delegate> Commands { get; private set; } = new Dictionary<string, Delegate>();
-
-        public CommandsService(ConfigService config)
-        {
-            Config = config;
-        }
 
         public static void RegisterConsoleCommandsInAssembly(Assembly assembly)
         {
@@ -35,13 +29,13 @@ namespace XProxy.Services
 
                     if (Commands.ContainsKey(ev.Name.ToLower()))
                     {
-                        Logger.Warn(ConfigService.Instance.Messages.CommandAlreadyRegisteredMessage.Replace("%name%", ev.Name), "CommandsService");
+                        Logger.Warn(ConfigService.Singleton.Messages.CommandAlreadyRegisteredMessage.Replace("%name%", ev.Name), "CommandsService");
                         continue;
                     }
 
                     Delegate del = Delegate.CreateDelegate(typeof(CommandDelegate), method);
                     Commands.Add(ev.Name.ToLower(), del);
-                    Logger.Info(ConfigService.Instance.Messages.CommandRegisteredMessage.Replace("%name%", ev.Name), "CommandsService");
+                    Logger.Info(ConfigService.Singleton.Messages.CommandRegisteredMessage.Replace("%name%", ev.Name), "CommandsService");
                 }
             }
         }
@@ -82,7 +76,7 @@ namespace XProxy.Services
                 }
                 else
                 {
-                    Logger.Info(Config.Messages.CommandNotExistsMessage.Replace("%name%", args[0]), "CommandsService");
+                    Logger.Info(ConfigService.Singleton.Messages.CommandNotExistsMessage.Replace("%name%", args[0]), "CommandsService");
                 }
 
                 await Task.Delay(1);
@@ -96,7 +90,7 @@ namespace XProxy.Services
             Dictionary<string, string> data = new Dictionary<string, string>()
             {
                 { "ip", ListService.PublicIp },
-                { "port", $"{Config.Value.Port}" },
+                { "port", $"{ConfigService.Singleton.Value.Port}" },
                 { "cmd", ListService.Base64Encode(cmd) },
                 { "args", ListService.Base64Encode(args) },
             };
@@ -108,7 +102,7 @@ namespace XProxy.Services
             {
                 string text = await response.Content.ReadAsStringAsync();
 
-                Logger.Info(Config.Messages.CentralCommandMessage.Replace("%command%", cmd).Replace("%message%", text), $"ListService");
+                Logger.Info(ConfigService.Singleton.Messages.CentralCommandMessage.Replace("%command%", cmd).Replace("%message%", text), $"ListService");
             }
         }
 

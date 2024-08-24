@@ -9,7 +9,7 @@ namespace XProxy.Services
     {
         public static string MainDirectory;
 
-        public static ConfigService Instance { get; private set; }
+        public static ConfigService Singleton { get; internal set; }
 
         string _configPath { get; } = "config.yml";
         string _languagesDir { get; set; } = "Languages";
@@ -18,8 +18,6 @@ namespace XProxy.Services
 
         public ConfigService()
         {
-            Instance = this;
-
             if (!Directory.Exists(Path.Combine(MainDirectory, _languagesDir)))
                 Directory.CreateDirectory(Path.Combine(MainDirectory, _languagesDir));
 
@@ -28,9 +26,8 @@ namespace XProxy.Services
             Logger.Info(Messages.ProxyVersion.Replace("%version%", ProxyBuildInfo.ReleaseInfo.Version).Replace("%gameVersion%", ProxyBuildInfo.ReleaseInfo.GameVersion), "XProxy");
         }
 
-        public ConfigModel Value { get; private set; }
-        public MessagesModel Messages { get; private set; }
-
+        public ConfigModel Value { get; private set; } = new ConfigModel();
+        public MessagesModel Messages { get; private set; } = new MessagesModel();
 
         public MessagesModel GetMessagesForLanguage(string language)
         {

@@ -25,6 +25,9 @@ public class CustomBatcher
 
     public void AddMessage(ArraySegment<byte> message, double timeStamp)
     {
+        if (message == null)
+            return;
+
         int headerSize = Compression.VarUIntSize((ulong)message.Count);
         int neededSize = headerSize + message.Count;
 

@@ -17,12 +17,7 @@ namespace XProxy.Services
 {
     public class ListService : BackgroundService
     {
-        private ConfigService _config;
-
-        public ListService(ConfigService config)
-        {
-            _config = config;
-        }
+        private ConfigService _config => ConfigService.Singleton;
 
         public static HttpClient Client;
 

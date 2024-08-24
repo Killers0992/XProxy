@@ -13,12 +13,6 @@ namespace XProxy.Services
 {
     public class PublicKeyService : BackgroundService
     {
-        private ConfigService _config;
-        public PublicKeyService(ConfigService config)
-        {
-            _config = config;
-        }
-
         public HttpClient Client;
         public static AsymmetricKeyParameter PublicKey;
 
@@ -36,22 +30,22 @@ namespace XProxy.Services
             {
                 PublicKey = ECDSA.PublicKeyFromString(text);
                 text2 = Sha.HashToString(Sha.Sha256(ECDSA.KeyToString(PublicKey)));
-                Logger.Debug(_config.Messages.LoadedPublicKeyFromCache, "PublicKeyService");
+                Logger.Debug(ConfigService.Singleton.Messages.LoadedPublicKeyFromCache, "PublicKeyService");
             }
 
-            Logger.Debug(_config.Messages.DownloadPublicKeyFromCentrals, "PublicKeyService");
+            Logger.Debug(ConfigService.Singleton.Messages.DownloadPublicKeyFromCentrals, "PublicKeyService");
             while (!stoppingToken.IsCancellationRequested)
             {
                 string responseText = "";
                 try
                 {
-                    HttpResponseMessage response = await Client.GetAsync(string.Format("{0}v4/publickey.php?major={1}", "https://api.scpslgame.com/", _config.Value.GameVersionParsed.Major));
+                    HttpResponseMessage response = await Client.GetAsync(string.Format("{0}v4/publickey.php?major={1}", "https://api.scpslgame.com/", ConfigService.Singleton.Value.GameVersionParsed.Major));
                     responseText = await response.Content.ReadAsStringAsync();
 
                     PublicKeyResponseModel publicKeyResponse = JsonConvert.DeserializeObject<PublicKeyResponseModel>(responseText);
                     if (!ECDSA.Verify(publicKeyResponse.Key, publicKeyResponse.Signature, CentralServerKeyCache.MasterKey))
                     {
-                        Logger.Error(_config.Messages.CantRefreshPublicKeyMessage, "PublicKeyService");
+                        Logger.Error(ConfigService.Singleton.Messages.CantRefreshPublicKeyMessage, "PublicKeyService");
                         await Task.Delay(360000);
                         continue;
                     }
@@ -60,7 +54,7 @@ namespace XProxy.Services
                     if (text3 != b)
                     {
                         b = text3;
-                        Logger.Debug(_config.Messages.ObtainedPublicKeyMessage, "PublicKeyService");
+                        Logger.Debug(ConfigService.Singleton.Messages.ObtainedPublicKeyMessage, "PublicKeyService");
                         if (text3 != text2)
                         {
                             CentralServerKeyCache.SaveCache(publicKeyResponse.Key, publicKeyResponse.Signature);
@@ -69,7 +63,7 @@ namespace XProxy.Services
                 }
                 catch (Exception ex)
                 {
-                    Logger.Error(_config.Messages.CantRefreshPublicKey2Message.Replace("%message%", ex.Message).Replace("%response%", responseText), "PublicKeyService");
+                    Logger.Error(ConfigService.Singleton.Messages.CantRefreshPublicKey2Message.Replace("%message%", ex.Message).Replace("%response%", responseText), "PublicKeyService");
                 }
                 await Task.Delay(360000);
             }

@@ -8,7 +8,9 @@ namespace XProxy.Core.Events
     {
         public delegate void CustomEventHandler<in TEvent>(TEvent ev)
             where TEvent : BaseEvent;
+
         public static ProxyEvents Proxy { get; } = new ProxyEvents();
+
         public static PlayerEvents Player { get; } = new PlayerEvents();
     }
 
@@ -25,5 +27,8 @@ namespace XProxy.Core.Events
     {
         public event CustomEventHandler<PlayerAssignTargetServer> AssignTargetServer;
         public void InvokeAssignTargetServer(PlayerAssignTargetServer ev) => AssignTargetServer?.InvokeWithExceptionHandler(ev);
+
+        public event CustomEventHandler<PlayerCanJoinEvent> CanJoin;
+        public void InvokeCanJoin(PlayerCanJoinEvent ev) => CanJoin?.InvokeWithExceptionHandler(ev);
     }
 }

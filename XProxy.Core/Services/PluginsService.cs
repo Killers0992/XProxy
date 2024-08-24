@@ -1,10 +1,13 @@
-﻿using System;
+﻿using Microsoft.Extensions.DependencyInjection;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Text;
 using XProxy.Core;
+using XProxy.Core.Core;
+using XProxy.Core.Interfaces;
 
 namespace XProxy.Services
 {
@@ -16,8 +19,12 @@ namespace XProxy.Services
         string _pluginsPath = "./Plugins";
         string _dependenciesPath = "./Dependencies";
 
-        public PluginsService()
+        IServiceCollection _serviceCollection;
+
+        public PluginsService(IServiceCollection serviceCollection)
         {
+            _serviceCollection = serviceCollection;
+
             if (!Directory.Exists(_pluginsPath))
                 Directory.CreateDirectory(_pluginsPath);
 
@@ -43,11 +50,11 @@ namespace XProxy.Services
 
             if (dependencies.Length == 0)
             {
-                Logger.Info(ConfigService.Instance.Messages.NoDependenciesToLoadMessage, "PluginsService");
+                Logger.Info(ConfigService.Singleton.Messages.NoDependenciesToLoadMessage, "PluginsService");
             }
             else
             {
-                Logger.Info(ConfigService.Instance.Messages.LoadedAllDependenciesMesssage.Replace("%loaded%", $"{loaded}"), "PluginsService");
+                Logger.Info(ConfigService.Singleton.Messages.LoadedAllDependenciesMesssage.Replace("%loaded%", $"{loaded}"), "PluginsService");
             }
         }
 
@@ -64,7 +71,7 @@ namespace XProxy.Services
 
                 if (name.StartsWith("-"))
                 {
-                    Logger.Info(ConfigService.Instance.Messages.PluginDisabledMessage.Replace("%current%", $"{x+1}").Replace("%max%", $"{plugins.Length}").Replace("%name%", name), "PluginsService");
+                    Logger.Info(ConfigService.Singleton.Messages.PluginDisabledMessage.Replace("%current%", $"{x+1}").Replace("%max%", $"{plugins.Length}").Replace("%name%", name), "PluginsService");
                     continue;
                 }
 
@@ -79,14 +86,14 @@ namespace XProxy.Services
                 if (missingAssemblies.Count > 0)
                 {
                     StringBuilder sb = new StringBuilder();
-                    sb.AppendLine(ConfigService.Instance.Messages.PluginHasMissingDependenciesMessage.Replace("%current%", $"{x+1}").Replace("%max%", $"{plugins.Length}").Replace("%name%", name));
+                    sb.AppendLine(ConfigService.Singleton.Messages.PluginHasMissingDependenciesMessage.Replace("%current%", $"{x+1}").Replace("%max%", $"{plugins.Length}").Replace("%name%", name));
                     foreach(var dependency in missingAssemblies)
                     {
-                        sb.AppendLine(ConfigService.Instance.Messages.PluginMissingDependencyMessage.Replace("%name%", dependency.Key).Replace("%version%", dependency.Value.Version.ToString(3)));
+                        sb.AppendLine(ConfigService.Singleton.Messages.PluginMissingDependencyMessage.Replace("%name%", dependency.Key).Replace("%version%", dependency.Value.Version.ToString(3)));
                     }
                     Logger.Info(sb, "PluginsServices");
                     failed++;
-                    continue;
+                    //continue;
                 }
 
                 Type[] types = assembly.GetTypes();
@@ -95,7 +102,7 @@ namespace XProxy.Services
 
                 foreach (var type in types)
                 {
-                    if (type.GetInterface("Plugin") == null)
+                    if (!type.IsSubclassOf(typeof(Plugin)))
                         continue;
 
                     plugin = (Plugin)Activator.CreateInstance(type);
@@ -105,27 +112,41 @@ namespace XProxy.Services
 
                 if (plugin == null)
                 {
-                    Logger.Info(ConfigService.Instance.Messages.PluginInvalidEntrypointMessage.Replace("%current%", $"{x+1}").Replace("%max%", $"{plugins.Length}").Replace("%name%", name), "PluginsService");
+                    Logger.Info(ConfigService.Singleton.Messages.PluginInvalidEntrypointMessage.Replace("%current%", $"{x+1}").Replace("%max%", $"{plugins.Length}").Replace("%name%", name), "PluginsService");
                     failed++;
                     continue;
                 }
 
-                plugin.OnLoad();
-                Logger.Info(ConfigService.Instance.Messages.PluginLoadedMessage.Replace("%current%", $"{x+1}").Replace("%max%", $"{plugins.Length}").Replace("%name%", name), "PluginsService");
+                name = plugin.Name;
+
+                plugin.PluginDirectory = Path.Combine(_pluginsPath, $"{name}");
+
+                try
+                {
+                    plugin.LoadConfig();
+
+                    plugin.OnLoad(_serviceCollection);
+                }
+                catch (Exception ex)
+                {
+                    Logger.Error($"Failed loading plugin {name}\n{ex}", "PluginsService");
+                }
+
+                Logger.Info(ConfigService.Singleton.Messages.PluginLoadedMessage.Replace("%current%", $"{x+1}").Replace("%max%", $"{plugins.Length}").Replace("%name%", name), "PluginsService");
                 loaded++;
             }
 
             if (plugins.Length == 0)
             {
-                Logger.Info(ConfigService.Instance.Messages.NoPluginsToLoadMessage, "PluginsService");
+                Logger.Info(ConfigService.Singleton.Messages.NoPluginsToLoadMessage, "PluginsService");
             }
             else if (plugins.Length == loaded)
             {
-                Logger.Info(ConfigService.Instance.Messages.LoadedAllPluginsMesssage.Replace("%loaded%", $"{loaded}"), "PluginsService");
+                Logger.Info(ConfigService.Singleton.Messages.LoadedAllPluginsMesssage.Replace("%loaded%", $"{loaded}"), "PluginsService");
             }
             else
             {
-                Logger.Info(ConfigService.Instance.Messages.PluginsLoadedAndFailedToLoadMessage.Replace("%loaded%", $"{loaded}").Replace("%failed%", $"{failed}"), "PluginsService");
+                Logger.Info(ConfigService.Singleton.Messages.PluginsLoadedAndFailedToLoadMessage.Replace("%loaded%", $"{loaded}").Replace("%failed%", $"{failed}"), "PluginsService");
             }
         }
     }
