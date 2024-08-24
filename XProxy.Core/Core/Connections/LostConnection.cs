@@ -52,7 +52,7 @@ namespace XProxy.Core.Connections
             }
             else
             {
-                string targetServer = Player.Proxy.GetRandomServerFromPriorities().ServerName;
+                string targetServer = Player.Proxy.GetRandomServerFromPriorities().Name;
 
                 if (string.IsNullOrEmpty(targetServer))
                 {

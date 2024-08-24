@@ -1,5 +1,4 @@
 ﻿using System.Text.RegularExpressions;
-using XProxy.Models;
 using XProxy.Services;
 
 namespace XProxy.Core
@@ -13,25 +12,25 @@ namespace XProxy.Core
                 string placeholderType = match.Groups[1].Value.ToLower();
                 string serverName = match.Groups[2].Success ? match.Groups[2].Value : null;
 
-                ServerInfo serverInstance = ProxyService.Singleton.GetServerByName(serverName);
+                Server.TryGetByName(serverName, out Server targetServer);
 
                 switch (placeholderType.ToLower())
                 {
                     case "playersinqueue":
-                        if (serverInstance == null)
+                        if (targetServer == null)
                             return "-1";
 
-                        return $"{serverInstance.PlayersInQueue}";
+                        return $"{targetServer.PlayersInQueue}";
                     case "onlineplayers":
-                        if (serverInstance == null)
+                        if (targetServer == null)
                             return "-1";
 
-                        return $"{serverInstance.PlayersOnline}";
+                        return $"{targetServer.PlayersCount}";
                     case "maxplayers":
-                        if (serverInstance == null)
+                        if (targetServer == null)
                             return "-1";
 
-                        return $"{serverInstance.PlayersOnline}";
+                        return $"{targetServer.PlayersCount}";
                     case "proxyonlineplayers":
                         return ProxyService.Singleton.Players.Count.ToString();
                     case "proxymaxplayers":

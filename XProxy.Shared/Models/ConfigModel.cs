@@ -103,6 +103,15 @@ namespace XProxy.Shared.Models
         public bool AutoJoinQueueInLobby { get; set; } = false;
         [Description("For how long queue slot will be valid for player upon joining target server. ( started connecting to target server >-( TIME IN SECONDS )-> connected to target server ) ")]
         public int QueueTicketLifetime { get; set; } = 15;
+
+        public bool TryGetServer(string serverName, out ServerModel serverModel)
+        {
+            if (Servers.TryGetValue(serverName, out serverModel))
+                return true;
+
+            serverModel = null;
+            return false;
+        }
     }
 
     public class ServerModel

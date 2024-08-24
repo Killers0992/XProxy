@@ -46,9 +46,9 @@ namespace XProxy.Commands
         {
             StringBuilder sb = new StringBuilder();
             sb.AppendLine("Servers:");
-            foreach (var server in ProxyService.Singleton.Servers)
+            foreach (var server in Server.List)
             {
-                sb.AppendLine($" - (f=cyan){server.Value.ServerName}(f=white) [ (f=green){server.Value.PlayersOnline}/{server.Value.MaxPlayers}(f=white) ] ((f=darkcyan){server.Value}(f=white))");
+                sb.AppendLine($" - (f=cyan){server.Name}(f=white) [ (f=green){server.PlayersCount}/{server.Settings.MaxPlayers}(f=white) ] ((f=darkcyan){server}(f=white))");
             }
             Logger.Info(sb.ToString(), "servers");
         }
@@ -58,23 +58,23 @@ namespace XProxy.Commands
         {
             StringBuilder sb = new StringBuilder();
             sb.AppendLine("Players on servers:");
-            foreach (var server in ProxyService.Singleton.Servers)
+            foreach (var server in Server.List)
             {
-                sb.AppendLine($" - Server (f=cyan){server.Value.ServerName}(f=white) [ (f=green){server.Value.PlayersOnline}/{server.Value.MaxPlayers}(f=white) ] ((f=darkcyan){server.Value}(f=white))");
+                sb.AppendLine($" - Server (f=cyan){server.Name}(f=white) [ (f=green){server.PlayersCount}/{server.Settings.MaxPlayers}(f=white) ] ((f=darkcyan){server}(f=white))");
                 sb.AppendLine($"  -> On Server  ");
-                foreach (var player in server.Value.Players.OrderBy(x => x.IsInQueue).OrderBy(x => x.PositionInQueue))
+                foreach (var player in server.Players.OrderBy(x => x.IsInQueue).OrderBy(x => x.PositionInQueue))
                 {
                     sb.AppendLine($"  [(f=green){player.Id}(f=white)] (f=cyan){player.UserId}(f=white) connection time (f=darkcyan){player.Connectiontime.ToReadableString()}(f=white)");
                 }
 
-                if (server.Value.PlayersInQueueCount > 0)
+                if (server.PlayersInQueueCount > 0)
                 {
                     sb.AppendLine($"  -> In Queue  ");
-                    foreach (var queuePlayers in server.Value.PlayersInQueue.OrderBy(x => x.Value.Position))
+                    foreach (var queuePlayers in server.PlayersInQueue.OrderBy(x => x.Value.Position))
                     {
                         var plr = ProxyService.Singleton.GetPlayerByUserId(queuePlayers.Key);
 
-                        sb.AppendLine($"  [(f=green){queuePlayers.Value.Position}(f=white)/(f=green){server.Value.PlayersInQueueCount}(f=white)] (f=cyan){queuePlayers.Key}(f=white) {(plr == null ? $"(f=darkred)OFFLINE(f=white) ( slot expires in few seconds )" : $"connection time (f=darkcyan){plr.Connectiontime.ToReadableString()}(f=white)")}");
+                        sb.AppendLine($"  [(f=green){queuePlayers.Value.Position}(f=white)/(f=green){server.PlayersInQueueCount}(f=white)] (f=cyan){queuePlayers.Key}(f=white) {(plr == null ? $"(f=darkred)OFFLINE(f=white) ( slot expires in few seconds )" : $"connection time (f=darkcyan){plr.Connectiontime.ToReadableString()}(f=white)")}");
                     }
                 }
             }
@@ -93,9 +93,7 @@ namespace XProxy.Commands
 
             string serverName = string.Join(" ", args.Skip(1));
 
-            ServerInfo server = ProxyService.Singleton.GetServerByName(serverName);
-
-            if (server == null)
+            if (!Server.TryGetByName(serverName, out Server server))
             {
                 Logger.Info($"Server with name {args[1]} not exists!", "send");
                 return;
@@ -109,16 +107,16 @@ namespace XProxy.Commands
                     {
                         if (player.ServerInfo == server) continue;
 
-                        if (player.RedirectTo(server.ServerName))
+                        if (player.RedirectTo(server.Name))
                         {
                             sent++;
-                            player.SendHint($"Connecting to <color=green>{server.ServerName}</color>...", 10f);
+                            player.SendHint($"Connecting to <color=green>{server.Name}</color>...", 10f);
                         }
                         else
-                            player.SendHint($"<color=red>Server <color=green>{server.ServerName}</color> is full...</color>", 3f);
+                            player.SendHint($"<color=red>Server <color=green>{server.Name}</color> is full...</color>", 3f);
                     }
 
-                    Logger.Info($"Sent (f=green){sent}(f=white) players to server (f=green){server.ServerName}(f=white)", "send");
+                    Logger.Info($"Sent (f=green){sent}(f=white) players to server (f=green){server.Name}(f=white)", "send");
                     break;
                 default:
                     if (args[1].Contains("@"))
@@ -131,12 +129,12 @@ namespace XProxy.Commands
                             return;
                         }
 
-                        if (targetPlayer.RedirectTo(server.ServerName))
-                            targetPlayer.SendHint($"Connecting to <color=green>{server.ServerName}</color>...", 10f);
+                        if (targetPlayer.RedirectTo(server.Name))
+                            targetPlayer.SendHint($"Connecting to <color=green>{server.Name}</color>...", 10f);
                         else
-                            targetPlayer.SendHint($"<color=red>Server <color=green>{server.ServerName}</color> is full...</color>", 3f);
+                            targetPlayer.SendHint($"<color=red>Server <color=green>{server.Name}</color> is full...</color>", 3f);
 
-                        Logger.Info($"Sent (f=green){targetPlayer.UserId} to server (f=green){server.ServerName}(f=white)", "send");
+                        Logger.Info($"Sent (f=green){targetPlayer.UserId} to server (f=green){server.Name}(f=white)", "send");
                     }
                     else
                     {

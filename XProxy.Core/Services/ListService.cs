@@ -360,8 +360,8 @@ namespace XProxy.Services
 
                 if (serverWithUseSlots.Value != null)
                 {
-                    var targetServer = ProxyService.Singleton.GetServerByName(serverWithUseSlots.Key);
-                    playersStr = $"{targetServer.PlayersOnline}/{targetServer.MaxPlayers}";
+                    if (Server.TryGetByName(serverWithUseSlots.Key, out Server targetServer))
+                        playersStr = $"{targetServer.PlayersCount}/{targetServer.Settings.MaxPlayers}";
                 }
 
                 Dictionary<string, string> upd = Update ?

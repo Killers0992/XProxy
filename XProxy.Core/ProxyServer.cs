@@ -22,14 +22,14 @@ namespace XProxy
         private NetManager _manager;
         private EventBasedNetListener _listener;
 
+        public static bool UpdateServers = false;
+
         internal ConfigService _config => ConfigService.Singleton;
 
         public ushort Port => _config.Value.Port;
 
         public ConcurrentDictionary<int, Player> Players { get; private set; } = new ConcurrentDictionary<int, Player>();
         public ConcurrentDictionary<string, int> PlayersByUserId { get; private set; } = new ConcurrentDictionary<string, int>();
-
-        public Dictionary<string, ServerInfo> Servers { get; private set; } = new Dictionary<string, ServerInfo>();
 
         public static ConcurrentDictionary<string, LastServerInfo> ForceServerForUserID { get; set; } = new ConcurrentDictionary<string, LastServerInfo>();
 
@@ -58,7 +58,7 @@ namespace XProxy
                     MessageIdToName.Add(key, message.FullName);
             }
 
-            RefreshServers();
+            Server.Refresh();
 
             _listener = new EventBasedNetListener();
             _listener.ConnectionRequestEvent += OnConnectionRequest;
@@ -91,62 +91,22 @@ namespace XProxy
             return plr;
         }
 
-        public ServerInfo GetServerByIp(string ip)
+        public Server GetFirstServerFromPriorities()
         {
-            string[] ipParse = ip.Split(':');
-
-            if (ipParse.Length != 2) return null;
-
-            string ipPart = ipParse[0];
-
-            if (!int.TryParse(ipParse[1], out int port))
-                return null;
-
-            return Servers.Values.Where(x => x.ServerIp == ipPart && x.ServerPort == port).FirstOrDefault();
-        }
-
-        public ServerInfo GetServerByPublicIp(string ip)
-        {
-            string[] ipParse = ip.Split(':');
-
-            if (ipParse.Length != 2) return null;
-
-            string ipPart = ipParse[0];
-
-            if (!int.TryParse(ipParse[1], out int port))
-                return null;
-
-            return Servers.Values.Where(x => x.ServerPublicIp == ipPart && x.ServerPort == port).FirstOrDefault();
-        }
-
-        public ServerInfo GetServerByName(string name)
-        {
-            if (name == null) return null;
-
-            if (Servers.TryGetValue(name, out ServerInfo info))
-                return info;
-
-            return null;
-        }
-
-        public ServerInfo GetFirstServerFromPriorities()
-        {
-            ServerInfo first = Servers
-                    .Where(x => _config.Value.Priorities.Contains(x.Key))
-                    .OrderBy(pair => _config.Value.Priorities.IndexOf(pair.Key))
-                    .Select(pair => pair.Value)
+            Server first = Server.List
+                    .Where(x => _config.Value.Priorities.Contains(x.Name))
+                    .OrderBy(pair => _config.Value.Priorities.IndexOf(pair.Name))
                     .ToList()
                     .FirstOrDefault();
 
             return first;
         }
 
-        public ServerInfo GetRandomServerFromPriorities(Player plr = null)
+        public Server GetRandomServerFromPriorities(Player plr = null)
         {
-            ServerInfo random = Servers
-                    .Where(x => _config.Value.Priorities.Contains(x.Key))
-                    .OrderBy(pair => _config.Value.Priorities.IndexOf(pair.Key))
-                    .Select(pair => pair.Value)
+            Server random = Server.List
+                    .Where(x => _config.Value.Priorities.Contains(x.Name))
+                    .OrderBy(pair => _config.Value.Priorities.IndexOf(pair.Name))
                     .Where(x => plr != null ? x.CanPlayerJoin(plr) : !x.IsServerFull)
                     .ToList()
                     .FirstOrDefault();
@@ -181,40 +141,19 @@ namespace XProxy
             return info.Time > DateTime.Now;
         }
 
-        public ServerInfo GetSavedLastServer(string userid)
+        public Server GetSavedLastServerAndClear(string userid)
         {
-            if (!HasSavedLastServer(userid)) return null;
+            if (!ForceServerForUserID.TryGetValue(userid, out LastServerInfo info))
+                return null;
 
-            return GetServerByName(ForceServerForUserID[userid].Index);
-        }
-
-        public ServerInfo GetSavedLastServerAndClear(string userid)
-        {
-            string name = ForceServerForUserID[userid].Index;
+            string name = info.Index;
 
             ClearSavedLastServer(userid);
 
-            return GetServerByName(name);
-        }
+            if (!Server.TryGetByName(name, out Server server))
+                return null;
 
-        public void RefreshServers()
-        {
-            Servers = _config.Value.Servers.ToDictionary(
-                x => 
-                    x.Key, 
-                a => 
-                    new ServerInfo(
-                        a.Key, 
-                        a.Value.Name, 
-                        a.Value.PublicIp, 
-                        a.Value.Ip, 
-                        a.Value.Port, 
-                        a.Value.MaxPlayers, 
-                        a.Value.SendIpAddressInPreAuth, 
-                        a.Value.ConnectionType, 
-                        a.Value.Simulation,
-                        a.Value.QueueSlots
-                    ));
+            return server;
         }
 
         public async Task Run()
@@ -226,6 +165,12 @@ namespace XProxy
                     if (_manager != null)
                         if (_manager.IsRunning)
                             _manager.PollEvents();
+
+                    if (UpdateServers)
+                    {
+                        Server.Refresh();
+                        UpdateServers = false;
+                    }
                 }
                 catch(Exception ex)
                 {
@@ -292,7 +237,7 @@ namespace XProxy
 
             Logger.Debug($"[{request.RemoteEndPoint.Address}] Get last server");
 
-            ServerInfo target;
+            Server target;
             if (HasSavedLastServer(preAuth.UserID))
                 target = GetSavedLastServerAndClear(preAuth.UserID);
             else
@@ -309,7 +254,7 @@ namespace XProxy
 
             EventManager.Player.InvokeAssignTargetServer(ev2);
 
-            if (target.SendIpAddressInPreAuth)
+            if (target.Settings.SendIpAddressInPreAuth)
                 preAuth.RawPreAuth.Put(ip);
 
             Logger.Debug($"[{request.RemoteEndPoint.Address}] Internal setup -> connect");

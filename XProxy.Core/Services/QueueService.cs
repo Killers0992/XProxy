@@ -2,7 +2,6 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
-using XProxy.Services;
 
 namespace XProxy.Core.Services
 {
@@ -14,7 +13,7 @@ namespace XProxy.Core.Services
             {
                 try
                 {
-                    foreach (var server in ProxyService.Singleton.Servers.Values)
+                    foreach (var server in Server.List)
                     {
                         foreach(var ticket in server.PlayersInQueue)
                         {
@@ -22,12 +21,12 @@ namespace XProxy.Core.Services
 
                             if (ticket.Value.IsConnecting)
                             {
-                                Logger.Info($"Player {ticket.Key} joined server {server.ServerName} from queue successfully! ( freed slot )", "QueueService");
+                                Logger.Info($"Player {ticket.Key} joined server {server.Name} from queue successfully! ( freed slot )", "QueueService");
 
                             }
                             else
                             {
-                                Logger.Info($"Queue slot for {ticket.Key} expired! ( server {server.ServerName} )", "QueueService");
+                                Logger.Info($"Queue slot for {ticket.Key} expired! ( server {server.Name} )", "QueueService");
                             }
 
                             server.PlayersInQueueByUserId.Remove(ticket.Value.UserId);

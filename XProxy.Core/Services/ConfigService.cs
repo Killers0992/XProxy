@@ -21,7 +21,7 @@ namespace XProxy.Services
             if (!Directory.Exists(Path.Combine(MainDirectory, _languagesDir)))
                 Directory.CreateDirectory(Path.Combine(MainDirectory, _languagesDir));
 
-            Load();
+            Load(true);
 
             Logger.Info(Messages.ProxyVersion.Replace("%version%", ProxyBuildInfo.ReleaseInfo.Version).Replace("%gameVersion%", ProxyBuildInfo.ReleaseInfo.GameVersion), "XProxy");
         }
@@ -52,13 +52,16 @@ namespace XProxy.Services
                 File.WriteAllText(Path.Combine(MainDirectory, _languagesDir, _defaultLanguagePath), YamlParser.Serializer.Serialize(new MessagesModel()));
         }
 
-        public void Load()
+        public void Load(bool intial = false)
         {
-            ProxyService.Singleton?.RefreshServers();
             CreateIfMissing();
             Value = YamlParser.Deserializer.Deserialize<ConfigModel>(File.ReadAllText(Path.Combine(MainDirectory, _configPath)));
             Logger.DebugMode = Value.Debug;
             Messages = GetMessagesForLanguage(Value.Langauge);
+
+            if (!intial)
+                ProxyServer.UpdateServers = true;
+
             Save();
             Logger.Debug(Messages.ConfigLoadedMessage, "ConfigService");
         }

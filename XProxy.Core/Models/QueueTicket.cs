@@ -8,9 +8,9 @@ namespace XProxy.Core.Models
     {
         bool? _lastOfflineStatus = false;
         DateTime _offlineFor = DateTime.Now;
-        ServerInfo _info;
+        Server _info;
 
-        public QueueTicket(string userId, ServerInfo server)
+        public QueueTicket(string userId, Server server)
         {
             UserId = userId;
             _info = server;

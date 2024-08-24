@@ -5,8 +5,6 @@ namespace XProxy.Core.Connections
 {
     public class QueueConnection : SimulatedConnection
     {
-        public override bool AddToOnlinePlayers => false;
-
         public QueueConnection(Player plr) : base(plr)
         {
         }
@@ -61,9 +59,9 @@ namespace XProxy.Core.Connections
                 case "lobby":
                     var rng = Player.Proxy.GetRandomServerFromPriorities();
 
-                    if (rng.ConnectionType == ConnectionType.Simulated)
+                    if (rng.Settings.ConnectionType == ConnectionType.Simulated)
                     {
-                        if (ProxyServer.Simulations.TryGetValue(rng.Simulation, out Type simType))
+                        if (ProxyServer.Simulations.TryGetValue(rng.Settings.Simulation, out Type simType))
                         {
                             Player.ServerInfo = rng;
                             Player.Connection = (SimulatedConnection)Activator.CreateInstance(simType, args: Player);

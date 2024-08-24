@@ -6,8 +6,6 @@ using System.Linq;
 using System.Reflection;
 using System.Text;
 using XProxy.Core;
-using XProxy.Core.Core;
-using XProxy.Core.Interfaces;
 
 namespace XProxy.Services
 {
@@ -16,8 +14,8 @@ namespace XProxy.Services
         public List<Assembly> Dependencies = new List<Assembly>();
         public Dictionary<Assembly, Plugin> AssemblyToPlugin = new Dictionary<Assembly, Plugin>();
 
-        string _pluginsPath = "./Plugins";
-        string _dependenciesPath = "./Dependencies";
+        string _pluginsPath =>  Path.Combine(ConfigService.MainDirectory, "Plugins");
+        string _dependenciesPath => Path.Combine(ConfigService.MainDirectory, "Dependencies");
 
         IServiceCollection _serviceCollection;
 
