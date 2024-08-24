@@ -17,6 +17,11 @@ namespace XProxy.Core
 
                 switch (placeholderType.ToLower())
                 {
+                    case "playersinqueue":
+                        if (serverInstance == null)
+                            return "-1";
+
+                        return $"{serverInstance.PlayersInQueue}";
                     case "onlineplayers":
                         if (serverInstance == null)
                             return "-1";

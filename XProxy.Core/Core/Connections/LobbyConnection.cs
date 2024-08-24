@@ -144,9 +144,7 @@ namespace XProxy.Core.Connections
 
             foreach (var line in Player.Proxy._config.Messages.LobbyMainHint)
             {
-                string tempLine = line.Replace("%serversLine1%", line1).Replace("%serversLine2%", line2).Replace("%server%", currentServer);
-
-                sb.AppendLine(PlaceHolders.ReplacePlaceholders(tempLine));
+                sb.AppendLine(line.Replace("%serversLine1%", line1).Replace("%serversLine2%", line2).Replace("%server%", currentServer));
             }
 
             Player.SendHint(sb.ToString(), dur);

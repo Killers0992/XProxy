@@ -179,6 +179,8 @@ namespace XProxy.Core
 
         public void SendHint(string message, float duration = 3)
         {
+            message = PlaceHolders.ReplacePlaceholders(message);
+
             NetworkWriter writerPooled = new NetworkWriter();
 
             writerPooled.WriteUShort(HintMessageId);
@@ -314,6 +316,8 @@ namespace XProxy.Core
 
         public void SendGameConsoleMessage(string message, string color = "green")
         {
+            message = PlaceHolders.ReplacePlaceholders(message);
+
             NetworkWriter wri = new NetworkWriter();
 
             wri.WriteUShort(EncryptedMessageOutsideId);
