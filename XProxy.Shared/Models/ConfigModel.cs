@@ -16,6 +16,9 @@ namespace XProxy.Shared.Models
         public bool Debug { get; set; }
         [Description("Language of messages.")]
         public string Langauge { get; set; } = "en";
+
+        [Description("IP on which proxy will listen.")]
+        public string ListenIp { get; set; } = "0.0.0.0";
         [Description("Port which proxy will use to listen for connections.")]
         public ushort Port { get; set; } = 7777;
 

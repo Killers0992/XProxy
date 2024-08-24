@@ -5,6 +5,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Data;
 using System.Linq;
+using System.Net;
 using System.Threading.Tasks;
 using XProxy.Core;
 using XProxy.Core.Connections;
@@ -72,7 +73,7 @@ namespace XProxy
             _manager.DisconnectTimeout = 6000;
             _manager.ReconnectDelay = 400;
             _manager.MaxConnectAttempts = 2;
-            _manager.Start(_config.Value.Port);
+            _manager.Start(IPAddress.Parse(_config.Value.ListenIp), IPAddress.IPv6Any, _config.Value.Port);
 
             EventManager.Proxy.InvokeStartedListening(new ProxyStartedListening(this, _config.Value.Port));
 
