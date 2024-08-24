@@ -316,7 +316,10 @@ namespace XProxy.Services
             Client.DefaultRequestHeaders.Add("User-Agent", "SCP SL");
             Client.DefaultRequestHeaders.Add("Game-Version", ConfigModel.GameVersion);
 
-            PublicIp = await GetPublicIp();
+            if (ConfigService.Singleton.Value.ListenIp == "0.0.0.0")
+                PublicIp = ConfigService.Singleton.Value.ListenIp;
+            else
+                PublicIp = await GetPublicIp();
 
             RefreshToken(true);
 
