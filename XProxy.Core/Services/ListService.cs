@@ -316,8 +316,8 @@ namespace XProxy.Services
             Client.DefaultRequestHeaders.Add("User-Agent", "SCP SL");
             Client.DefaultRequestHeaders.Add("Game-Version", ConfigModel.GameVersion);
 
-            if (ConfigService.Singleton.Value.ListenIp == "0.0.0.0")
-                PublicIp = ConfigService.Singleton.Value.ListenIp;
+            if (ConfigService.Singleton.Value.ServerIP.ToLower() != "auto")
+                PublicIp = ConfigService.Singleton.Value.ServerIP;
             else
                 PublicIp = await GetPublicIp();
 

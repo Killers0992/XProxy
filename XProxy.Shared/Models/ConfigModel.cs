@@ -17,6 +17,9 @@ namespace XProxy.Shared.Models
         [Description("Language of messages.")]
         public string Langauge { get; set; } = "en";
 
+        [Description("Server IP used for listing server on serverlist. ( auto = automatically gets public ip )")]
+        public string ServerIP { get; set; } = "auto";
+
         [Description("IP on which proxy will listen.")]
         public string ListenIp { get; set; } = "0.0.0.0";
         [Description("Port which proxy will use to listen for connections.")]
