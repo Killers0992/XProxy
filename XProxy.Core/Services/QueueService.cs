@@ -39,7 +39,7 @@ namespace XProxy.Core.Services
                     Logger.Error(ex, "QueueService");
                 }
 
-                await Task.Delay(10);
+                await Task.Delay(1000);
             }
         }
     }

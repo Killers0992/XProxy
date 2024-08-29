@@ -363,15 +363,8 @@ namespace XProxy.Core
 
         public bool RedirectTo(Server server, bool queue = false)
         {
-            Logger.Info("Redirect player");
-
             if (!server.CanPlayerJoin(this))
-            {
-                Logger.Info("Redirect player failed");
                 return false;
-            }
-
-            Logger.Info("Redirect 2 player");
 
             if (queue)
                 ServerInfo.MarkPlayerInQueueAsConnecting(this);

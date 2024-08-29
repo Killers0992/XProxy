@@ -79,7 +79,7 @@ namespace XProxy.Services
                     Logger.Info(ConfigService.Singleton.Messages.CommandNotExistsMessage.Replace("%name%", args[0]), "CommandsService");
                 }
 
-                await Task.Delay(1);
+                await Task.Delay(15);
             }
         }
 

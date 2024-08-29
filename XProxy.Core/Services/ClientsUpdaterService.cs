@@ -14,7 +14,7 @@ namespace XProxy.Services
                 {
                     client.InternalUpdate();
                 }
-                await Task.Delay(10);
+                await Task.Delay(1000);
             }
         }
     }
