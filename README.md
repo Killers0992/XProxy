@@ -55,7 +55,6 @@ These placeholders can be used in lobby hint or server name.
 
 | IP | Name |
 | ------------- | ------------- |
-| 193.164.18.36:7777 | ![image](https://github.com/user-attachments/assets/72eaabd6-a02b-4d11-b3a6-eeac56437087) |
 | 45.79.40.209:9000 | ![image](https://github.com/user-attachments/assets/df0bb6a8-e5b9-422f-a686-2a313ed7bc44) |
 
 # Central Commands
