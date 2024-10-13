@@ -1,5 +1,4 @@
 ﻿using LiteNetLib;
-using Matchmaker.API.Networking;
 using Mirror;
 using System;
 using System.Collections.Concurrent;
@@ -45,7 +44,6 @@ namespace XProxy
 
         public ProxyServer()
         {
-            MatchmakerMaster.AutoReconnect = true;
             foreach(var message in typeof(GameConsoleTransmission).Assembly.GetTypes().Where(x => x.GetInterface("NetworkMessage") != null))
             {
                 ushort key = (ushort)message.FullName.GetStableHashCode();
