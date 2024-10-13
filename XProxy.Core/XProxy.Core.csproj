@@ -26,6 +26,9 @@
     <Reference Include="Assembly-CSharp">
       <HintPath>$(SL_REFERENCES)\Assembly-CSharp.dll</HintPath>
     </Reference>
+    <Reference Include="Matchmaker.API">
+      <HintPath>..\..\Matchmaker\Matchmaker.API\bin\Debug\net7\Matchmaker.API.dll</HintPath>
+    </Reference>
     <Reference Include="Mirror">
       <HintPath>$(SL_REFERENCES)\Mirror.dll</HintPath>
     </Reference>

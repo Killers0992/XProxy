@@ -1,4 +1,5 @@
 ﻿using LiteNetLib;
+using Matchmaker.API.Networking;
 using Mirror;
 using System;
 using System.Collections.Concurrent;
@@ -12,6 +13,7 @@ using XProxy.Core.Connections;
 using XProxy.Core.Core.Events.Args;
 using XProxy.Core.Events;
 using XProxy.Core.Events.Args;
+using XProxy.Core.Models;
 using XProxy.Models;
 using XProxy.Services;
 using XProxy.Shared.Models;
@@ -43,6 +45,7 @@ namespace XProxy
 
         public ProxyServer()
         {
+            MatchmakerMaster.AutoReconnect = true;
             foreach(var message in typeof(GameConsoleTransmission).Assembly.GetTypes().Where(x => x.GetInterface("NetworkMessage") != null))
             {
                 ushort key = (ushort)message.FullName.GetStableHashCode();
@@ -60,6 +63,8 @@ namespace XProxy
             }
 
             Server.Refresh();
+
+            NetDebug.Logger = new CustomNetLogger();
 
             _listener = new EventBasedNetListener();
             _listener.ConnectionRequestEvent += OnConnectionRequest;
