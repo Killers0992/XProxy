@@ -119,7 +119,7 @@ namespace XProxy.Commands
                     Logger.Info($"Sent (f=green){sent}(f=white) players to server (f=green){server.Name}(f=white)", "send");
                     break;
                 default:
-                    if (args[1].Contains("@"))
+                    if (args[0].Contains("@"))
                     {
                         var targetPlayer = ProxyService.Singleton.Players.Values.Where(x => x.UserId == args[1]).FirstOrDefault();
 
