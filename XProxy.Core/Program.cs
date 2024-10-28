@@ -10,7 +10,7 @@ using XProxy.Core.Services;
 using XProxy.Services;
 using XProxy.Shared.Models;
 
-[assembly: AssemblyVersion("1.4.9")]
+[assembly: AssemblyVersion("1.5.0")]
 
 namespace XProxy
 {
@@ -45,7 +45,7 @@ namespace XProxy
             });
 
 #if DEBUG
-            ConfigModel.GameVersion = "13.5.1";
+            ConfigModel.GameVersion = "13.6.9";
 #endif
 
             if (string.IsNullOrEmpty(ConfigModel.GameVersion))
