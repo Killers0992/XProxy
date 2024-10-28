@@ -121,11 +121,11 @@ namespace XProxy.Commands
                 default:
                     if (args[0].Contains("@"))
                     {
-                        var targetPlayer = ProxyService.Singleton.Players.Values.Where(x => x.UserId == args[1]).FirstOrDefault();
+                        var targetPlayer = ProxyService.Singleton.Players.Values.Where(x => x.UserId == args[0]).FirstOrDefault();
 
                         if (targetPlayer == null)
                         {
-                            Logger.Info($"Player with userid {args[1]} not exists!", "send");
+                            Logger.Info($"Player with userid {args[0]} not exists!", "send");
                             return;
                         }
 
