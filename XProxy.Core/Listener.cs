@@ -224,11 +224,7 @@ namespace XProxy
             string failed = string.Empty;
             string ip = $"{request.RemoteEndPoint.Address}";
 
-            Logger.Debug($"[{request.RemoteEndPoint.Address}] Connection request, read preAuth...");
-
             var preAuth = PreAuthModel.ReadPreAuth(ip, request.Data, ref failed);
-
-            Logger.Debug($"[{request.RemoteEndPoint.Address}] Connection request, preAuth\n{preAuth}");
 
             if (!preAuth.IsValid)
             {
@@ -269,11 +265,7 @@ namespace XProxy
             if (ev.IsCancelled)
                 return;
 
-            Logger.Debug($"[{request.RemoteEndPoint.Address}] Create player");
-
             Player player = new Player(this, preAuth);
-
-            Logger.Debug($"[{request.RemoteEndPoint.Address}] Get last server");
 
             Server target;
             if (HasSavedLastServer(preAuth.UserID))
@@ -304,14 +296,16 @@ namespace XProxy
 
         public void OnNetworkReceive(NetPeer peer, NetPacketReader reader, byte channelNumber, DeliveryMethod deliveryMethod)
         {
-            if (!Players.TryGetValue(peer.Id, out Player player)) return;
+            if (!Players.TryGetValue(peer.Id, out Player player)) 
+                return;
 
             player.InternalReceiveDataFromProxy(reader, deliveryMethod);
         }
 
         public void OnPeerDisconnected(NetPeer peer, DisconnectInfo disconnectInfo)
         {
-            if (!Players.TryGetValue(peer.Id, out Player player)) return;
+            if (!Players.TryGetValue(peer.Id, out Player player)) 
+                return;
 
             bool showDisconnectMessage = !player.IsRoundRestarting && !player.IsRedirecting && disconnectInfo.Reason != DisconnectReason.DisconnectPeerCalled;
 

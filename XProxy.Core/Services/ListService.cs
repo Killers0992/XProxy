@@ -354,15 +354,9 @@ namespace XProxy.Services
 
                     string str = JsonConvert.SerializeObject(new AuthPlayersModel());
 
-                    var serverWithUseSlots = _config.Value.Servers.FirstOrDefault(x => x.Value.UseSlotsForServerListPlayersCount);
-
                     string playersStr = $"{proxyServer.Players.Count}/{settings.MaxPlayers}";
-
-                    if (serverWithUseSlots.Value != null)
-                    {
-                        if (Server.TryGetByName(serverWithUseSlots.Key, out Server targetServer))
-                            playersStr = $"{targetServer.PlayersCount}/{targetServer.Settings.MaxPlayers}";
-                    }
+                    if (Server.TryGetByName(settings.ServerList.TakePlayerCountFromServer, out Server targetServer))
+                        playersStr = $"{targetServer.PlayersCount}/{targetServer.Settings.MaxPlayers}";
 
                     Dictionary<string, string> upd = settings.ServerListUpdate ?
                         new Dictionary<string, string>()

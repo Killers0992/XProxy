@@ -19,5 +19,9 @@ namespace XProxy.Shared.Models
 
         [Description("This PASTEBIN is used for server information on SCPSL Server List.")]
         public string Pastebin { get; set; } = "7wV681fT";
+
+
+        [Description("Setting this value for example to lobby it will take PlayerCount + MaxPlayerCount and it will use for displaying on serverlist.")]
+        public string TakePlayerCountFromServer { get; set; } = string.Empty;
     }
 }

@@ -61,6 +61,7 @@ namespace XProxy.Core
             PreAuth = preAuth;
 
             CancellationToken = new CancellationTokenSource();
+            Proxy.Players.TryAdd(Id, this);
         }
 
         public int Id { get; private set; } = -1;
@@ -642,8 +643,6 @@ namespace XProxy.Core
 
             if (!Listener.PlayersByUserId.ContainsKey(UserId))
                 Listener.PlayersByUserId.TryAdd(UserId, Id);
-
-            Proxy.Players.TryAdd(Id, this);
 
             _connectionRequest = null;
             (connection == null ? Connection : connection).InternalConnected();

@@ -131,8 +131,6 @@ namespace XProxy.Shared.Models
 
         [Description("PreAuth will contain IP Address of client and target server will set this ip address to that one only if enable_proxy_ip_passthrough is set to true and trusted_proxies_ip_addresses has your proxy ip!")]
         public bool SendIpAddressInPreAuth { get; set; } = true;
-        [Description("If currentPlayers + maxPlayers count from this server should be used as proxy serverlist players count. ( total players on proxy and max players on proxy will be then not displayed on serverlist )")]
-        public bool UseSlotsForServerListPlayersCount { get; set; } = false;
     }
 
     public class UserModel
