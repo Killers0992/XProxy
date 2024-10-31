@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Data;
 using System.Linq;
 using System.Net;
+using System.Threading;
 using System.Threading.Tasks;
 using XProxy.Core;
 using XProxy.Core.Connections;
@@ -160,9 +161,9 @@ namespace XProxy
             return server;
         }
 
-        public async Task Run()
+        public async Task Run(CancellationToken token)
         {
-            while (true)
+            while (!token.IsCancellationRequested)
             {
                 try
                 {
@@ -181,7 +182,7 @@ namespace XProxy
                     Logger.Error(ex);
                 }
 
-                await Task.Delay(1);
+                await Task.Delay(10);
             }
         }
 
@@ -251,6 +252,7 @@ namespace XProxy
             {
                 Logger.Info(_config.Messages.ProxyIsFull.Replace("%address%", $"{request.RemoteEndPoint.Address}").Replace("%userid%", preAuth.UserID), "XProxy");
                 request.DisconnectServerFull();
+                player?.Dispose();
                 return;
             }
 

@@ -8,7 +8,7 @@ namespace XProxy.Services
     {
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
-            while (true)
+            while (!stoppingToken.IsCancellationRequested)
             {
                 foreach(var client in ProxyService.Singleton.Players.Values)
                 {

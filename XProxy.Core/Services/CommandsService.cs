@@ -44,7 +44,7 @@ namespace XProxy.Services
         {
             RegisterConsoleCommandsInAssembly(Assembly.GetExecutingAssembly());
 
-            while (true)
+            while (!stoppingToken.IsCancellationRequested)
             {
                 string cmd = Console.ReadLine();
 

@@ -16,7 +16,7 @@ namespace XProxy.Services
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
-            await Singleton.Run();
+            await Singleton.Run(stoppingToken);
         }
     }
 }

@@ -10,7 +10,7 @@ using XProxy.Core.Services;
 using XProxy.Services;
 using XProxy.Shared.Models;
 
-[assembly: AssemblyVersion("1.5.0")]
+[assembly: AssemblyVersion("1.5.1")]
 
 namespace XProxy
 {
@@ -29,7 +29,7 @@ namespace XProxy
         }
 
         static async Task Main(string[] args) => await RunApplication(BuildApplication(args));
-        
+
         static HostApplicationBuilder BuildApplication(string[] args)
         {
             Parser.Default.ParseArguments<Options>(args)

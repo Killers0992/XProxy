@@ -3,6 +3,7 @@ using System.Linq;
 using System.Text;
 using XProxy.Attributes;
 using XProxy.Core;
+using XProxy.Core.Monitors;
 using XProxy.Models;
 using XProxy.Services;
 
@@ -222,6 +223,14 @@ namespace XProxy.Commands
                 client.SendBroadcast(message, 3, Broadcast.BroadcastFlags.Normal);
             }
             Logger.Info($"Send broadcast with message (f=green){message}(f=white) to {ProxyService.Singleton.Players.Count} players", "broadcast");
+        }
+
+        [ConsoleCommand("stats")]
+        public static void StatsCommand(CommandsService service, string[] args)
+        {
+            Logger.Info($"XProxy Stats");
+            Logger.Info($" - CPU Usage {CpuProfiler.GetCpuUsage():0.00}%");
+            Logger.Info($" - Running Tasks: {TaskMonitor.GetRunningTaskCount()}");
         }
     }
 }
