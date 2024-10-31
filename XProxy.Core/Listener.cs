@@ -1,5 +1,4 @@
 ﻿using LiteNetLib;
-using Mirror;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -20,46 +19,90 @@ using XProxy.Shared.Models;
 
 namespace XProxy
 {
-    public class ProxyServer
+    public class Listener
     {
+        public static Dictionary<string, Listener> NamesByListener = new Dictionary<string, Listener>();
+
         private NetManager _manager;
         private EventBasedNetListener _listener;
 
         public static bool UpdateServers = false;
 
         internal ConfigService _config => ConfigService.Singleton;
-
-        public ushort Port => _config.Value.Port;
+       
+        // Shared data between all listeners.
 
         public ConcurrentDictionary<int, Player> Players { get; private set; } = new ConcurrentDictionary<int, Player>();
-        public ConcurrentDictionary<string, int> PlayersByUserId { get; private set; } = new ConcurrentDictionary<string, int>();
 
+        public static ConcurrentDictionary<string, int> PlayersByUserId { get; private set; } = new ConcurrentDictionary<string, int>();
         public static ConcurrentDictionary<string, LastServerInfo> ForceServerForUserID { get; set; } = new ConcurrentDictionary<string, LastServerInfo>();
 
-        public static Dictionary<uint, string> MessageIdToName = new Dictionary<uint, string>();
+        public static int GetTotalPlayersOnline()
+        {
+            int count = 0;
+
+            foreach (var listener in NamesByListener.Values)
+                count += listener.Players.Count;
+
+            return count;
+        }
+
+        public static List<Player> GetAllPlayers()
+        {
+            var list = new List<Player>();
+
+            foreach (var listener in NamesByListener.Values)
+                list.AddRange(listener.Players.Values);
+
+            return list;
+        }
+
+        public static Player GetPlayerByUserId(string userId)
+        {
+            if (!PlayersByUserId.TryGetValue(userId, out int playerId))
+                return null;
+
+            Player plr = null;
+
+            foreach (var listener in NamesByListener.Values)
+            {
+                if (!listener.Players.TryGetValue(playerId, out plr))
+                    continue;
+            }
+
+            return plr;
+        }
+
+        // --
 
         public static Dictionary<string, Type> Simulations { get; private set; } = new Dictionary<string, Type>()
         {
             { "lobby", typeof(LobbyConnection) }
         };
 
-        public ProxyServer()
+        /// <summary>
+        /// Gets listener name.
+        /// </summary>
+        public string ListenerName { get; private set; }
+
+        /// <summary>
+        /// Gets listener settings for this proxy server.
+        /// </summary>
+        public ListenerServer Settings
         {
-            foreach(var message in typeof(GameConsoleTransmission).Assembly.GetTypes().Where(x => x.GetInterface("NetworkMessage") != null))
+            get
             {
-                ushort key = (ushort)message.FullName.GetStableHashCode();
+                if (ConfigService.Singleton.Value.Listeners.TryGetValue(ListenerName, out var listener))
+                    return listener;
 
-                if (!MessageIdToName.ContainsKey(key))
-                    MessageIdToName.Add(key, message.FullName);
+                return null;
             }
+        }
 
-            foreach (var message in typeof(Mirror.AddPlayerMessage).Assembly.GetTypes().Where(x => x.GetInterface("NetworkMessage") != null))
-            {
-                ushort key = (ushort)message.FullName.GetStableHashCode();
-
-                if (!MessageIdToName.ContainsKey(key))
-                    MessageIdToName.Add(key, message.FullName);
-            }
+        public Listener(string listenerName)
+        {
+            ListenerName = listenerName;
+            NamesByListener.Add(ListenerName, this);
 
             Server.Refresh();
 
@@ -77,30 +120,18 @@ namespace XProxy
             _manager.DisconnectTimeout = 6000;
             _manager.ReconnectDelay = 400;
             _manager.MaxConnectAttempts = 2;
-            _manager.Start(IPAddress.Parse(_config.Value.ListenIp), IPAddress.IPv6Any, _config.Value.Port);
+            _manager.Start(IPAddress.Parse(Settings.ListenIp), IPAddress.IPv6Any, Settings.Port);
 
-            EventManager.Proxy.InvokeStartedListening(new ProxyStartedListening(this, _config.Value.Port));
+            EventManager.Proxy.InvokeStartedListening(new ProxyStartedListening(this, Settings.Port));
 
-            Logger.Info($"{_config.Messages.ProxyStartedListeningMessage.Replace("%port%", $"{Port}").Replace("%version%", ConfigModel.GameVersion)}", $"XProxy");
-            Logger.Info("");
-        }
-
-        public Player GetPlayerByUserId(string userId)
-        {
-            if (!PlayersByUserId.TryGetValue(userId, out int playerId))
-                return null;
-
-            if (!Players.TryGetValue(playerId, out Player plr))
-                return null;
-
-            return plr;
+            Logger.Info($"{_config.Messages.ProxyStartedListeningMessage.Replace("%port%", $"{Settings.Port}").Replace("%version%", ConfigModel.GameVersion)}", $"XProxy");
         }
 
         public Server GetFirstServerFromPriorities()
         {
             Server first = Server.List
-                    .Where(x => _config.Value.Priorities.Contains(x.Name))
-                    .OrderBy(pair => _config.Value.Priorities.IndexOf(pair.Name))
+                    .Where(x => Settings.Priorities.Contains(x.Name))
+                    .OrderBy(pair => Settings.Priorities.IndexOf(pair.Name))
                     .ToList()
                     .FirstOrDefault();
 
@@ -110,8 +141,8 @@ namespace XProxy
         public Server GetRandomServerFromPriorities(Player plr = null)
         {
             Server random = Server.List
-                    .Where(x => _config.Value.Priorities.Contains(x.Name))
-                    .OrderBy(pair => _config.Value.Priorities.IndexOf(pair.Name))
+                    .Where(x => Settings.Priorities.Contains(x.Name))
+                    .OrderBy(pair => Settings.Priorities.IndexOf(pair.Name))
                     .Where(x => plr != null ? x.CanPlayerJoin(plr) : !x.IsServerFull)
                     .ToList()
                     .FirstOrDefault();
@@ -188,6 +219,8 @@ namespace XProxy
 
         public void OnConnectionRequest(ConnectionRequest request)
         {
+            Logger.Debug($"[{request.RemoteEndPoint.Address}] New incoming connection from listener, {Settings.ListenIp}:{Settings.Port}");
+
             string failed = string.Empty;
             string ip = $"{request.RemoteEndPoint.Address}";
 
@@ -213,7 +246,7 @@ namespace XProxy
 
             bool ignoreSlots = preAuth.Flags.HasFlagFast(CentralAuthPreauthFlags.ReservedSlot) || preAuth.Flags.HasFlagFast(CentralAuthPreauthFlags.NorthwoodStaff) && _config.Value.NorthwoodStaffIgnoresSlots;
 
-            if (!ignoreSlots && _manager.ConnectedPeersCount >= _config.Value.MaxPlayers)
+            if (!ignoreSlots && _manager.ConnectedPeersCount >= Settings.MaxPlayers)
             {
                 Logger.Info(_config.Messages.ProxyIsFull.Replace("%address%", $"{request.RemoteEndPoint.Address}").Replace("%userid%", preAuth.UserID), "XProxy");
                 request.DisconnectServerFull();

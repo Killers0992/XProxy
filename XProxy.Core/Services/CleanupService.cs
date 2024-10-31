@@ -17,9 +17,9 @@ namespace XProxy.Core.Services
             {
                 try
                 {
-                    foreach(var itemsToRemove in ProxyServer.ForceServerForUserID.Where(x => x.Value.Time < DateTime.Now))
+                    foreach(var itemsToRemove in Listener.ForceServerForUserID.Where(x => x.Value.Time < DateTime.Now))
                     {
-                        ProxyServer.ForceServerForUserID.Remove(itemsToRemove.Key, out LastServerInfo _);
+                        Listener.ForceServerForUserID.Remove(itemsToRemove.Key, out LastServerInfo _);
                     }
                 }
                 catch(Exception ex)

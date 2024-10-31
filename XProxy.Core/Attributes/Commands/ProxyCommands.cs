@@ -4,7 +4,6 @@ using System.Text;
 using XProxy.Attributes;
 using XProxy.Core;
 using XProxy.Core.Monitors;
-using XProxy.Models;
 using XProxy.Services;
 
 namespace XProxy.Commands
@@ -73,13 +72,13 @@ namespace XProxy.Commands
                     sb.AppendLine($"  -> In Queue  ");
                     foreach (var queuePlayers in server.PlayersInQueue.OrderBy(x => x.Value.Position))
                     {
-                        var plr = ProxyService.Singleton.GetPlayerByUserId(queuePlayers.Key);
+                        var plr = Listener.GetPlayerByUserId(queuePlayers.Key);
 
                         sb.AppendLine($"  [(f=green){queuePlayers.Value.Position}(f=white)/(f=green){server.PlayersInQueueCount}(f=white)] (f=cyan){queuePlayers.Key}(f=white) {(plr == null ? $"(f=darkred)OFFLINE(f=white) ( slot expires in few seconds )" : $"connection time (f=darkcyan){plr.Connectiontime.ToReadableString()}(f=white)")}");
                     }
                 }
             }
-            sb.AppendLine($" Total online players (f=green){ProxyService.Singleton.Players.Count}/{ConfigService.Singleton.Value.MaxPlayers}(f=white)!");
+            sb.AppendLine($" Total online players (f=green){Listener.GetTotalPlayersOnline()}(f=white)!");
             Logger.Info(sb.ToString(), "players");
         }
 
@@ -104,7 +103,7 @@ namespace XProxy.Commands
             {
                 case "all":
                     int sent = 0;
-                    foreach (var player in ProxyService.Singleton.Players.Values)
+                    foreach (Player player in Listener.GetAllPlayers())
                     {
                         if (player.ServerInfo == server) continue;
 
@@ -122,7 +121,7 @@ namespace XProxy.Commands
                 default:
                     if (args[0].Contains("@"))
                     {
-                        var targetPlayer = ProxyService.Singleton.Players.Values.Where(x => x.UserId == args[0]).FirstOrDefault();
+                        Player targetPlayer = Listener.GetPlayerByUserId(args[0]);
 
                         if (targetPlayer == null)
                         {
@@ -200,11 +199,11 @@ namespace XProxy.Commands
 
             string message = string.Join(" ", args);
 
-            foreach (var client in ProxyService.Singleton.Players.Values)
+            foreach (var client in Listener.GetAllPlayers())
             {
                 client.SendHint(message);
             }
-            Logger.Info($"Send hint with message (f=green){message}(f=white) to {ProxyService.Singleton.Players.Count} players", "sendhint");
+            Logger.Info($"Send hint with message (f=green){message}(f=white) to {Listener.GetTotalPlayersOnline()} players", "sendhint");
         }
 
         [ConsoleCommand("broadcast")]
@@ -218,11 +217,11 @@ namespace XProxy.Commands
 
             string message = string.Join(" ", args);
 
-            foreach (var client in ProxyService.Singleton.Players.Values)
+            foreach (var client in Listener.GetAllPlayers())
             {
                 client.SendBroadcast(message, 3, Broadcast.BroadcastFlags.Normal);
             }
-            Logger.Info($"Send broadcast with message (f=green){message}(f=white) to {ProxyService.Singleton.Players.Count} players", "broadcast");
+            Logger.Info($"Send broadcast with message (f=green){message}(f=white) to {Listener.GetTotalPlayersOnline()} players", "broadcast");
         }
 
         [ConsoleCommand("stats")]

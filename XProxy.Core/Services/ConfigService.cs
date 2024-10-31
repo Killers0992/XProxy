@@ -60,7 +60,7 @@ namespace XProxy.Services
             Messages = GetMessagesForLanguage(Value.Langauge);
 
             if (!intial)
-                ProxyServer.UpdateServers = true;
+                Listener.UpdateServers = true;
 
             Save();
             Logger.Debug(Messages.ConfigLoadedMessage, "ConfigService");

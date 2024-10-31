@@ -10,10 +10,14 @@ namespace XProxy.Services
         {
             while (!stoppingToken.IsCancellationRequested)
             {
-                foreach(var client in ProxyService.Singleton.Players.Values)
+                foreach(var listener in Listener.NamesByListener.Values)
                 {
-                    client.InternalUpdate();
+                    foreach(var player in listener.Players.Values)
+                    {
+                        player?.InternalUpdate();
+                    }
                 }
+
                 await Task.Delay(1000);
             }
         }

@@ -94,13 +94,17 @@ namespace XProxy.Core
                     foreach (Player player in serv.Players)
                         player.InternalDisconnect();
 
-                    foreach(var player in ProxyService.Singleton.PlayersByUserId)
+                    foreach(var player in Listener.PlayersByUserId)
                     {
-                        if (serv.PlayersInQueueByUserId.Contains(player.Key))
-                        {
-                            var playerObj = ProxyService.Singleton.Players[player.Value];
-                            playerObj.InternalDisconnect();
-                        }
+                        if (!serv.PlayersInQueueByUserId.Contains(player.Key))
+                            continue;
+
+                        Player plr = Listener.GetPlayerByUserId(player.Key);
+
+                        if (plr == null)
+                            continue;
+
+                        plr.InternalDisconnect();
                     }
 
                     serv.Destroy();

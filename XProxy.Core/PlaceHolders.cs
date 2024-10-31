@@ -1,4 +1,5 @@
-﻿using System.Text.RegularExpressions;
+﻿using System.Linq;
+using System.Text.RegularExpressions;
 using XProxy.Services;
 
 namespace XProxy.Core
@@ -32,9 +33,9 @@ namespace XProxy.Core
 
                         return $"{targetServer.PlayersCount}";
                     case "proxyonlineplayers":
-                        return ProxyService.Singleton.Players.Count.ToString();
+                        return Listener.GetTotalPlayersOnline().ToString();
                     case "proxymaxplayers":
-                        return ConfigService.Singleton.Value.MaxPlayers.ToString();
+                        return ConfigService.Singleton.Value.Listeners.FirstOrDefault().Value.MaxPlayers.ToString();
                     default:
                         return "%placeholder_not_found%";
                 }

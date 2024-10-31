@@ -14,28 +14,18 @@ namespace XProxy.Shared.Models
 
         [Description("Enables debug logs.")]
         public bool Debug { get; set; }
+
         [Description("Language of messages.")]
         public string Langauge { get; set; } = "en";
-
-        [Description("Server IP used for listing server on serverlist. ( auto = automatically gets public ip )")]
-        public string ServerIP { get; set; } = "auto";
-
-        [Description("IP on which proxy will listen.")]
-        public string ListenIp { get; set; } = "0.0.0.0";
-        [Description("Port which proxy will use to listen for connections.")]
-        public ushort Port { get; set; } = 7777;
 
         [Description("Email used for listing your server on SCP SL serverlist.")]
         public string Email { get; set; } = "example@gmail.com";
 
-        [Description("Server name.")]
-        [YamlMember(ScalarStyle = YamlDotNet.Core.ScalarStyle.Literal)]
-        public string ServerName { get; set; } = 
-@" Example server name.
-  Proxy Server";
-
-        [Description("Server information.")]
-        public string Pastebin { get; set; } = "7wV681fT";
+        [Description("All listeners which will host own proxy instance.")]
+        public Dictionary<string, ListenerServer> Listeners { get; set; } = new Dictionary<string, ListenerServer>()
+        {
+            { "main", new ListenerServer() }
+        };
 
         [YamlIgnore]
         public System.Version GameVersionParsed
@@ -53,14 +43,8 @@ namespace XProxy.Shared.Models
             }
         }
 
-        [Description("Maximum amount of players which can connect to your proxy.")]
-        public int MaxPlayers { get; set; } = 50;
-
         [Description("Northwood staff ignores maximum amount of players which can connect to proxy.")]
         public bool NorthwoodStaffIgnoresSlots { get; set; } = false;
-
-        [Description("Priority servers used for first connection and fallback servers.")]
-        public List<string> Priorities { get; set; } = new List<string>() { "lobby" };
 
         [Description("Available servers.")]
         public Dictionary<string, ServerModel> Servers { get; set; } = new Dictionary<string, ServerModel>()

@@ -7,7 +7,7 @@ namespace XProxy.Core.Events.Args
     {
         private ConnectionRequest _request;
 
-        public ProxyConnectionRequest(ProxyServer proxy, ConnectionRequest request, string ipAddress, string userId, CentralAuthPreauthFlags flags)
+        public ProxyConnectionRequest(Listener proxy, ConnectionRequest request, string ipAddress, string userId, CentralAuthPreauthFlags flags)
         {
             Proxy = proxy;
 
@@ -18,7 +18,7 @@ namespace XProxy.Core.Events.Args
             Flags = flags;
         }
 
-        public ProxyServer Proxy { get; }
+        public Listener Proxy { get; }
         public string IpAddress { get; }
         public string UserId { get; }
         public CentralAuthPreauthFlags Flags { get; }

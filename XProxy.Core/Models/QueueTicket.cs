@@ -1,6 +1,4 @@
 ﻿using System;
-using XProxy.Models;
-using XProxy.Services;
 
 namespace XProxy.Core.Models
 {
@@ -21,14 +19,14 @@ namespace XProxy.Core.Models
         public bool IsConnecting { get; private set; }
         public DateTime TicketLifetime { get; private set; }
 
-        public bool IsPlayerOffline => !ProxyService.Singleton.PlayersByUserId.ContainsKey(UserId);
+        public bool IsPlayerOffline => !Listener.PlayersByUserId.ContainsKey(UserId);
         public TimeSpan OfflineTime => DateTime.Now - _offlineFor;
 
         public bool IsPlayerConnected
         {
             get
             {
-                var plr = ProxyService.Singleton.GetPlayerByUserId(UserId);
+                var plr = Listener.GetPlayerByUserId(UserId);
 
                 if (plr == null) return false;
 

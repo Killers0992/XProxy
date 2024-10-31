@@ -10,7 +10,7 @@ using XProxy.Core.Services;
 using XProxy.Services;
 using XProxy.Shared.Models;
 
-[assembly: AssemblyVersion("1.5.1")]
+[assembly: AssemblyVersion("1.6.0")]
 
 namespace XProxy
 {
@@ -78,7 +78,7 @@ namespace XProxy
             _plugins = new PluginsService(services);
 
             services.AddHostedService<LoggingService>();
-            services.AddHostedService<ProxyService>();
+            services.AddHostedService<ListenersService>();
             services.AddHostedService<PublicKeyService>();
             services.AddHostedService<ListService>();
             services.AddHostedService<QueueService>();

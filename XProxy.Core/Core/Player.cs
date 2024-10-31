@@ -55,7 +55,7 @@ namespace XProxy.Core
 
         private DateTime _nextUpdate = DateTime.Now;
 
-        public Player(ProxyServer proxy, PreAuthModel preAuth)
+        public Player(Listener proxy, PreAuthModel preAuth)
         {
             Proxy = proxy;
             PreAuth = preAuth;
@@ -79,7 +79,7 @@ namespace XProxy.Core
         public bool ProcessMirrorMessagesFromCurrentServer { get; set; }
         public bool IsInQueue => ServerInfo == null ? false : ServerInfo.IsPlayerInQueue(this);
         public int PositionInQueue => ServerInfo == null ? -1 : ServerInfo.GetPlayerPositionInQueue(this);
-        public ProxyServer Proxy { get; private set; }
+        public Listener Proxy { get; private set; }
         public PreAuthModel PreAuth { get; private set; }
         public BaseConnection Connection { get; set; }
         public Server ServerInfo { get; set; }
@@ -589,9 +589,9 @@ namespace XProxy.Core
                 case ConnectionType.Simulated:
                     if (ServerInfo.Settings.Simulation == "lobby")
                     {
-                        if (ProxyService.Singleton._config.Value.AutoJoinQueueInLobby)
+                        if (ConfigService.Singleton.Value.AutoJoinQueueInLobby)
                         {
-                            var targetServer = ProxyService.Singleton.GetFirstServerFromPriorities();
+                            var targetServer = Proxy.GetFirstServerFromPriorities();
 
                             if (targetServer != null)
                             {
@@ -604,7 +604,7 @@ namespace XProxy.Core
                         }
                     }
 
-                    if (ProxyServer.Simulations.TryGetValue(ServerInfo.Settings.Simulation, out Type simType))
+                    if (Listener.Simulations.TryGetValue(ServerInfo.Settings.Simulation, out Type simType))
                     {
                         Connection = (SimulatedConnection)Activator.CreateInstance(simType, args: this);
                     }
@@ -640,8 +640,8 @@ namespace XProxy.Core
             if (!ServerInfo.PlayersById.ContainsKey(Id))
                 ServerInfo.PlayersById.TryAdd(Id, this);
 
-            if (!Proxy.PlayersByUserId.ContainsKey(UserId))
-                Proxy.PlayersByUserId.TryAdd(UserId, Id);
+            if (!Listener.PlayersByUserId.ContainsKey(UserId))
+                Listener.PlayersByUserId.TryAdd(UserId, Id);
 
             Proxy.Players.TryAdd(Id, this);
 
@@ -677,7 +677,7 @@ namespace XProxy.Core
         internal void InternalDestroy()
         {
             ServerInfo.PlayersById.TryRemove(Id, out _);
-            Proxy.PlayersByUserId.TryRemove(UserId, out _);
+            Listener.PlayersByUserId.TryRemove(UserId, out _);
 
             InternalDestroyNetwork();
 

@@ -1,0 +1,83 @@
+﻿using System.ComponentModel;
+using YamlDotNet.Serialization;
+
+namespace XProxy.Shared.Models
+{
+    public class ListenerServer
+    {
+        #region YAML Settings
+
+        [Description("This IP is used for UDP Server to listen on.")]
+        public string ListenIp { get; set; } = "0.0.0.0";
+
+        [Description("This PORT is used for listing your server on SCPSL Server List and for UDP Server to listen on.")]
+        public ushort Port { get; set; } = 7777;
+
+        [Description("Maximum amount of players which can connect to server.")]
+        public int MaxPlayers { get; set; } = 50;
+
+        [Description("Priority servers used for first connection and fallback servers.")]
+        public List<string> Priorities { get; set; } = new List<string>() { "lobby" };
+
+        [Description("Settings related to SCP Server List.")]
+        public ScpServerList ServerList { get; set; } = new ScpServerList();
+        #endregion
+
+        /// <summary>
+        /// Gets http client for this listener.
+        /// </summary>
+        public HttpClient Http;
+
+        /// <summary>
+        /// Gets final public ip of this listener.
+        /// </summary>
+        public string PublicIp;
+
+        /// <summary>
+        /// If data on serverlist should be updated.
+        /// </summary>
+        public bool ServerListUpdate;
+
+        /// <summary>
+        /// Gets cycle number of server listing.
+        /// </summary>
+        public int ServerListCycle;
+
+        /// <summary>
+        /// Initializes this listener.
+        /// </summary>
+        /// <returns></returns>
+        public async Task Initialize()
+        {
+            Http = new HttpClient();
+            Http.DefaultRequestHeaders.Add("User-Agent", "SCP SL");
+            Http.DefaultRequestHeaders.Add("Game-Version", ConfigModel.GameVersion);
+
+            if (ServerList.AddressIp != "auto")
+                PublicIp = ServerList.AddressIp;
+            else
+                PublicIp = await GetPublicIp();
+        }
+
+        async Task<string> GetPublicIp()
+        {
+            try
+            {
+                using (var response = await Http.GetAsync("https://api.scpslgame.com/ip.php"))
+                {
+                    string str = await response.Content.ReadAsStringAsync();
+
+                    str = (str.EndsWith(".") ? str.Remove(str.Length - 1) : str);
+
+                    return str;
+                }
+            }
+            catch (Exception ex)
+            {
+                Logger.Error(ex, "ListService");
+                return null;
+            }
+        }
+
+    }
+}

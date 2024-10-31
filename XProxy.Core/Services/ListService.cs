@@ -22,9 +22,7 @@ namespace XProxy.Services
 
         public static HttpClient Client;
 
-        public static string PublicIp;
         public static string Password;
-        public bool Update;
         public bool ScheduleTokenRefresh;
         public string VerKey;
 
@@ -65,7 +63,9 @@ namespace XProxy.Services
             if (Password != VerKey)
             {
                 Logger.Debug(_config.Messages.TokenReloadedMessage, $"ListService");
-                Update = true;
+
+                foreach (ListenerServer server in _config.Value.Listeners.Values)
+                    server.ServerListUpdate = true;
             }
 
             Password = VerKey;
@@ -74,7 +74,7 @@ namespace XProxy.Services
         internal static readonly PlayerListSerializedModel PlayersListRaw = new PlayerListSerializedModel();
         internal static string _verificationPlayersList = string.Empty;
 
-        public async Task<bool> SendData(Dictionary<string, string> data)
+        public async Task<bool> SendData(Listener server, Dictionary<string, string> data)
         {
             FormUrlEncodedContent content = new FormUrlEncodedContent(data);
 
@@ -84,7 +84,7 @@ namespace XProxy.Services
                 {
                     string str = await response.Content.ReadAsStringAsync();
 
-                    return (str.StartsWith("{\"") ? await ProcessResponse(str) : await ProcessLegacyResponse(str));
+                    return (str.StartsWith("{\"") ? await ProcessResponse(server, str) : await ProcessLegacyResponse(server, str));
                 }
             }
             catch(Exception ex)
@@ -94,7 +94,7 @@ namespace XProxy.Services
             }
         }
 
-        public async Task<bool> ProcessResponse(string data)
+        public async Task<bool> ProcessResponse(Listener server, string data)
         {
             AuthResponseModel authenticatorResponse = JsonConvert.DeserializeObject<AuthResponseModel>(data);
             if (!string.IsNullOrEmpty(authenticatorResponse.VerificationChallenge) && !string.IsNullOrEmpty(authenticatorResponse.VerificationResponse))
@@ -118,7 +118,7 @@ namespace XProxy.Services
                     string[] array = authenticatorResponse.Actions;
                     for (int i = 0; i < array.Length; i++)
                     {
-                        await HandleAction(array[i]);
+                        await HandleAction(server, array[i]);
                     }
                 }
                 if (authenticatorResponse.Messages != null && authenticatorResponse.Messages.Length != 0)
@@ -139,7 +139,10 @@ namespace XProxy.Services
                 VerKey = token;
                 File.WriteAllText(Path.Combine(ConfigService.MainDirectory, "verkey.txt"), token);
                 Logger.Info(_config.Messages.TokenSavedMessage, $"ListService");
-                Update = true;
+
+                foreach (ListenerServer server in _config.Value.Listeners.Values)
+                    server.ServerListUpdate = true;
+
                 ScheduleTokenRefresh = true;
             }
             catch (Exception ex)
@@ -148,7 +151,7 @@ namespace XProxy.Services
             }
         }
 
-        public async Task<bool> ProcessLegacyResponse(string response)
+        public async Task<bool> ProcessLegacyResponse(Listener server, string response)
         {
             if (response == "YES")
                 return true;
@@ -165,7 +168,10 @@ namespace XProxy.Services
                     VerKey = text;
                     File.WriteAllText(Path.Combine(ConfigService.MainDirectory, "verkey.txt"), text);
                     Logger.Info(_config.Messages.PasswordSavedMessage, $"ListService");
-                    Update = true;
+
+
+
+                    server.Settings.ServerListUpdate = true;
                     return true;
                 }
                 catch
@@ -176,19 +182,19 @@ namespace XProxy.Services
             }
             if (response.Contains(":Restart:"))
             {
-                await HandleAction("Restart");
+                await HandleAction(server, "Restart");
             }
             else if (response.Contains(":RoundRestart:"))
             {
-                await HandleAction("RoundRestart");
+                await HandleAction(server, "RoundRestart");
             }
             else if (response.Contains(":UpdateData:"))
             {
-                await HandleAction("UpdateData");
+                await HandleAction(server, "UpdateData");
             }
             else if (response.Contains(":RefreshKey:"))
             {
-                await HandleAction("RefreshKey");
+                await HandleAction(server, "RefreshKey");
             }
             else if (response.Contains(":Message - "))
             {
@@ -198,7 +204,7 @@ namespace XProxy.Services
             }
             else if (response.Contains(":GetContactAddress:"))
             {
-                await HandleAction("GetContactAddress");
+                await HandleAction(server, "GetContactAddress");
             }
             else
             {
@@ -210,7 +216,7 @@ namespace XProxy.Services
             return true;
         }
 
-        public async Task HandleAction(string action)
+        public async Task HandleAction(Listener server, string action)
         {
             switch (action.ToUpper())
             {
@@ -219,23 +225,23 @@ namespace XProxy.Services
                 case "ROUNDRESTART":
                     break;
                 case "UPDATEDATA":
-                    Update = true;
+                    server.Settings.ServerListUpdate = true;
                     break;
                 case "REFRESHKEY":
                     await RefreshPublicKeyOnce();
                     break;
                 case "GETCONTACTADDRESS":
-                    await SendContactAddress();
+                    await SendContactAddress(server);
                     break;
             }
         }
 
-        public async Task SendContactAddress()
+        public async Task SendContactAddress(Listener server)
         {
             Dictionary<string, string> data = new Dictionary<string, string>()
             {
-                { "ip", PublicIp },
-                { "port", $"{_config.Value.Port}" },
+                { "ip", server.Settings.PublicIp },
+                { "port", $"{server.Settings.Port}" },
                 { "version", "2" },
                 { "address", Base64Encode(_config.Value.Email) }
             };
@@ -284,27 +290,6 @@ namespace XProxy.Services
             }
         }
 
-
-        public async Task<string> GetPublicIp()
-        {
-            try
-            {
-                using (var response = await Client.GetAsync("https://api.scpslgame.com/ip.php"))
-                {
-                    string str = await response.Content.ReadAsStringAsync();
-
-                    str = (str.EndsWith(".") ? str.Remove(str.Length - 1) : str);
-
-                    return str;
-                }
-            }
-            catch(Exception ex)
-            {
-                Logger.Error(ex, "ListService");
-                return null;
-            }
-        }
-
         bool _verifyNotice = false;
 
         byte cycle;
@@ -316,15 +301,12 @@ namespace XProxy.Services
             Client.DefaultRequestHeaders.Add("User-Agent", "SCP SL");
             Client.DefaultRequestHeaders.Add("Game-Version", ConfigModel.GameVersion);
 
-            if (ConfigService.Singleton.Value.ServerIP.ToLower() != "auto")
-                PublicIp = ConfigService.Singleton.Value.ServerIP;
-            else
-                PublicIp = await GetPublicIp();
-
             RefreshToken(true);
 
             while (!stoppingToken.IsCancellationRequested)
             {
+
+
                 try
                 {
                     await DoCycle();
@@ -342,7 +324,9 @@ namespace XProxy.Services
 
         async Task DoCycle()
         {
-            cycle += 1;
+            foreach (ListenerServer server in _config.Value.Listeners.Values)
+                server.ServerListCycle += 1;
+
             if (!init && string.IsNullOrEmpty(Password) && cycle < 15)
             {
                 if (cycle == 5 || cycle == 12 || ScheduleTokenRefresh)
@@ -353,72 +337,92 @@ namespace XProxy.Services
             else
             {
                 init = false;
-                Update = Update || cycle == 10;
 
-                string str = JsonConvert.SerializeObject(new AuthPlayersModel());
-
-                var serverWithUseSlots = _config.Value.Servers.FirstOrDefault(x => x.Value.UseSlotsForServerListPlayersCount);
-
-                string playersStr = $"{ProxyService.Singleton.Players.Count}/{_config.Value.MaxPlayers}";
-
-                if (serverWithUseSlots.Value != null)
+                foreach (var listener in Listener.NamesByListener)
                 {
-                    if (Server.TryGetByName(serverWithUseSlots.Key, out Server targetServer))
-                        playersStr = $"{targetServer.PlayersCount}/{targetServer.Settings.MaxPlayers}";
-                }
+                    if (!listener.Value.Settings.ServerList.UseScpServerList)
+                        continue;
 
-                Dictionary<string, string> upd = Update ?
-                    new Dictionary<string, string>()
+                    string listenerName = listener.Key;
+                    Listener proxyServer = listener.Value;
+                    ListenerServer settings = proxyServer.Settings;
+
+                    if (settings.PublicIp == null)
+                        await settings.Initialize();
+
+                    settings.ServerListUpdate = settings.ServerListUpdate || settings.ServerListCycle == 10;
+
+                    string str = JsonConvert.SerializeObject(new AuthPlayersModel());
+
+                    var serverWithUseSlots = _config.Value.Servers.FirstOrDefault(x => x.Value.UseSlotsForServerListPlayersCount);
+
+                    string playersStr = $"{proxyServer.Players.Count}/{settings.MaxPlayers}";
+
+                    if (serverWithUseSlots.Value != null)
                     {
-                        { "ip", PublicIp },
+                        if (Server.TryGetByName(serverWithUseSlots.Key, out Server targetServer))
+                            playersStr = $"{targetServer.PlayersCount}/{targetServer.Settings.MaxPlayers}";
+                    }
+
+                    Dictionary<string, string> upd = settings.ServerListUpdate ?
+                        new Dictionary<string, string>()
+                        {
+                        { "ip", settings.PublicIp },
                         { "players", playersStr },
                         { "playersList", _verificationPlayersList },
                         { "newPlayers", str },
-                        { "port", $"{_config.Value.Port}" },
-                        { "pastebin", _config.Value.Pastebin },
+                        { "port", $"{settings.Port}" },
+                        { "pastebin", settings.ServerList.Pastebin },
                         { "gameVersion", ConfigModel.GameVersion },
                         { "version", "2" },
                         { "update", "1" },
-                        { "info", Base64Encode((_config.Value.MaintenanceMode ? PlaceHolders.ReplacePlaceholders(_config.Value.MaintenanceServerName) : PlaceHolders.ReplacePlaceholders(_config.Value.ServerName)).Replace('+', '-') + $"<color=#00000000><size=1>XProxy {ProxyBuildInfo.ReleaseInfo.Version}</size></color>") },
+                        { "info", Base64Encode((_config.Value.MaintenanceMode ? PlaceHolders.ReplacePlaceholders(_config.Value.MaintenanceServerName) : PlaceHolders.ReplacePlaceholders(settings.ServerList.Name)).Replace('+', '-') + $"<color=#00000000><size=1>XProxy {ProxyBuildInfo.ReleaseInfo.Version}</size></color>") },
                         { "privateBeta", "false" },
                         { "staffRA", "false" },
                         { "friendlyFire", "false" },
                         { "geoblocking", "0" },
                         { "modded", "true" },
+                        { "tmodded", "false" },
                         { "cgs", "true" },
                         { "whitelist", "false" },
                         { "accessRestriction", "false" },
                         { "emailSet", "true" },
                         { "enforceSameIp", "true" },
                         { "enforceSameAsn", "true" }
-                    } :
-                    new Dictionary<string, string>()
-                    {
-                        { "ip", PublicIp },
+                        } :
+                        new Dictionary<string, string>()
+                        {
+                        { "ip", settings.PublicIp },
                         { "players", playersStr },
                         { "newPlayers", str },
-                        { "port", $"{_config.Value.Port}" },
+                        { "port", $"{settings.Port}" },
                         { "version", "2" },
                         { "enforceSameIp", "true" },
                         { "enforceSameAsn", "true" }
-                    };
+                        };
 
-                if (!string.IsNullOrEmpty(Password))
-                    upd.Add("passcode", Password);
+                    if (!string.IsNullOrEmpty(Password))
+                        upd.Add("passcode", Password);
 
-                Update = false;
+                    settings.ServerListUpdate = false;
 
-                bool result = await SendData(upd);
+                    bool result = await SendData(proxyServer, upd);
 
-                if (result && !_verifyNotice)
-                {
-                    Logger.Info(_config.Messages.ServerListedMessage, "ListService");
-                    _verifyNotice = true;
+                    if (result && !_verifyNotice)
+                    {
+                        Logger.Info(_config.Messages.ServerListedMessage, "ListService");
+                        _verifyNotice = true;
+                    }
+
+                    settings.ServerListUpdate = settings.ServerListUpdate || settings.ServerListCycle == 10;
                 }
             }
 
-            if (cycle >= 15) 
-                cycle = 0;
+            foreach (ListenerServer server in _config.Value.Listeners.Values)
+            {
+                if (server.ServerListCycle >= 15)
+                    server.ServerListCycle = 0;
+            }
         }
     }
 }

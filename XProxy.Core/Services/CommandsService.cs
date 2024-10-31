@@ -56,7 +56,8 @@ namespace XProxy.Services
 
                     if (!string.IsNullOrEmpty(centralCmd[0]))
                     {
-                        await RunCentralServerCommand(centralCmd[0], string.Join(" ", centralCmd.Skip(1)));
+                        // TODO
+                        await RunCentralServerCommand(null, centralCmd[0], string.Join(" ", centralCmd.Skip(1)));
                     }
                     else
                     {
@@ -83,14 +84,14 @@ namespace XProxy.Services
             }
         }
 
-        public async Task RunCentralServerCommand(string cmd, string args)
+        public async Task RunCentralServerCommand(Listener server, string cmd, string args)
         {
             cmd = cmd.ToLower();
 
             Dictionary<string, string> data = new Dictionary<string, string>()
             {
-                { "ip", ListService.PublicIp },
-                { "port", $"{ConfigService.Singleton.Value.Port}" },
+                { "ip", server.Settings.PublicIp },
+                { "port", $"{server.Settings.Port}" },
                 { "cmd", ListService.Base64Encode(cmd) },
                 { "args", ListService.Base64Encode(args) },
             };

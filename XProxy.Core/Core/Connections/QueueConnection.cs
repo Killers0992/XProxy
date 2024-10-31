@@ -61,7 +61,7 @@ namespace XProxy.Core.Connections
 
                     if (rng.Settings.ConnectionType == ConnectionType.Simulated)
                     {
-                        if (ProxyServer.Simulations.TryGetValue(rng.Settings.Simulation, out Type simType))
+                        if (Listener.Simulations.TryGetValue(rng.Settings.Simulation, out Type simType))
                         {
                             Player.ServerInfo = rng;
                             Player.Connection = (SimulatedConnection)Activator.CreateInstance(simType, args: Player);
