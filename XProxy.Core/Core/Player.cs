@@ -75,6 +75,9 @@ namespace XProxy.Core
         {
             get
             {
+                if (_netManager == null)
+                    return false;
+
                 if (_connectionRequest != null)
                     return true;
 
