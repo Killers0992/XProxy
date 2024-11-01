@@ -80,7 +80,7 @@ namespace XProxy.Services
 
             try
             {
-                using (var response = await Client.PostAsync("https://api.scpslgame.com/v4/authenticator.php", content))
+                using (var response = await server.Settings.Http.PostAsync("https://api.scpslgame.com/v4/authenticator.php", content))
                 {
                     string str = await response.Content.ReadAsStringAsync();
 
@@ -251,7 +251,7 @@ namespace XProxy.Services
 
             try
             {
-                using (var response = await Client.PostAsync("https://api.scpslgame.com/v4/contactaddress.php", new FormUrlEncodedContent(data)))
+                using (var response = await server.Settings.Http.PostAsync("https://api.scpslgame.com/v4/contactaddress.php", new FormUrlEncodedContent(data)))
                 {
                     string text = await response.Content.ReadAsStringAsync();
                     Console.WriteLine(text);
@@ -299,7 +299,7 @@ namespace XProxy.Services
         {
             Client = new HttpClient();
             Client.DefaultRequestHeaders.Add("User-Agent", "SCP SL");
-            Client.DefaultRequestHeaders.Add("Game-Version", ConfigModel.GameVersion);
+            Client.DefaultRequestHeaders.Add("Game-Version", "13.6.9");
 
             RefreshToken(true);
 
@@ -361,38 +361,34 @@ namespace XProxy.Services
                     Dictionary<string, string> upd = settings.ServerListUpdate ?
                         new Dictionary<string, string>()
                         {
-                        { "ip", settings.PublicIp },
-                        { "players", playersStr },
-                        { "playersList", _verificationPlayersList },
-                        { "newPlayers", str },
-                        { "port", $"{settings.Port}" },
-                        { "pastebin", settings.ServerList.Pastebin },
-                        { "gameVersion", ConfigModel.GameVersion },
-                        { "version", "2" },
-                        { "update", "1" },
-                        { "info", Base64Encode((_config.Value.MaintenanceMode ? PlaceHolders.ReplacePlaceholders(_config.Value.MaintenanceServerName) : PlaceHolders.ReplacePlaceholders(settings.ServerList.Name)).Replace('+', '-') + $"<color=#00000000><size=1>XProxy {ProxyBuildInfo.ReleaseInfo.Version}</size></color>") },
-                        { "privateBeta", "false" },
-                        { "staffRA", "false" },
-                        { "friendlyFire", "false" },
-                        { "geoblocking", "0" },
-                        { "modded", "true" },
-                        { "tmodded", "false" },
-                        { "cgs", "true" },
-                        { "whitelist", "false" },
-                        { "accessRestriction", "false" },
-                        { "emailSet", "true" },
-                        { "enforceSameIp", "true" },
-                        { "enforceSameAsn", "true" }
+                            { "ip", settings.PublicIp },
+                            { "players", playersStr },
+                            { "playersList", _verificationPlayersList },
+                            { "newPlayers", str },
+                            { "port", $"{settings.Port}" },
+                            { "pastebin", settings.ServerList.Pastebin },
+                            { "gameVersion", settings.Version },
+                            { "version", "2" },
+                            { "update", "1" },
+                            { "info", Base64Encode((_config.Value.MaintenanceMode ? PlaceHolders.ReplacePlaceholders(_config.Value.MaintenanceServerName) : PlaceHolders.ReplacePlaceholders(settings.ServerList.Name)).Replace('+', '-') + $"<color=#00000000><size=1>XProxy {ProxyBuildInfo.ReleaseInfo.Version}</size></color>") },
+                            { "privateBeta", "false" },
+                            { "staffRA", "false" },
+                            { "friendlyFire", "false" },
+                            { "geoblocking", "0" },
+                            { "modded", "true" },
+                            { "tmodded", "false" },
+                            { "whitelist", "false" },
+                            { "accessRestriction", "false" },
+                            { "emailSet", "true" },
+                            { "enforceSameIp", "true" },
                         } :
                         new Dictionary<string, string>()
                         {
-                        { "ip", settings.PublicIp },
-                        { "players", playersStr },
-                        { "newPlayers", str },
-                        { "port", $"{settings.Port}" },
-                        { "version", "2" },
-                        { "enforceSameIp", "true" },
-                        { "enforceSameAsn", "true" }
+                            { "ip", settings.PublicIp },
+                            { "players", playersStr },
+                            { "newPlayers", str },
+                            { "port", $"{settings.Port}" },
+                            { "version", "2" },
                         };
 
                     if (!string.IsNullOrEmpty(Password))

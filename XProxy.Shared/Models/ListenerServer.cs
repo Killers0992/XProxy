@@ -5,6 +5,8 @@ namespace XProxy.Shared.Models
 {
     public class ListenerServer
     {
+        private Version _version;
+
         #region YAML Settings
 
         [Description("This IP is used for UDP Server to listen on.")]
@@ -15,6 +17,9 @@ namespace XProxy.Shared.Models
 
         [Description("Maximum amount of players which can connect to server.")]
         public int MaxPlayers { get; set; } = 50;
+
+        [Description("Version of game for which listener will run, this version is also used for listing your server on SCP Server List.")]
+        public string Version { get; set; } = "13.6.9";
 
         [Description("Priority servers used for first connection and fallback servers.")]
         public List<string> Priorities { get; set; } = new List<string>() { "lobby" };
@@ -43,6 +48,22 @@ namespace XProxy.Shared.Models
         /// </summary>
         public int ServerListCycle;
 
+        [YamlIgnore]
+        public System.Version GameVersionParsed
+        {
+            get
+            {
+                if (_version == null)
+                {
+                    string text = Version.Contains("-") ? Version.Split('-')[0] : Version;
+
+                    System.Version.TryParse(text, out _version);
+                }
+
+                return _version;
+            }
+        }
+
         /// <summary>
         /// Initializes this listener.
         /// </summary>
@@ -51,7 +72,7 @@ namespace XProxy.Shared.Models
         {
             Http = new HttpClient();
             Http.DefaultRequestHeaders.Add("User-Agent", "SCP SL");
-            Http.DefaultRequestHeaders.Add("Game-Version", ConfigModel.GameVersion);
+            Http.DefaultRequestHeaders.Add("Game-Version", Version);
 
             if (ServerList.AddressIp != "auto")
                 PublicIp = ServerList.AddressIp;

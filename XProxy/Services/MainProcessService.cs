@@ -95,9 +95,10 @@ namespace XProxy.Patcher.Services
                     await Task.Delay(10);
                 }
 
-                if (AssemblyUpdated) GetAssemblyVersion();
+                if (AssemblyUpdated) 
+                    GetAssemblyVersion();
 
-                await Task.Delay(10);
+                await Task.Delay(5000);
             }
 
             _mainProcess.Kill();
@@ -111,8 +112,6 @@ namespace XProxy.Patcher.Services
 
             if (Logger.AnsiDisabled)
                 info.ArgumentList.Add("--ansidisable");
-
-            info.ArgumentList.Add($"-g {_config.Value.GameVersion}");
 
             try
             {

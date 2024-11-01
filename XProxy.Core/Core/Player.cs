@@ -680,7 +680,7 @@ namespace XProxy.Core
 
         async Task UpdateNetwork(CancellationToken cancellationToken)
         {
-            while (!cancellationToken.IsCancellationRequested)
+            while (_netManager != null && !cancellationToken.IsCancellationRequested)
             {
                 try
                 {

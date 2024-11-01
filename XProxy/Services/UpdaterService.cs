@@ -100,7 +100,7 @@ namespace XProxy.Shared.Services
                             Logger.Info("If you want to update now press (f=red)CTRL+C(f=white) ( kill process )", "XProxy");
                             while (MainProcessService.IsWaitingForProcessExit)
                             {
-                                await Task.Delay(10);
+                                await Task.Delay(1000);
                             }
                         }
 

@@ -38,7 +38,7 @@ namespace XProxy.Services
                     Logger.Error(ex, "XProxy");
                 }
 
-                await Task.Delay(10);
+                await Task.Delay(1000);
             }
         }
     }

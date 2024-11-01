@@ -42,8 +42,6 @@ namespace XProxy.Services
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
-            RegisterConsoleCommandsInAssembly(Assembly.GetExecutingAssembly());
-
             while (!stoppingToken.IsCancellationRequested)
             {
                 string cmd = Console.ReadLine();
@@ -99,7 +97,7 @@ namespace XProxy.Services
             if (!string.IsNullOrEmpty(ListService.Password))
                 data.Add("passcode", ListService.Password);
 
-            using (var response = await ListService.Client.PostAsync($"https://api.scpslgame.com/centralcommands/{cmd}.php", new FormUrlEncodedContent(data)))
+            using (var response = await server.Settings.Http.PostAsync($"https://api.scpslgame.com/centralcommands/{cmd}.php", new FormUrlEncodedContent(data)))
             {
                 string text = await response.Content.ReadAsStringAsync();
 

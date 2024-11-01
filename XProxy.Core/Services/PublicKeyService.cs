@@ -20,7 +20,7 @@ namespace XProxy.Services
         {
             Client = new HttpClient();
             Client.DefaultRequestHeaders.Add("User-Agent", "SCP SL");
-            Client.DefaultRequestHeaders.Add("Game-Version", $"{ConfigModel.GameVersion}");
+            Client.DefaultRequestHeaders.Add("Game-Version", $"13.6.9");
 
             string text = CentralServerKeyCache.ReadCache();
             string text2 = string.Empty;
@@ -39,7 +39,7 @@ namespace XProxy.Services
                 string responseText = "";
                 try
                 {
-                    HttpResponseMessage response = await Client.GetAsync(string.Format("{0}v4/publickey.php?major={1}", "https://api.scpslgame.com/", ConfigService.Singleton.Value.GameVersionParsed.Major));
+                    HttpResponseMessage response = await Client.GetAsync(string.Format("{0}v4/publickey.php?major={1}", "https://api.scpslgame.com/", "13"));
                     responseText = await response.Content.ReadAsStringAsync();
 
                     PublicKeyResponseModel publicKeyResponse = JsonConvert.DeserializeObject<PublicKeyResponseModel>(responseText);

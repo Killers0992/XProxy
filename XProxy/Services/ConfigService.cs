@@ -36,7 +36,6 @@ namespace XProxy.Services
         public void Save()
         {
             File.WriteAllText(_configPath, YamlParser.Serializer.Serialize(Value));
-
         }
     }
 }

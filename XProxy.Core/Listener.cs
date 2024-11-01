@@ -126,7 +126,7 @@ namespace XProxy
 
             EventManager.Proxy.InvokeStartedListening(new ProxyStartedListening(this, Settings.Port));
 
-            Logger.Info($"{_config.Messages.ProxyStartedListeningMessage.Replace("%port%", $"{Settings.Port}").Replace("%version%", ConfigModel.GameVersion)}", $"XProxy");
+            Logger.Info($"{_config.Messages.ProxyStartedListeningMessage.Replace("%port%", $"{Settings.Port}").Replace("%version%", Settings.Version)}", $"XProxy");
         }
 
         public Server GetFirstServerFromPriorities()
@@ -235,7 +235,7 @@ namespace XProxy
                 return;
             }
 
-            if (preAuth.Major != _config.Value.GameVersionParsed.Major || preAuth.Minor != _config.Value.GameVersionParsed.Minor || preAuth.Revision != _config.Value.GameVersionParsed.Build)
+            if (preAuth.Major != Settings.GameVersionParsed.Major || preAuth.Minor != Settings.GameVersionParsed.Minor || preAuth.Revision != Settings.GameVersionParsed.Build)
             {
                 Logger.Info(_config.Messages.WrongVersion.Replace("%address%", $"{request.RemoteEndPoint.Address}").Replace("%userid%", preAuth.UserID).Replace("%version%", preAuth.Version), "XProxy");
                 request.DisconnectWrongVersion();

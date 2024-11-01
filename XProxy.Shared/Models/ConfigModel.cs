@@ -6,12 +6,6 @@ namespace XProxy.Shared.Models
 {
     public class ConfigModel
     {
-        [YamlIgnore]
-        public static string GameVersion;
-
-        [YamlIgnore]
-        private System.Version _version;
-
         [Description("Enables debug logs.")]
         public bool Debug { get; set; }
 
@@ -26,22 +20,6 @@ namespace XProxy.Shared.Models
         {
             { "main", new ListenerServer() }
         };
-
-        [YamlIgnore]
-        public System.Version GameVersionParsed
-        {
-            get
-            {
-                if (_version == null)
-                {
-                    string text = GameVersion.Contains("-") ? GameVersion.Split('-')[0] : GameVersion;
-
-                    System.Version.TryParse(text, out _version);
-                }
-
-                return _version;
-            }
-        }
 
         [Description("Northwood staff ignores maximum amount of players which can connect to proxy.")]
         public bool NorthwoodStaffIgnoresSlots { get; set; } = false;
