@@ -62,14 +62,28 @@ namespace XProxy.Core
             _connectionRequest = request;
 
             PreAuth = preAuth;
-
-            CancellationToken = new CancellationTokenSource();
         }
 
         public int Id { get; private set; } = -1;
 
+        public bool IsDisposing { get; private set; }
+
         public DateTime ConnectedOn { get; } = DateTime.Now;
         public TimeSpan Connectiontime => DateTime.Now - ConnectedOn;
+
+        public bool IsConnectionValid
+        {
+            get
+            {
+                if (_connectionRequest != null)
+                    return true;
+
+                if (_proxyPeer.ConnectionState == ConnectionState.Connected)
+                    return true;
+
+                return false;
+            }
+        }
 
         public double RemoteTimestamp { get; private set; }
         public uint NetworkId { get; private set; } = Database.GetNextNetworkId();
@@ -95,8 +109,6 @@ namespace XProxy.Core
         public CustomBatcher Batcher { get; private set; } = new CustomBatcher(65535 * (NetConstants.MaxPacketSize - 6));
 
         public IPEndPoint ClientEndPoint => _connectionRequest != null ? _connectionRequest.RemoteEndPoint : _proxyPeer.EndPoint;
-
-        public CancellationTokenSource CancellationToken;
 
         public string Tag => Proxy._config.Messages.PlayerTag.Replace("%serverIpPort%", ServerInfo.ToString()).Replace("%server%", ServerInfo.Name);
         public string ErrorTag => Proxy._config.Messages.PlayerErrorTag.Replace("%serverIpPort%", ServerInfo.ToString()).Replace("%server%", ServerInfo.Name);
@@ -457,7 +469,7 @@ namespace XProxy.Core
             _netManager.ReconnectDelay = 300;
             _netManager.MaxConnectAttempts = 3;
 
-            TaskMonitor.RegisterTask(Task.Run(() => UpdateNetwork(CancellationToken.Token), CancellationToken.Token));
+            TaskMonitor.RegisterTask(Task.Run(() => UpdateNetwork()));
 
             _netManager.Start();
         }
@@ -572,7 +584,7 @@ namespace XProxy.Core
         {
             ServerInfo = info;
 
-            TaskMonitor.RegisterTask(Task.Run(() => RunBatcher(CancellationToken.Token), CancellationToken.Token));
+            TaskMonitor.RegisterTask(Task.Run(() => RunBatcher()));
 
             SetupNetManager();
         }
@@ -678,9 +690,9 @@ namespace XProxy.Core
             }
         }
 
-        async Task UpdateNetwork(CancellationToken cancellationToken)
+        async Task UpdateNetwork()
         {
-            while (_netManager != null && !cancellationToken.IsCancellationRequested)
+            while (!IsDisposing && IsConnectionValid)
             {
                 try
                 {
@@ -692,17 +704,17 @@ namespace XProxy.Core
                     Logger.Error(Proxy._config.Messages.PlayerNetworkExceptionMessage.Replace("%tag%", ErrorTag).Replace("%address%", $"{ClientEndPoint}").Replace("%userid%", UserId).Replace("%message%", $"{ex}"), "Player");
                 } 
 
-                await Task.Delay(10, cancellationToken);
+                await Task.Delay(10);
             }
 
             InternalDestroyNetwork();
         }
 
-        async Task RunBatcher(CancellationToken cancellationToken)
+        async Task RunBatcher()
         {
             NetworkWriter writer = new NetworkWriter();
 
-            while (!cancellationToken.IsCancellationRequested)
+            while (!IsDisposing)
             {
                 while (Batcher.GetBatch(writer))
                 {
@@ -876,9 +888,11 @@ namespace XProxy.Core
             if (Id != -1)
                 Proxy.Players.TryRemove(Id, out _);
 
-            CancellationToken?.Cancel();
-            CancellationToken?.Dispose();
-            CancellationToken = null;
+            IsDisposing = true;
+            PreAuth = null;
+            Batcher = null;
+            UnbatcherCurrentServer = null;
+            UnbatcherProxy = null;
         }
     }
 }
