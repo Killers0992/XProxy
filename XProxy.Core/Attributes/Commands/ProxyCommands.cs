@@ -105,7 +105,7 @@ namespace XProxy.Commands
                     int sent = 0;
                     foreach (Player player in Listener.GetAllPlayers())
                     {
-                        if (player.ServerInfo == server) continue;
+                        if (player.CurrentServer == server) continue;
 
                         if (player.RedirectTo(server.Name))
                         {

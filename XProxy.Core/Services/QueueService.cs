@@ -17,12 +17,12 @@ namespace XProxy.Core.Services
                     {
                         foreach(var ticket in server.PlayersInQueue)
                         {
-                            if (!ticket.Value.IsTicketExpired()) continue;
+                            if (!ticket.Value.IsTicketExpired()) 
+                                continue;
 
                             if (ticket.Value.IsConnecting)
                             {
                                 Logger.Info($"Player {ticket.Key} joined server {server.Name} from queue successfully! ( freed slot )", "QueueService");
-
                             }
                             else
                             {

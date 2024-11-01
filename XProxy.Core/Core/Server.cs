@@ -21,7 +21,7 @@ namespace XProxy.Core
 
             foreach(var server in List)
             {
-                if (server.Name == plr.ServerInfo.Name)
+                if (server.Name == plr.CurrentServer.Name)
                     continue;
 
                 names.Add(server.Name);

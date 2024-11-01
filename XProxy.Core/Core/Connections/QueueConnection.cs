@@ -37,17 +37,17 @@ namespace XProxy.Core.Connections
 
             if (pos == 1)
             {
-                if (Player.RedirectTo(Player.ServerInfo, true))
+                if (Player.RedirectTo(Player.CurrentServer, true))
                 {
                 }
                 else
                 {
-                    Player.SendHint(Player.Proxy._config.Messages.FirstPositionInQueue.Replace("%position%", $"{pos}").Replace("%totalInQueue%", $"{Player.ServerInfo.PlayersInQueueCount}"), 1);
+                    Player.SendHint(Player.Proxy._config.Messages.FirstPositionInQueue.Replace("%position%", $"{pos}").Replace("%totalInQueue%", $"{Player.CurrentServer.PlayersInQueueCount}"), 1);
                 }
             }
             else
             {
-                Player.SendHint(Player.Proxy._config.Messages.PositionInQueue.Replace("%position%", $"{pos}").Replace("%totalInQueue%", $"{Player.ServerInfo.PlayersInQueueCount}"), 1);
+                Player.SendHint(Player.Proxy._config.Messages.PositionInQueue.Replace("%position%", $"{pos}").Replace("%totalInQueue%", $"{Player.CurrentServer.PlayersInQueueCount}"), 1);
             }
         }
 
@@ -63,7 +63,7 @@ namespace XProxy.Core.Connections
                     {
                         if (Listener.Simulations.TryGetValue(rng.Settings.Simulation, out Type simType))
                         {
-                            Player.ServerInfo = rng;
+                            Player.CurrentServer = rng;
                             Player.Connection = (SimulatedConnection)Activator.CreateInstance(simType, args: Player);
                             Player.SendGameConsoleMessage("Switch to lobby...");
                         }

@@ -99,12 +99,12 @@ namespace XProxy.Core
         public bool IsConnectedToCurrentServer => _netManager != null && _netManager.FirstPeer != null;
         public bool ProcessMirrorMessagesFromProxy { get; set; }
         public bool ProcessMirrorMessagesFromCurrentServer { get; set; }
-        public bool IsInQueue => ServerInfo == null ? false : ServerInfo.IsPlayerInQueue(this);
-        public int PositionInQueue => ServerInfo == null ? -1 : ServerInfo.GetPlayerPositionInQueue(this);
+        public bool IsInQueue => CurrentServer == null ? false : CurrentServer.IsPlayerInQueue(this);
+        public int PositionInQueue => CurrentServer == null ? -1 : CurrentServer.GetPlayerPositionInQueue(this);
         public Listener Proxy { get; private set; }
         public PreAuthModel PreAuth { get; private set; }
         public BaseConnection Connection { get; set; }
-        public Server ServerInfo { get; set; }
+        public Server CurrentServer { get; set; }
 
         public CustomUnbatcher UnbatcherCurrentServer { get; private set; } = new CustomUnbatcher();
         public CustomUnbatcher UnbatcherProxy { get; private set; } = new CustomUnbatcher();
@@ -113,14 +113,14 @@ namespace XProxy.Core
 
         public IPEndPoint ClientEndPoint => _connectionRequest != null ? _connectionRequest.RemoteEndPoint : _proxyPeer.EndPoint;
 
-        public string Tag => Proxy._config.Messages.PlayerTag.Replace("%serverIpPort%", ServerInfo.ToString()).Replace("%server%", ServerInfo.Name);
-        public string ErrorTag => Proxy._config.Messages.PlayerErrorTag.Replace("%serverIpPort%", ServerInfo.ToString()).Replace("%server%", ServerInfo.Name);
+        public string Tag => Proxy._config.Messages.PlayerTag.Replace("%serverIpPort%", CurrentServer.ToString()).Replace("%server%", CurrentServer.Name);
+        public string ErrorTag => Proxy._config.Messages.PlayerErrorTag.Replace("%serverIpPort%", CurrentServer.ToString()).Replace("%server%", CurrentServer.Name);
 
         // QUEUE SYSTEM
 
         public bool CanJoinQueue(Server server = null)
         {
-            Server targetServer = server ?? ServerInfo;
+            Server targetServer = server ?? CurrentServer;
 
             if (targetServer == null)
                 return false;
@@ -133,12 +133,12 @@ namespace XProxy.Core
 
         public void JoinQueue(Server server = null)
         {
-            Server targetServer = server ?? ServerInfo;
+            Server targetServer = server ?? CurrentServer;
 
             if (targetServer == null)
                 return;
 
-            ServerInfo = targetServer;
+            CurrentServer = targetServer;
             Connection = new QueueConnection(this);
 
             if (targetServer.IsPlayerInQueue(this))
@@ -391,7 +391,7 @@ namespace XProxy.Core
                 return false;
 
             if (queue)
-                ServerInfo.MarkPlayerInQueueAsConnecting(this);
+                CurrentServer.MarkPlayerInQueueAsConnecting(this);
 
             IsRedirecting = true;
             Logger.Info(Proxy._config.Messages.PlayerRedirectToMessage.Replace("%tag%", Tag).Replace("%address%", $"{ClientEndPoint}").Replace("%userid%", UserId).Replace("%server%", server.Name), $"Player");
@@ -400,7 +400,7 @@ namespace XProxy.Core
             return true;
         }
 
-        public void SaveCurrentServerForNextSession(float duration = 4f) => Proxy.SaveLastServerForUser(UserId, ServerInfo.Name, duration);
+        public void SaveCurrentServerForNextSession(float duration = 4f) => Proxy.SaveLastServerForUser(UserId, CurrentServer.Name, duration);
         public void SaveServerForNextSession(string name, float duration = 4f) => Proxy.SaveLastServerForUser(UserId, name, duration);
 
         public void DisconnectFromProxy(string reason = null, NetDataWriter writer = null, RejectionReason? rejectionReason = null)
@@ -585,7 +585,7 @@ namespace XProxy.Core
 
         internal void InternalSetup(Server info)
         {
-            ServerInfo = info;
+            CurrentServer = info;
 
             TaskMonitor.RegisterTask(Task.Run(() => RunBatcher()));
 
@@ -594,7 +594,7 @@ namespace XProxy.Core
 
         internal void InternalConnect()
         {
-            switch (ServerInfo.Settings.ConnectionType)
+            switch (CurrentServer.Settings.ConnectionType)
             {
                 case ConnectionType.Proxied:
                     if (IsChallenging)
@@ -602,10 +602,10 @@ namespace XProxy.Core
                     else
                         Logger.Info(Proxy._config.Messages.PlayerIsConnectingMessage.Replace("%tag%", Tag).Replace("%address%", $"{ClientEndPoint}").Replace("%userid%", UserId), $"Player");
 
-                    _netManager.Connect(ServerInfo.Settings.Ip, ServerInfo.Settings.Port, PreAuth.RawPreAuth);
+                    _netManager.Connect(CurrentServer.Settings.Ip, CurrentServer.Settings.Port, PreAuth.RawPreAuth);
                     break;
                 case ConnectionType.Simulated:
-                    if (ServerInfo.Settings.Simulation == "lobby")
+                    if (CurrentServer.Settings.Simulation == "lobby")
                     {
                         if (ConfigService.Singleton.Value.AutoJoinQueueInLobby)
                         {
@@ -622,7 +622,7 @@ namespace XProxy.Core
                         }
                     }
 
-                    if (Listener.Simulations.TryGetValue(ServerInfo.Settings.Simulation, out Type simType))
+                    if (Listener.Simulations.TryGetValue(CurrentServer.Settings.Simulation, out Type simType))
                     {
                         Connection = (SimulatedConnection)Activator.CreateInstance(simType, args: this);
                     }
@@ -658,8 +658,8 @@ namespace XProxy.Core
 
             Proxy.Players.TryAdd(Id, this);
 
-            if (!ServerInfo.PlayersById.ContainsKey(Id))
-                ServerInfo.PlayersById.TryAdd(Id, this);
+            if (!CurrentServer.PlayersById.ContainsKey(Id))
+                CurrentServer.PlayersById.TryAdd(Id, this);
 
             if (!Listener.PlayersByUserId.ContainsKey(UserId))
                 Listener.PlayersByUserId.TryAdd(UserId, Id);
@@ -803,7 +803,7 @@ namespace XProxy.Core
             switch (disconnectInfo.Reason)
             {
                 case DisconnectReason.ConnectionFailed when disconnectInfo.AdditionalData.RawData == null:
-                    DisconnectFromProxy(Proxy._config.Messages.ServerIsOfflineKickMessage.Replace("%server%", ServerInfo.Name));
+                    DisconnectFromProxy(Proxy._config.Messages.ServerIsOfflineKickMessage.Replace("%server%", CurrentServer.Name));
                     Logger.Info(Proxy._config.Messages.PlayerServerIsOfflineMessage.Replace("%tag%", Tag).Replace("%address%", $"{ClientEndPoint}").Replace("%userid%", UserId), $"Player");
                     return;
 
@@ -885,7 +885,10 @@ namespace XProxy.Core
         public void Dispose()
         {
             Proxy.Connections.Remove(this);
-            ServerInfo.PlayersById.TryRemove(Id, out _);
+
+            if (CurrentServer != null)
+                CurrentServer.PlayersById.TryRemove(Id, out _);
+
             Listener.PlayersByUserId.TryRemove(UserId, out _);
 
             if (Id != -1)
