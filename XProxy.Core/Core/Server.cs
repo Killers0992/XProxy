@@ -238,7 +238,7 @@ namespace XProxy.Core
             if (PlayersInQueue.TryAdd(plr.UserId, new QueueTicket(plr.UserId, this)))
             {
                 PlayersInQueueByUserId.Add(plr.UserId);
-                Logger.Info($"Added player {plr.UserId} to queue because {Name} is full!, pos {GetPlayerPositionInQueue(plr)}/{PlayersInQueueCount}", "QueueService");
+                Logger.Info($"Added player {plr.UserId} to queue because {Name} is full!, pos {plr.PositionInQueue}/{PlayersInQueueCount}", "QueueService");
                 return true;
             }
 

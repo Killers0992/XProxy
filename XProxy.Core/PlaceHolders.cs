@@ -21,7 +21,7 @@ namespace XProxy.Core
                         if (targetServer == null)
                             return "-1";
 
-                        return $"{targetServer.PlayersInQueue}";
+                        return $"{targetServer.PlayersInQueueCount}";
                     case "onlineplayers":
                         if (targetServer == null)
                             return "-1";
@@ -34,8 +34,6 @@ namespace XProxy.Core
                         return $"{targetServer.PlayersCount}";
                     case "proxyonlineplayers":
                         return Listener.GetTotalPlayersOnline().ToString();
-                    case "proxymaxplayers":
-                        return ConfigService.Singleton.Value.Listeners.FirstOrDefault().Value.MaxPlayers.ToString();
                     default:
                         return "%placeholder_not_found%";
                 }
