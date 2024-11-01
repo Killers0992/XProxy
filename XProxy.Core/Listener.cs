@@ -34,6 +34,8 @@ namespace XProxy
 
         public ConcurrentDictionary<int, Player> Players { get; private set; } = new ConcurrentDictionary<int, Player>();
 
+        public List<Player> Connections = new List<Player>();
+
         public static ConcurrentDictionary<string, int> PlayersByUserId { get; private set; } = new ConcurrentDictionary<string, int>();
         public static ConcurrentDictionary<string, LastServerInfo> ForceServerForUserID { get; set; } = new ConcurrentDictionary<string, LastServerInfo>();
 
@@ -265,7 +267,7 @@ namespace XProxy
             if (ev.IsCancelled)
                 return;
 
-            Player player = new Player(this, preAuth);
+            Player player = new Player(this, request, preAuth);
 
             Server target;
             if (HasSavedLastServer(preAuth.UserID))
@@ -276,8 +278,7 @@ namespace XProxy
             if (target == null)
             {
                 Logger.Info(_config.Messages.ProxyIsFull.Replace("%address%", $"{request.RemoteEndPoint.Address}").Replace("%userid%", preAuth.UserID), "XProxy");
-                request.DisconnectServerFull();
-                player?.Dispose();
+                player.DisconnectFromProxy(rejectionReason: RejectionReason.ServerFull);
                 return;
             }
 
@@ -288,9 +289,7 @@ namespace XProxy
             if (target.Settings.SendIpAddressInPreAuth)
                 preAuth.RawPreAuth.Put(ip);
 
-            Logger.Debug($"[{request.RemoteEndPoint.Address}] Internal setup -> connect");
-
-            player.InternalSetup(request, target);
+            player.InternalSetup(target);
             player.InternalConnect();
         }
 
@@ -304,7 +303,7 @@ namespace XProxy
 
         public void OnPeerDisconnected(NetPeer peer, DisconnectInfo disconnectInfo)
         {
-            if (!Players.TryGetValue(peer.Id, out Player player)) 
+            if (!Players.TryGetValue(peer.Id, out Player player))
                 return;
 
             bool showDisconnectMessage = !player.IsRoundRestarting && !player.IsRedirecting && disconnectInfo.Reason != DisconnectReason.DisconnectPeerCalled;
@@ -322,7 +321,7 @@ namespace XProxy
                 }
             }
 
-            player.InternalDestroy();
+            player.Dispose();
         }
     }
 }

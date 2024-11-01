@@ -10,7 +10,7 @@ using XProxy.Core.Services;
 using XProxy.Services;
 using XProxy.Shared.Models;
 
-[assembly: AssemblyVersion("1.6.1")]
+[assembly: AssemblyVersion("1.6.2")]
 
 namespace XProxy
 {

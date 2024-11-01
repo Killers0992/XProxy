@@ -18,6 +18,7 @@ using static PlayerStatsSystem.SyncedStatMessages;
 using XProxy.Services;
 using System.Threading;
 using XProxy.Core.Monitors;
+using System.Collections.Generic;
 
 namespace XProxy.Core
 {
@@ -53,20 +54,23 @@ namespace XProxy.Core
         private NetManager _netManager;
         private EventBasedNetListener _listener;
 
-        private DateTime _nextUpdate = DateTime.Now;
-
-        public Player(Listener proxy, PreAuthModel preAuth)
+        public Player(Listener proxy, ConnectionRequest request, PreAuthModel preAuth)
         {
             Proxy = proxy;
+            Proxy.Connections.Add(this);
+
+            _connectionRequest = request;
+
             PreAuth = preAuth;
 
             CancellationToken = new CancellationTokenSource();
-            Proxy.Players.TryAdd(Id, this);
         }
 
         public int Id { get; private set; } = -1;
+
         public DateTime ConnectedOn { get; } = DateTime.Now;
         public TimeSpan Connectiontime => DateTime.Now - ConnectedOn;
+
         public double RemoteTimestamp { get; private set; }
         public uint NetworkId { get; private set; } = Database.GetNextNetworkId();
         public string UserId => PreAuth.UserID;
@@ -84,8 +88,6 @@ namespace XProxy.Core
         public PreAuthModel PreAuth { get; private set; }
         public BaseConnection Connection { get; set; }
         public Server ServerInfo { get; set; }
-
-        public bool RejectIncomingVoicePackets { get; set; }
 
         public CustomUnbatcher UnbatcherCurrentServer { get; private set; } = new CustomUnbatcher();
         public CustomUnbatcher UnbatcherProxy { get; private set; } = new CustomUnbatcher();
@@ -386,30 +388,32 @@ namespace XProxy.Core
         public void SaveCurrentServerForNextSession(float duration = 4f) => Proxy.SaveLastServerForUser(UserId, ServerInfo.Name, duration);
         public void SaveServerForNextSession(string name, float duration = 4f) => Proxy.SaveLastServerForUser(UserId, name, duration);
 
-        public void DisconnectFromProxy(string reason = null)
+        public void DisconnectFromProxy(string reason = null, NetDataWriter writer = null, RejectionReason? rejectionReason = null)
         {
             if (_connectionRequest != null)
             {
                 if (!string.IsNullOrEmpty(reason))
                 {
-                    NetDataWriter writer = new NetDataWriter();
-                    writer.Put((byte)RejectionReason.Custom);
-                    writer.Put(reason);
+                    NetDataWriter customWriter = new NetDataWriter();
+                    customWriter.Put((byte)RejectionReason.Custom);
+                    customWriter.Put(reason);
+                    _connectionRequest.Reject(customWriter);
+                }
+                else if (writer != null)
                     _connectionRequest.Reject(writer);
+                else if (rejectionReason.HasValue)
+                {
+                    NetDataWriter customWriter = new NetDataWriter();
+                    customWriter.Put((byte)rejectionReason.Value);
+                    _connectionRequest.Reject(customWriter);
                 }
                 else
                     _connectionRequest.RejectForce();
+
+                Dispose();
             }
             else
                 _proxyPeer.Disconnect();
-        }
-
-        public void RejectFromProxy(NetDataWriter writer)
-        {
-            if (_connectionRequest == null) return;
-
-            _connectionRequest.Reject(writer);
-            InternalDestroy();
         }
 
         public void SendDataToCurrentServer(byte[] bytes, int position, int length, DeliveryMethod method)
@@ -564,11 +568,9 @@ namespace XProxy.Core
                 Connection.OnReceiveDataFromProxy(reader, method);
         }
 
-        internal void InternalSetup(ConnectionRequest request, Server info)
+        internal void InternalSetup(Server info)
         {
             ServerInfo = info;
-
-            _connectionRequest = request;
 
             TaskMonitor.RegisterTask(Task.Run(() => RunBatcher(CancellationToken.Token), CancellationToken.Token));
 
@@ -615,28 +617,31 @@ namespace XProxy.Core
 
         internal void InternalUpdate()
         {
-            if (_nextUpdate < DateTime.Now && IsPlayerSpawned)
+            if (!IsPlayerSpawned)
+                return;
+
+            try
             {
-                try
-                {
-                    Update();
-                    Connection?.Update();
-                }
-                catch (Exception ex)
-                {
-                    Logger.Error(ex);
-                }
-                _nextUpdate = DateTime.Now.AddSeconds(1);
+                Update();
+                Connection?.Update();
+            }
+            catch (Exception ex)
+            {
+                Logger.Error(ex);
             }
         }
 
         internal void InternalAcceptConnection(BaseConnection connection = null)
         {
-            if (_connectionRequest == null) return;
+            // This should never happen.
+            if (_connectionRequest == null)
+                return;
 
             _proxyPeer = _connectionRequest.Accept();
 
             Id = _proxyPeer.Id;
+
+            Proxy.Players.TryAdd(Id, this);
 
             if (!ServerInfo.PlayersById.ContainsKey(Id))
                 ServerInfo.PlayersById.TryAdd(Id, this);
@@ -673,24 +678,9 @@ namespace XProxy.Core
             }
         }
 
-        internal void InternalDestroy()
-        {
-            ServerInfo.PlayersById.TryRemove(Id, out _);
-            Listener.PlayersByUserId.TryRemove(UserId, out _);
-
-            InternalDestroyNetwork();
-
-            Batcher = null;
-
-            if (Id != -1)
-                Proxy.Players.TryRemove(Id, out _);
-
-            Dispose();
-        }
-
         async Task UpdateNetwork(CancellationToken cancellationToken)
         {
-            while (_netManager != null && !cancellationToken.IsCancellationRequested)
+            while (!cancellationToken.IsCancellationRequested)
             {
                 try
                 {
@@ -704,13 +694,15 @@ namespace XProxy.Core
 
                 await Task.Delay(10, cancellationToken);
             }
+
+            InternalDestroyNetwork();
         }
 
-        async Task RunBatcher(CancellationToken token)
+        async Task RunBatcher(CancellationToken cancellationToken)
         {
             NetworkWriter writer = new NetworkWriter();
 
-            while (Batcher != null && !token.IsCancellationRequested)
+            while (!cancellationToken.IsCancellationRequested)
             {
                 while (Batcher.GetBatch(writer))
                 {
@@ -850,8 +842,10 @@ namespace XProxy.Core
                             break;
                     }
 
-                    if (!cancel)
-                        RejectFromProxy(rejectedData);
+                    if (cancel)
+                        return;
+
+                    DisconnectFromProxy(writer: rejectedData);
                     return;
 
                 case DisconnectReason.Timeout:
@@ -868,7 +862,6 @@ namespace XProxy.Core
                     Connection = new LostConnection(this, LostConnectionType.Shutdown);
                     Logger.Info(Proxy._config.Messages.PlayerServerShutdownMessage.Replace("%tag%", Tag).Replace("%address%", $"{ClientEndPoint}").Replace("%userid%", UserId), $"Player");
                     return;
-
             }
 
             DisconnectFromProxy();
@@ -876,6 +869,13 @@ namespace XProxy.Core
 
         public void Dispose()
         {
+            Proxy.Connections.Remove(this);
+            ServerInfo.PlayersById.TryRemove(Id, out _);
+            Listener.PlayersByUserId.TryRemove(UserId, out _);
+
+            if (Id != -1)
+                Proxy.Players.TryRemove(Id, out _);
+
             CancellationToken?.Cancel();
             CancellationToken?.Dispose();
             CancellationToken = null;
