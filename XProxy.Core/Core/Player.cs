@@ -19,6 +19,7 @@ using XProxy.Services;
 using System.Threading;
 using XProxy.Core.Monitors;
 using System.Collections.Generic;
+using Org.BouncyCastle.Utilities.Net;
 
 namespace XProxy.Core
 {
@@ -54,10 +55,14 @@ namespace XProxy.Core
         private NetManager _netManager;
         private EventBasedNetListener _listener;
 
+        public IPEndPoint IpAddress;
+
         public Player(Listener proxy, ConnectionRequest request, PreAuthModel preAuth)
         {
             Proxy = proxy;
-            Proxy.Connections.Add(this);
+            IpAddress = request.RemoteEndPoint;
+
+            Proxy.Connections.Add(IpAddress, this);
 
             _connectionRequest = request;
 
@@ -464,15 +469,14 @@ namespace XProxy.Core
             _listener.NetworkReceiveEvent += OnReceiveData;
             _listener.PeerDisconnectedEvent += OnDisconnected;
 
-            _netManager = new NetManager(_listener);
-
-            _netManager.UpdateTime = 5;
-            _netManager.ChannelsCount = (byte)6;
-            _netManager.DisconnectTimeout = 4000;
-            _netManager.ReconnectDelay = 300;
-            _netManager.MaxConnectAttempts = 3;
-
-            TaskMonitor.RegisterTask(Task.Run(() => UpdateNetwork()));
+            _netManager = new NetManager(_listener)
+            {
+                UpdateTime = 5,
+                ChannelsCount = (byte)6,
+                DisconnectTimeout = 1000,
+                ReconnectDelay = 300,
+                MaxConnectAttempts = 3,
+            };
 
             _netManager.Start();
         }
@@ -656,13 +660,11 @@ namespace XProxy.Core
 
             Id = _proxyPeer.Id;
 
-            Proxy.Players.TryAdd(Id, this);
-
             if (!CurrentServer.PlayersById.ContainsKey(Id))
                 CurrentServer.PlayersById.TryAdd(Id, this);
 
-            if (!Listener.PlayersByUserId.ContainsKey(UserId))
-                Listener.PlayersByUserId.TryAdd(UserId, Id);
+            if (!Listener.ConnectionToUserId.ContainsKey(UserId))
+                Listener.ConnectionToUserId.TryAdd(UserId, this);
 
             _connectionRequest = null;
             (connection == null ? Connection : connection).InternalConnected();
@@ -693,24 +695,13 @@ namespace XProxy.Core
             }
         }
 
-        async Task UpdateNetwork()
+        public void PollEvents()
         {
-            while (!IsDisposing && IsConnectionValid)
-            {
-                try
-                {
-                    if (_netManager.IsRunning)
-                        _netManager.PollEvents();
-                }
-                catch (Exception ex)
-                {
-                    Logger.Error(Proxy._config.Messages.PlayerNetworkExceptionMessage.Replace("%tag%", ErrorTag).Replace("%address%", $"{ClientEndPoint}").Replace("%userid%", UserId).Replace("%message%", $"{ex}"), "Player");
-                } 
+            if (_netManager == null)
+                return;
 
-                await Task.Delay(10);
-            }
-
-            InternalDestroyNetwork();
+            if (_netManager.IsRunning)
+                _netManager.PollEvents();
         }
 
         async Task RunBatcher()
@@ -884,15 +875,15 @@ namespace XProxy.Core
 
         public void Dispose()
         {
-            Proxy.Connections.Remove(this);
+            Proxy.Connections.Remove(IpAddress);
 
+            // If player is connected to any server remove their id.
             if (CurrentServer != null)
                 CurrentServer.PlayersById.TryRemove(Id, out _);
 
-            Listener.PlayersByUserId.TryRemove(UserId, out _);
+            Listener.ConnectionToUserId.Remove(UserId, out _);
 
-            if (Id != -1)
-                Proxy.Players.TryRemove(Id, out _);
+            InternalDestroyNetwork();
 
             IsDisposing = true;
             PreAuth = null;

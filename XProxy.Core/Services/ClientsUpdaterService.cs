@@ -12,7 +12,7 @@ namespace XProxy.Services
             {
                 foreach(var listener in Listener.NamesByListener.Values)
                 {
-                    foreach(var player in listener.Players.Values)
+                    foreach(var player in listener.Connections.Values)
                     {
                         player?.InternalUpdate();
                     }

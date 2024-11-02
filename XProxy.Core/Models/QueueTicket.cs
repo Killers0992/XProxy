@@ -19,7 +19,7 @@ namespace XProxy.Core.Models
         public bool IsConnecting { get; private set; }
         public DateTime TicketLifetime { get; private set; }
 
-        public bool IsPlayerOffline => !Listener.PlayersByUserId.ContainsKey(UserId);
+        public bool IsPlayerOffline => !Listener.ConnectionToUserId.ContainsKey(UserId);
         public TimeSpan OfflineTime => DateTime.Now - _offlineFor;
 
         public bool IsPlayerConnected
@@ -37,12 +37,16 @@ namespace XProxy.Core.Models
         public bool IsTicketExpired()
         {
             if (IsConnecting)
+            {
+                Logger.Info("Player is connecting and ticket lifetime expired");
                 return TicketLifetime < DateTime.Now;
+            }
 
             if (IsPlayerOffline)
             {
                 if (_lastOfflineStatus.HasValue)
                 {
+                    Logger.Info("Is offline for more than " + OfflineTime.TotalSeconds);
                     return OfflineTime.TotalSeconds > 5;
                 }
                 else
@@ -53,7 +57,10 @@ namespace XProxy.Core.Models
                 }
             }
             else if (IsPlayerConnected)
+            {
+                Logger.Info("Player is connected, expire ticket");
                 return true;
+            }
             else
                 _lastOfflineStatus = null;
 

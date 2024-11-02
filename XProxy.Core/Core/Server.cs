@@ -94,17 +94,12 @@ namespace XProxy.Core
                     foreach (Player player in serv.Players)
                         player.InternalDisconnect();
 
-                    foreach(var player in Listener.PlayersByUserId)
+                    foreach(var player in Listener.GetAllPlayers())
                     {
-                        if (!serv.PlayersInQueueByUserId.Contains(player.Key))
+                        if (!serv.PlayersInQueueByUserId.Contains(player.UserId))
                             continue;
 
-                        Player plr = Listener.GetPlayerByUserId(player.Key);
-
-                        if (plr == null)
-                            continue;
-
-                        plr.InternalDisconnect();
+                        player.InternalDisconnect();
                     }
 
                     serv.Destroy();

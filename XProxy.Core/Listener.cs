@@ -32,11 +32,8 @@ namespace XProxy
        
         // Shared data between all listeners.
 
-        public ConcurrentDictionary<int, Player> Players { get; private set; } = new ConcurrentDictionary<int, Player>();
+        public static ConcurrentDictionary<string, Player> ConnectionToUserId { get; private set; } = new ConcurrentDictionary<string, Player>();
 
-        public List<Player> Connections = new List<Player>();
-
-        public static ConcurrentDictionary<string, int> PlayersByUserId { get; private set; } = new ConcurrentDictionary<string, int>();
         public static ConcurrentDictionary<string, LastServerInfo> ForceServerForUserID { get; set; } = new ConcurrentDictionary<string, LastServerInfo>();
 
         public static int GetTotalPlayersOnline()
@@ -44,7 +41,7 @@ namespace XProxy
             int count = 0;
 
             foreach (var listener in NamesByListener.Values)
-                count += listener.Players.Count;
+                count += listener.Connections.Count;
 
             return count;
         }
@@ -54,21 +51,18 @@ namespace XProxy
             var list = new List<Player>();
 
             foreach (var listener in NamesByListener.Values)
-                list.AddRange(listener.Players.Values);
+                list.AddRange(listener.Connections.Values);
 
             return list;
         }
 
         public static Player GetPlayerByUserId(string userId)
         {
-            if (!PlayersByUserId.TryGetValue(userId, out int playerId))
-                return null;
-
             Player plr = null;
 
             foreach (var listener in NamesByListener.Values)
             {
-                if (!listener.Players.TryGetValue(playerId, out plr))
+                if (!ConnectionToUserId.TryGetValue(userId, out plr))
                     continue;
             }
 
@@ -101,9 +95,18 @@ namespace XProxy
             }
         }
 
-        public Listener(string listenerName)
+        /// <summary>
+        /// Gets all connections made to this listener.
+        /// </summary>
+        public Dictionary<IPEndPoint, Player> Connections { get; private set; } = new Dictionary<IPEndPoint, Player>();
+
+        public CancellationToken CancellationToken { get; }
+
+        public Listener(string listenerName, CancellationToken token)
         {
             ListenerName = listenerName;
+            CancellationToken = token;
+
             NamesByListener.Add(ListenerName, this);
 
             Server.Refresh();
@@ -115,18 +118,66 @@ namespace XProxy
             _listener.NetworkReceiveEvent += OnNetworkReceive;
             _listener.PeerDisconnectedEvent += OnPeerDisconnected;
 
-            _manager = new NetManager(_listener);
-            _manager.UpdateTime = 5;
-            _manager.BroadcastReceiveEnabled = true;
-            _manager.ChannelsCount = (byte)6;
-            _manager.DisconnectTimeout = 6000;
-            _manager.ReconnectDelay = 400;
-            _manager.MaxConnectAttempts = 2;
-            _manager.Start(IPAddress.Parse(Settings.ListenIp), IPAddress.IPv6Any, Settings.Port);
+            _manager = new NetManager(_listener)
+            {
+                UpdateTime = 5,
+                BroadcastReceiveEnabled = true,
+                ChannelsCount = (byte)6,
+                DisconnectTimeout = 6000,
+                ReconnectDelay = 400,
+                MaxConnectAttempts = 2,
+            };
+            _manager.StartInManualMode(IPAddress.Parse(Settings.ListenIp), IPAddress.IPv6Any, Settings.Port);
 
             EventManager.Proxy.InvokeStartedListening(new ProxyStartedListening(this, Settings.Port));
 
             Logger.Info($"{_config.Messages.ProxyStartedListeningMessage.Replace("%port%", $"{Settings.Port}").Replace("%version%", Settings.Version)}", $"XProxy");
+
+            Task.Run(() => RunEventPolling(CancellationToken), CancellationToken);
+            Task.Run(() => RunServerUpdater(CancellationToken), CancellationToken);
+        }
+
+        private async Task RunEventPolling(CancellationToken token)
+        {
+            const int msDelay = 10;
+
+            while (!token.IsCancellationRequested)
+            {
+                try
+                {
+                    _manager.PollEvents();
+                    _manager.ManualUpdate(msDelay);
+
+                    foreach (Player connection in Connections.Values)
+                        connection.PollEvents();
+                }
+                catch (Exception ex)
+                {
+                    Logger.Error(ex);
+                }
+
+                await Task.Delay(msDelay, token);
+            }
+        }
+
+        private async Task RunServerUpdater(CancellationToken token)
+        {
+            while (!token.IsCancellationRequested)
+            {
+                if (UpdateServers)
+                {
+                    try
+                    {
+                        Server.Refresh();
+                    }
+                    catch (Exception ex)
+                    {
+                        Logger.Error(ex);
+                    }
+                    UpdateServers = false;
+                }
+                await Task.Delay(1000, token);
+            }
         }
 
         public Server GetFirstServerFromPriorities()
@@ -192,31 +243,6 @@ namespace XProxy
                 return null;
 
             return server;
-        }
-
-        public async Task Run(CancellationToken token)
-        {
-            while (!token.IsCancellationRequested)
-            {
-                try
-                {
-                    if (_manager != null)
-                        if (_manager.IsRunning)
-                            _manager.PollEvents();
-
-                    if (UpdateServers)
-                    {
-                        Server.Refresh();
-                        UpdateServers = false;
-                    }
-                }
-                catch(Exception ex)
-                {
-                    Logger.Error(ex);
-                }
-
-                await Task.Delay(10);
-            }
         }
 
         public void OnConnectionRequest(ConnectionRequest request)
@@ -295,7 +321,7 @@ namespace XProxy
 
         public void OnNetworkReceive(NetPeer peer, NetPacketReader reader, byte channelNumber, DeliveryMethod deliveryMethod)
         {
-            if (!Players.TryGetValue(peer.Id, out Player player)) 
+            if (!Connections.TryGetValue(peer.EndPoint, out Player player)) 
                 return;
 
             player.InternalReceiveDataFromProxy(reader, deliveryMethod);
@@ -303,10 +329,10 @@ namespace XProxy
 
         public void OnPeerDisconnected(NetPeer peer, DisconnectInfo disconnectInfo)
         {
-            if (!Players.TryGetValue(peer.Id, out Player player))
+            if (!Connections.TryGetValue(peer.EndPoint, out Player player))
                 return;
 
-            bool showDisconnectMessage = !player.IsRoundRestarting && !player.IsRedirecting && disconnectInfo.Reason != DisconnectReason.DisconnectPeerCalled;
+            bool showDisconnectMessage = disconnectInfo.Reason != DisconnectReason.DisconnectPeerCalled;
 
             if (showDisconnectMessage)
             {

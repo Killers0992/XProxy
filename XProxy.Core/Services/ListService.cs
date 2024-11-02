@@ -305,8 +305,6 @@ namespace XProxy.Services
 
             while (!stoppingToken.IsCancellationRequested)
             {
-
-
                 try
                 {
                     await DoCycle();
@@ -324,6 +322,8 @@ namespace XProxy.Services
 
         async Task DoCycle()
         {
+            cycle += 1;
+
             foreach (ListenerServer server in _config.Value.Listeners.Values)
                 server.ServerListCycle += 1;
 
@@ -354,7 +354,8 @@ namespace XProxy.Services
 
                     string str = JsonConvert.SerializeObject(new AuthPlayersModel());
 
-                    string playersStr = $"{proxyServer.Players.Count}/{settings.MaxPlayers}";
+                    string playersStr = $"{proxyServer.Connections.Count}/{settings.MaxPlayers}";
+
                     if (Server.TryGetByName(settings.ServerList.TakePlayerCountFromServer, out Server targetServer))
                         playersStr = $"{targetServer.PlayersCount}/{targetServer.Settings.MaxPlayers}";
 
@@ -407,6 +408,9 @@ namespace XProxy.Services
                     settings.ServerListUpdate = settings.ServerListUpdate || settings.ServerListCycle == 10;
                 }
             }
+
+            if (cycle >= 15)
+                cycle = 0;
 
             foreach (ListenerServer server in _config.Value.Listeners.Values)
             {
