@@ -147,13 +147,22 @@ namespace XProxy
                 {
                     _manager.PollEvents();
                     _manager.ManualUpdate(msDelay);
-
-                    foreach (Player connection in Connections.Values)
-                        connection.PollEvents();
                 }
                 catch (Exception ex)
                 {
                     Logger.Error(ex);
+                }
+
+                foreach (Player connection in Connections.Values)
+                {
+                    try
+                    {
+                        connection.PollEvents();
+                    }
+                    catch (Exception ex)
+                    {
+                        Logger.Error(ex);
+                    }
                 }
 
                 await Task.Delay(msDelay, token);
