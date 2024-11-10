@@ -24,16 +24,16 @@
 
   <ItemGroup>
     <Reference Include="Assembly-CSharp">
-      <HintPath>$(SL_REFERENCES)\Assembly-CSharp.dll</HintPath>
+      <HintPath>..\..\..\Downloads\Assembly-CSharp-Publicized.dll</HintPath>
     </Reference>
     <Reference Include="Mirror">
-      <HintPath>$(SL_REFERENCES)\Mirror.dll</HintPath>
+      <HintPath>..\..\..\Downloads\Mirror.dll</HintPath>
     </Reference>
     <Reference Include="NorthwoodLib">
-      <HintPath>$(SL_REFERENCES)\NorthwoodLib.dll</HintPath>
+      <HintPath>..\..\..\Downloads\NorthwoodLib.dll</HintPath>
     </Reference>
     <Reference Include="UnityEngine.CoreModule">
-      <HintPath>$(UNITY_REFERENCES)\UnityEngine.CoreModule.dll</HintPath>
+      <HintPath>..\..\..\Downloads\UnityEngine.CoreModule.dll</HintPath>
     </Reference>
   </ItemGroup>
 

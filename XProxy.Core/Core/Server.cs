@@ -19,7 +19,7 @@ namespace XProxy.Core
         {
             List<string> names = new List<string>();
 
-            foreach(var server in List)
+            foreach (var server in List)
             {
                 if (server.Name == plr.CurrentServer.Name)
                     continue;
@@ -30,7 +30,7 @@ namespace XProxy.Core
             return names;
         }
 
-        public static bool TryGetByName(string name , out Server server)
+        public static bool TryGetByName(string name, out Server server)
         {
             if (string.IsNullOrEmpty(name))
             {
@@ -86,7 +86,7 @@ namespace XProxy.Core
                 return;
 
             Logger.Info($"Initializing (f=green){serversToAdd.Count}(f=white) servers", "XProxy");
-            
+
             foreach (string server in serversToDestroy)
             {
                 if (TryGetByName(server, out Server serv))
@@ -94,7 +94,7 @@ namespace XProxy.Core
                     foreach (Player player in serv.Players)
                         player.InternalDisconnect();
 
-                    foreach(var player in Listener.GetAllPlayers())
+                    foreach (var player in Listener.GetAllPlayers())
                     {
                         if (!serv.PlayersInQueueByUserId.Contains(player.UserId))
                             continue;
@@ -150,11 +150,16 @@ namespace XProxy.Core
             .Count();
 
         public ConcurrentDictionary<string, QueueTicket> PlayersInQueue { get; set; } = new ConcurrentDictionary<string, QueueTicket>();
+        public List<string> PlayersInQueueByUserId = new List<string>();
+
+        // New Priority Queue
+        public Queue<Player> PriorityQueue { get; set; } = new Queue<Player>();
+        public Queue<Player> RegularQueue { get; set; } = new Queue<Player>();
 
         /// <summary>
         /// Gets amount of players in queue.
         /// </summary>
-        public int PlayersInQueueCount => PlayersInQueue.Count;
+        public int PlayersInQueueCount => PriorityQueue.Count + RegularQueue.Count;
 
         /// <summary>
         /// Gets if server is full.
@@ -176,11 +181,8 @@ namespace XProxy.Core
             }
         }
 
-        public List<string> PlayersInQueueByUserId = new List<string>();
-
         public bool CanPlayerJoin(Player player)
         {
-            //
             PlayerCanJoinEvent ev = new PlayerCanJoinEvent(player, this);
             EventManager.Player.InvokeCanJoin(ev);
             if (ev.ForceDeny)
@@ -188,7 +190,6 @@ namespace XProxy.Core
 
             if (ev.ForceAllow)
                 return true;
-            //
 
             if (Settings.ConnectionType == ConnectionType.Simulated)
                 return true;
@@ -217,36 +218,61 @@ namespace XProxy.Core
 
         public bool IsPlayerInQueue(Player plr)
         {
-            return PlayersInQueue.ContainsKey(plr.UserId);
+            return PriorityQueue.Contains(plr) || RegularQueue.Contains(plr);
         }
 
         public int GetPlayerPositionInQueue(Player plr)
         {
-            if (PlayersInQueue.TryGetValue(plr.UserId, out QueueTicket ticket))
-                return ticket.Position;
+            if (PriorityQueue.Contains(plr))
+                return PriorityQueue.ToList().IndexOf(plr) + 1;
+            if (RegularQueue.Contains(plr))
+                return PriorityQueue.Count + RegularQueue.ToList().IndexOf(plr) + 1;
 
             return -1;
         }
 
-        public bool AddPlayerToQueue(Player plr)
+        public void AddPlayerToQueue(Player player)
         {
-            if (PlayersInQueue.TryAdd(plr.UserId, new QueueTicket(plr.UserId, this)))
+            if (!IsPlayerInQueue(player))
             {
-                PlayersInQueueByUserId.Add(plr.UserId);
-                Logger.Info($"Added player {plr.UserId} to queue because {Name} is full!, pos {plr.PositionInQueue}/{PlayersInQueueCount}", "QueueService");
-                return true;
+                RegularQueue.Enqueue(player);
+                Logger.Info($"Added player {player.UserId} to regular queue for server {Name}", "QueueService");
+            }
+        }
+
+        public void AddPlayerToPriorityQueue(Player player)
+        {
+            if (!IsPlayerInQueue(player))
+            {
+                PriorityQueue.Enqueue(player);
+                Logger.Info($"Added player {player.UserId} to priority queue for server {Name}", "QueueService");
+            }
+        }
+
+        public Player GetNextPlayerInQueue()
+        {
+            if (PriorityQueue.Count > 0)
+            {
+                return PriorityQueue.Dequeue();
+            }
+            else if (RegularQueue.Count > 0)
+            {
+                return RegularQueue.Dequeue();
             }
 
-            return false;
+            return null;
         }
 
         public void MarkPlayerInQueueAsConnecting(Player plr)
         {
-            if (!PlayersInQueue.TryGetValue(plr.UserId, out QueueTicket ticket))
-                return;
-
-            ticket.MarkAsConnecting();
-            Logger.Info($"{plr.UserId} is connecting from queue to {Name}!", "QueueService");
+            if (PriorityQueue.Contains(plr))
+            {
+                Logger.Info($"{plr.UserId} is connecting from priority queue to {Name}!", "QueueService");
+            }
+            else if (RegularQueue.Contains(plr))
+            {
+                Logger.Info($"{plr.UserId} is connecting from regular queue to {Name}!", "QueueService");
+            }
         }
 
         public void Destroy()

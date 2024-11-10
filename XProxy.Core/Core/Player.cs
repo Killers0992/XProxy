@@ -19,6 +19,8 @@ using XProxy.Services;
 using System.Threading;
 using XProxy.Core.Monitors;
 using System.Collections.Generic;
+using System.Net.Http;
+using Newtonsoft.Json;
 using Org.BouncyCastle.Utilities.Net;
 
 namespace XProxy.Core
@@ -121,8 +123,6 @@ namespace XProxy.Core
         public string Tag => Proxy._config.Messages.PlayerTag.Replace("%serverIpPort%", CurrentServer.ToString()).Replace("%server%", CurrentServer.Name);
         public string ErrorTag => Proxy._config.Messages.PlayerErrorTag.Replace("%serverIpPort%", CurrentServer.ToString()).Replace("%server%", CurrentServer.Name);
 
-        // QUEUE SYSTEM
-
         public bool CanJoinQueue(Server server = null)
         {
             Server targetServer = server ?? CurrentServer;
@@ -136,7 +136,7 @@ namespace XProxy.Core
             return targetServer.PlayersInQueueCount < targetServer.Settings.QueueSlots;
         }
 
-        public void JoinQueue(Server server = null)
+        public async Task JoinQueue(Server server = null)
         {
             Server targetServer = server ?? CurrentServer;
 
@@ -149,7 +149,43 @@ namespace XProxy.Core
             if (targetServer.IsPlayerInQueue(this))
                 return;
 
-            targetServer.AddPlayerToQueue(this);
+            // Check if the player has priority
+            bool isPriority = await IsPriorityPlayer(PreAuth.UserID);
+
+            if (isPriority)
+            {
+                targetServer.AddPlayerToPriorityQueue(this);
+            }
+            else
+            {
+                targetServer.AddPlayerToQueue(this);
+            }
+        }
+
+        internal async Task<bool> IsPriorityPlayer(string steamId)
+        {
+            try
+            {
+                using (HttpClient client = new HttpClient())
+                {
+                    string url = "https://api.kingsplayground.fun/web/patronlist";
+                    HttpResponseMessage response = await client.GetAsync(url);
+
+                    if (response.IsSuccessStatusCode)
+                    {
+                        string jsonResponse = await response.Content.ReadAsStringAsync();
+                        List<string> priorityList = JsonConvert.DeserializeObject<List<string>>(jsonResponse);
+
+                        return priorityList.Contains(steamId);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Logger.Error("Error fetching priority list: " + ex.Message);
+            }
+
+            return false;
         }
 
         // METHODS

@@ -25,13 +25,13 @@ namespace XProxy.Core.Connections
             Player.Spawn();
         }
 
-        public override void Update()
+        public override async void Update()
         {
             int pos = Player.PositionInQueue;
 
             if (!Player.IsInQueue)
             {
-                Player.JoinQueue();
+                await Player.JoinQueue();
                 return;
             }
 
@@ -42,12 +42,30 @@ namespace XProxy.Core.Connections
                 }
                 else
                 {
-                    Player.SendHint(Player.Proxy._config.Messages.FirstPositionInQueue.Replace("%position%", $"{pos}").Replace("%totalInQueue%", $"{Player.CurrentServer.PlayersInQueueCount}"), 1);
+                    Player.SendHint(Player.Proxy._config.Messages.FirstPositionInQueue
+                        .Replace("%position%", $"{pos}")
+                        .Replace("%totalInQueue%", $"{Player.CurrentServer.PlayersInQueueCount}"), 1);
                 }
             }
             else
             {
-                Player.SendHint(Player.Proxy._config.Messages.PositionInQueue.Replace("%position%", $"{pos}").Replace("%totalInQueue%", $"{Player.CurrentServer.PlayersInQueueCount}"), 1);
+                bool isPriority = await Player.IsPriorityPlayer(Player.UserId);
+                string queueMessage;
+
+                if (isPriority)
+                {
+                    queueMessage = Player.Proxy._config.Messages.PriorityPositionInQueue
+                        .Replace("%position%", $"{pos}")
+                        .Replace("%totalInQueue%", $"{Player.CurrentServer.PlayersInQueueCount}");
+                }
+                else
+                {
+                    queueMessage = Player.Proxy._config.Messages.PositionInQueue
+                        .Replace("%position%", $"{pos}")
+                        .Replace("%totalInQueue%", $"{Player.CurrentServer.PlayersInQueueCount}");
+                }
+
+                Player.SendHint(queueMessage, 1);
             }
         }
 

@@ -88,6 +88,7 @@
         public string DefaultServerColor { get; set; } = "white";
         public string LobbyServerLine2 { get; set; } = "<color=orange>%onlinePlayers%</color>/<color=orange>%maxPlayers%</color>";
         public string PositionInQueue { get; set; } = "Position <color=orange><b>%position%</b></color>/<color=orange>%totalInQueue%</color>";
+        public string PriorityPositionInQueue { get; set; } = "PRIORITY Position <color=orange><b>%position%</b></color>/<color=orange>%totalInQueue%</color>";
         public string FirstPositionInQueue { get; set; } = "<color=green>Position</color> <color=orange><b>%position%</b></color>/<color=orange>%totalInQueue%</color>";
         public string LostConnectionHint { get; set; } = "<color=yellow><b>XProxy</b></color>\nServer is not responding for <color=green><b>%time%</b></color> seconds...";
         public string SearchingForFallbackServerHint { get; set; } = "<color=yellow><b>XProxy</b></color>\nSearching for fallback server...";
