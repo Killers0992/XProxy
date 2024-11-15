@@ -1,6 +1,4 @@
-﻿using System.Linq;
-using System.Text.RegularExpressions;
-using XProxy.Services;
+﻿using System.Text.RegularExpressions;
 
 namespace XProxy.Core
 {

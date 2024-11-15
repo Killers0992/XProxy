@@ -7,7 +7,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using XProxy.Cryptography;
 using XProxy.Models;
-using XProxy.Shared.Models;
 
 namespace XProxy.Services
 {

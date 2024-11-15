@@ -1,12 +1,8 @@
-﻿namespace XProxy.Shared.Models
+﻿namespace XProxy.Models
 {
     public class MessagesModel
     {
-        public string ProxyVersion { get; set; } = "Running version (f=green)%version%(f=white), supported game version (f=green)%gameVersion%(f=white)";
-        public string ProxyIsUpToDate { get; set; } = "Proxy is up to date!";
-        public string ProxyIsOutdated { get; set; } = "Proxy is outdated, new version (f=green)%version%(f=white)";
-        public string DownloadingUpdate { get; set; } = "Downloading update (f=green)%percentage%%(f=white)...";
-        public string DownloadedUpdate { get; set; } = "Downloaded update!";
+        public string ProxyVersion { get; set; } = "Running version (f=green)%version%(f=white), supported game versions (f=green)%gameVersion%(f=white)";
         public string PlayerTag { get; set; } = "(f=white)[(f=darkcyan)%serverIpPort%(f=white)] [(f=cyan)%server%(f=white)]";
         public string PlayerErrorTag { get; set; } = "(f=red)[(f=darkcyan)%serverIpPort%(f=red)] [(f=cyan)%server%(f=red)]";
         public string Proxy { get; set; } = "proxy";

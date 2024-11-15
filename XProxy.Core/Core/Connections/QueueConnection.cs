@@ -1,5 +1,5 @@
 ﻿using System;
-using XProxy.Shared.Enums;
+using XProxy.Enums;
 
 namespace XProxy.Core.Connections
 {

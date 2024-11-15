@@ -41,8 +41,7 @@ namespace XProxy.Services
 
             for (int x = 0; x < dependencies.Length; x++)
             {
-                byte[] data = File.ReadAllBytes(dependencies[x]);
-                Dependencies.Add(Assembly.Load(data));
+                Dependencies.Add(Assembly.LoadFrom(dependencies[x]));
                 loaded++;
             }
 
