@@ -21,7 +21,7 @@ namespace XProxy.Models
         public string Version { get; set; } = "0.0.0";
         public string[] SupportedGameVersions { get; set; } = new string[0];
         public string[] Changelogs { get; set; } = new string[0];
-        public OsSpecificFiles Windows { get; set; } = new OsSpecificFiles();
-        public OsSpecificFiles Linux { get; set; } = new OsSpecificFiles();
+        public string CoreUrl { get; set; }
+        public string DependenciesUrl { get; set; }
     }
 }

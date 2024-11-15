@@ -369,7 +369,7 @@ namespace XProxy.Services
                             { "gameVersion", settings.Version },
                             { "version", "2" },
                             { "update", "1" },
-                            { "info", Base64Encode((_config.Value.MaintenanceMode ? PlaceHolders.ReplacePlaceholders(_config.Value.MaintenanceServerName) : PlaceHolders.ReplacePlaceholders(settings.ServerList.Name)).Replace('+', '-') + $"<color=#00000000><size=1>XProxy {BuildInfo.VersionText}</size></color>") },
+                            { "info", Base64Encode((_config.Value.MaintenanceMode ? PlaceHolders.ReplacePlaceholders(_config.Value.MaintenanceServerName) : PlaceHolders.ReplacePlaceholders(settings.ServerList.Name)).Replace('+', '-') + $"<color=#00000000><size=1>XProxy {BuildInformation.VersionText}</size></color>") },
                             { "privateBeta", "False" },
                             { "staffRA", "False" },
                             { "friendlyFire", "False" },

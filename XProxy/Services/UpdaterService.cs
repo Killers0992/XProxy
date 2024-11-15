@@ -2,7 +2,6 @@
 using Newtonsoft.Json;
 using System.IO.Compression;
 using System.Reflection;
-using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using XProxy.Misc;
 using XProxy.Models;
@@ -14,7 +13,7 @@ namespace XProxy.Services
         private static HttpClient _client = new HttpClient();
         private static BuildInfo _latestBuild;
 
-        public const string BuildsProviderUrl = "http://localhost:7800/builds.json";
+        public const string BuildsProviderUrl = "https://killers0992.github.io/XProxy/builds.json";
         public const string VersionsUrls = "https://raw.githubusercontent.com/Killers0992/XProxy/master/Storage/gameVersions.json";
 
         public const int CheckUpdatesEveryMs = 30000;
@@ -163,19 +162,15 @@ namespace XProxy.Services
 
         private static async Task DownloadBuild(BuildInfo build)
         {
-            bool isWindows = RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
-
-            OsSpecificFiles osSpecific = isWindows ? build.Windows : build.Linux;
-
             using (FileStream proxyStream = new FileStream(ProxyFile, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None))
             {
                 CustomProgressReporter reporter = new CustomProgressReporter("Downloading (f=cyan)XProxy.Core.dll(f=white) (f=green)%percentage%%(f=white)...", null);
 
-                await _client.DownloadAsync(osSpecific.Proxy.Url, proxyStream, reporter);
+                await _client.DownloadAsync(build.CoreUrl, proxyStream, reporter);
             }
 
             FetchVersion();
-            Logger.Info($"Downloaded (f=cyan)XProxy.Core.dll(f=white) ((f=green){InstalledVersion.ToString(3)}(f=white))", "XProxy");
+            ConsoleLogger.Info($"Downloaded (f=cyan)XProxy.Core.dll(f=white) ((f=green){InstalledVersion.ToString(3)}(f=white))", "XProxy");
 
             string _dependencies = "./_dependencies.zip";
 
@@ -186,7 +181,7 @@ namespace XProxy.Services
             {
                 CustomProgressReporter reporter = new CustomProgressReporter("Downloading dependencies (f=green)%percentage%%(f=white)...", null);
 
-                await _client.DownloadAsync(osSpecific.Dependencies.Url, depsStream, reporter);
+                await _client.DownloadAsync(build.DependenciesUrl, depsStream, reporter);
 
                 using (ZipArchive depsZip = new ZipArchive(depsStream))
                 {

@@ -23,7 +23,7 @@ namespace XProxy.Services
 
             Load(true);
 
-            Logger.Info(Messages.ProxyVersion.Replace("%version%", BuildInfo.VersionText).Replace("%gameVersion%", string.Join(", ", BuildInfo.SupportedGameVersions)), "XProxy");
+            Logger.Info(Messages.ProxyVersion.Replace("%version%", BuildInformation.VersionText).Replace("%gameVersion%", string.Join(", ", BuildInformation.SupportedGameVersions)), "XProxy");
         }
 
         public ConfigModel Value { get; private set; } = new ConfigModel();

@@ -7,7 +7,7 @@ using System.Reflection;
 
 namespace XProxy.Core
 {
-    public static class BuildInfo
+    public static class BuildInformation
     {
         static Version _buildVersion;
 
@@ -27,6 +27,11 @@ namespace XProxy.Core
         public static string[] SupportedGameVersions =
         {
             "13.5.1",
+        };
+
+        public static string[] Changelogs =
+        {
+            "New Updater",
         };
     }
 }

@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel;
+using XProxy.Misc;
 using XProxy.Serialization;
 
 namespace XProxy.Models
@@ -28,8 +29,8 @@ namespace XProxy.Models
             }
             catch (Exception ex)
             {
-                Console.WriteLine("Failed loading config \"launcher_settings.yml\", press any key to retry");
-                Console.WriteLine(ex);
+                ConsoleLogger.Error("Failed loading config \"launcher_settings.yml\", press any key to retry");
+                ConsoleLogger.Error(ex);
 
                 Console.ReadKey();
                 retryCount++;
@@ -40,8 +41,13 @@ namespace XProxy.Models
                 goto retryLoading;
             }
 
+            ConsoleLogger.AnsiDisabled = Value.DisableAnsiColors;
+
             return true;
         }
+
+        [Description("Disables ansi colors in console logs")]
+        public bool DisableAnsiColors { get; set; } = false;
 
         [Description("If set to true updater will not try to update XProxy on startup.")]
         public bool DisableUpdater { get; set; } = false;

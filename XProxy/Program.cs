@@ -76,7 +76,11 @@ namespace XProxy
             return true;
         }
 
-        static void InitializeProxy(IServiceCollection services) => Initializer.SetupServices(services);
+        static void InitializeProxy(IServiceCollection services)
+        {
+            Logger.AnsiDisabled = LauncherSettings.Value.DisableAnsiColors;
+            Initializer.SetupServices(services);
+        }
 
         static async Task RunApplication(HostApplicationBuilder app)
         {
