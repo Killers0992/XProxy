@@ -1,6 +1,5 @@
-﻿using Newtonsoft.Json;
-using System.ComponentModel;
-using XProxy.Shared.Serialization;
+﻿using System.ComponentModel;
+using XProxy.Serialization;
 
 namespace XProxy.Models
 {
@@ -19,13 +18,13 @@ namespace XProxy.Models
 
             if (!File.Exists(LauncherPath))
             {
-                File.WriteAllText(LauncherPath, YamlParser.Serializer.Serialize(new LauncherSettings()));
+                File.WriteAllText(LauncherPath, ConsoleYamlParser.Serializer.Serialize(new LauncherSettings()));
             }
 
             try
             {
                 string content = File.ReadAllText(LauncherPath);
-                Value = YamlParser.Deserializer.Deserialize<LauncherSettings>(content);
+                Value = ConsoleYamlParser.Deserializer.Deserialize<LauncherSettings>(content);
             }
             catch (Exception ex)
             {

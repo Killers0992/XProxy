@@ -11,7 +11,7 @@
 	</ItemGroup>
 
 	<ItemGroup>
-	  <ProjectReference Include="..\XProxy.Core\XProxy.Core.csproj" />
+	  <ProjectReference Private="false" Include="..\XProxy.Core\XProxy.Core.csproj" />
 	</ItemGroup>
 	
 </Project>

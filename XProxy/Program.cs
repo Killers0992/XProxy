@@ -42,7 +42,6 @@ namespace XProxy
         {
             IServiceCollection services = builder.Services;
 
-            services.AddHostedService<LoggingService>();
             services.AddHostedService<UpdaterService>();
         }
 
@@ -66,7 +65,7 @@ namespace XProxy
 
             try
             {
-                Initializer.SetupServices(services);
+                InitializeProxy(services);
             }
             catch (Exception ex)
             {
@@ -76,6 +75,8 @@ namespace XProxy
 
             return true;
         }
+
+        static void InitializeProxy(IServiceCollection services) => Initializer.SetupServices(services);
 
         static async Task RunApplication(HostApplicationBuilder app)
         {

@@ -18,10 +18,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\XProxy.Shared\XProxy.Shared.csproj" />
-  </ItemGroup>
-
-  <ItemGroup>
     <Reference Include="Assembly-CSharp">
       <HintPath>$(SL_REFERENCES)\Assembly-CSharp.dll</HintPath>
     </Reference>
