@@ -13,13 +13,10 @@ using PlayerRoles;
 using RelativePositioning;
 using static EncryptedChannelManager;
 using System.Linq;
-using XProxy.Shared.Enums;
 using static PlayerStatsSystem.SyncedStatMessages;
 using XProxy.Services;
-using System.Threading;
 using XProxy.Core.Monitors;
 using System.Collections.Generic;
-using Org.BouncyCastle.Utilities.Net;
 
 namespace XProxy.Core
 {
@@ -59,14 +56,13 @@ namespace XProxy.Core
 
         public Player(Listener proxy, ConnectionRequest request, PreAuthModel preAuth)
         {
+            PreAuth = preAuth;
             Proxy = proxy;
             IpAddress = request.RemoteEndPoint;
 
             Proxy.Connections.Add(IpAddress, this);
 
             _connectionRequest = request;
-
-            PreAuth = preAuth;
         }
 
         public int Id { get; private set; } = -1;

@@ -3,7 +3,6 @@ using Newtonsoft.Json;
 using System;
 using System.Buffers;
 using System.Collections.Generic;
-using System.Linq;
 using System.Net.Http;
 using System.Text;
 using System.Threading;
@@ -11,7 +10,6 @@ using System.Threading.Tasks;
 using XProxy.Cryptography;
 using System.IO;
 using XProxy.Models;
-using XProxy.Shared.Models;
 using XProxy.Core;
 
 namespace XProxy.Services
@@ -371,7 +369,7 @@ namespace XProxy.Services
                             { "gameVersion", settings.Version },
                             { "version", "2" },
                             { "update", "1" },
-                            { "info", Base64Encode((_config.Value.MaintenanceMode ? PlaceHolders.ReplacePlaceholders(_config.Value.MaintenanceServerName) : PlaceHolders.ReplacePlaceholders(settings.ServerList.Name)).Replace('+', '-') + $"<color=#00000000><size=1>XProxy {ProxyBuildInfo.ReleaseInfo.Version}</size></color>") },
+                            { "info", Base64Encode((_config.Value.MaintenanceMode ? PlaceHolders.ReplacePlaceholders(_config.Value.MaintenanceServerName) : PlaceHolders.ReplacePlaceholders(settings.ServerList.Name)).Replace('+', '-') + $"<color=#00000000><size=1>XProxy {BuildInformation.VersionText}</size></color>") },
                             { "privateBeta", "False" },
                             { "staffRA", "False" },
                             { "friendlyFire", "False" },

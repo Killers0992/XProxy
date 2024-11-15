@@ -3,17 +3,18 @@ using System;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
+using XProxy.Shared;
 
-namespace XProxy.Core.Services
+namespace XProxy.Services
 {
     public class LoggingService : BackgroundService
     {
         static void WriteLogToFile(object message)
         {
-            if (!Directory.Exists("logs"))
-                Directory.CreateDirectory("logs");
+            if (!Directory.Exists("Logs"))
+                Directory.CreateDirectory("Logs");
 
-            File.AppendAllLines($"logs/log_{Logger.SessionTime.ToString("dd_MM_yyyy_hh_mm_ss")}.txt", new string[1] { message.ToString() });
+            File.AppendAllLines($"Logs/log_{Logger.SessionTime.ToString("dd_MM_yyyy_hh_mm_ss")}.txt", new string[1] { message.ToString() });
         }
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)

@@ -1,7 +1,11 @@
-﻿using System.ComponentModel;
+﻿using System;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Net.Http;
+using System.Threading.Tasks;
 using YamlDotNet.Serialization;
 
-namespace XProxy.Shared.Models
+namespace XProxy.Models
 {
     public class ListenerServer
     {

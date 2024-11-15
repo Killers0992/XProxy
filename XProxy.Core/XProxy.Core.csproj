@@ -1,7 +1,6 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <OutputType>Exe</OutputType>
     <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
     <TargetFramework>net7</TargetFramework>
     <Platforms>AnyCPU;x64</Platforms>
@@ -12,19 +11,17 @@
   <ItemGroup>
     <PackageReference Include="CommandLineParser" Version="2.9.1" />
     <PackageReference Include="Microsoft.Extensions.Hosting" Version="8.0.0" />
-    <PackageReference Include="Portable.BouncyCastle" Version="1.9.0" />
     <PackageReference Include="System.Net.WebHeaderCollection" Version="4.3.0" />
 	<PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
 	<PackageReference Include="YamlDotNet" Version="15.1.2" />
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\XProxy.Shared\XProxy.Shared.csproj" />
-  </ItemGroup>
-
-  <ItemGroup>
     <Reference Include="Assembly-CSharp">
       <HintPath>$(SL_REFERENCES)\Assembly-CSharp.dll</HintPath>
+    </Reference>
+	<Reference Include="BouncyCastle.Cryptography">
+      <HintPath>$(SL_REFERENCES)\BouncyCastle.Cryptography.dll</HintPath>
     </Reference>
     <Reference Include="Mirror">
       <HintPath>$(SL_REFERENCES)\Mirror.dll</HintPath>

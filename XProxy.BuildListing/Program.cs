@@ -3,13 +3,12 @@ using Microsoft.Extensions.Hosting;
 using Newtonsoft.Json;
 using Octokit;
 using System.ComponentModel.DataAnnotations;
-using System.Security.Cryptography;
 using XProxy.Models;
 
 await Host.CreateDefaultBuilder()
     .RunCommandLineApplicationAsync<AppCommand>(args);
 
-[Command(Description = "Runs builder.")]
+[Command(Description = "Runs listing builder.")]
 public class AppCommand
 {
     public const float KillDamage = float.PositiveInfinity;
@@ -47,14 +46,6 @@ public class AppCommand
     public string Repository => Environment.GetEnvironmentVariable("GITHUB_REPOSITORY");
     public string RepositoryOwner => Environment.GetEnvironmentVariable("GITHUB_REPOSITORY_OWNER");
 
-    string BytesToMD5(byte[] bytes)
-    {
-        using (var md5 = MD5.Create())
-        {
-            return BitConverter.ToString(md5.ComputeHash(bytes)).Replace("-", "").ToLowerInvariant();
-        }
-    }
-
     [Required]
     [Option(Description = "Build.")]
     public string Token { get; set; } = null;
@@ -75,33 +66,10 @@ public class AppCommand
                 return 1;
             }
 
-            ListingInfo lInfo = new ListingInfo();
-
-            if (File.Exists("./Website/builds.json"))
-            {
-                string existinglisting = File.ReadAllText("./Website/builds.json");
-
-                if (!string.IsNullOrEmpty(existinglisting))
-                {
-                    lInfo = JsonConvert.DeserializeObject<ListingInfo>(existinglisting);
-
-                    if (lInfo == null)
-                        lInfo = new ListingInfo();
-                }
-            }
-
+            BuildsListing listing = new BuildsListing();
+            
             foreach (var release in releases)
             {
-                if (lInfo.Versions.ContainsKey(release.TagName))
-                {
-                    Console.WriteLine($"Version {release.TagName} is already cached!");
-                    continue;
-                }
-
-                ReleaseInfo rInfo = null;
-
-                Dictionary<string, BuildFileInfo> files = new Dictionary<string, BuildFileInfo>();
-
                 foreach (var asset in release.Assets)
                 {
                     string fileName = Path.GetFileName(asset.BrowserDownloadUrl);
@@ -113,39 +81,18 @@ public class AppCommand
                             var result = await Http.GetAsync(asset.BrowserDownloadUrl);
 
                             if (result.IsSuccessStatusCode)
-                                rInfo = JsonConvert.DeserializeObject<ReleaseInfo>(await result.Content.ReadAsStringAsync());
-                            break;
-                        default:
-                            var result2 = await Http.GetAsync(asset.BrowserDownloadUrl);
-
-                            if (result2.IsSuccessStatusCode)
                             {
-                                byte[] bytes = await result2.Content.ReadAsByteArrayAsync();
-                                files.Add(fileName, new BuildFileInfo()
-                                {
-                                    Hash = BytesToMD5(bytes),
-                                    Name = fileName,
-                                    Url = asset.BrowserDownloadUrl,
-                                });
+                                var build = JsonConvert.DeserializeObject<BuildInfo>(await result.Content.ReadAsStringAsync());
+                                listing.Builds.Add(build.Version, build);
                             }
                             break;
                     }
                 }
 
-                if (rInfo == null) continue;
-
-                BuildInfo bInfo = new BuildInfo()
-                {
-                    GameVersion = rInfo.GameVersion,
-                    Version = rInfo.Version,
-                    Files = files,
-                };
-
-                lInfo.Versions.Add(release.TagName, bInfo);
                 Console.WriteLine($"Add Version {release.TagName}");
             }
 
-            File.WriteAllText("./Website/builds.json", JsonConvert.SerializeObject(lInfo, Formatting.Indented));
+            File.WriteAllText("./Website/builds.json", JsonConvert.SerializeObject(listing, Formatting.Indented));
             Console.WriteLine("Builds file uploaded!");
             return 0;
         }

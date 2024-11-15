@@ -4,9 +4,9 @@ using System.Linq;
 using XProxy.Core.Core.Events.Args;
 using XProxy.Core.Events;
 using XProxy.Core.Models;
+using XProxy.Enums;
+using XProxy.Models;
 using XProxy.Services;
-using XProxy.Shared.Enums;
-using XProxy.Shared.Models;
 
 namespace XProxy.Core
 {

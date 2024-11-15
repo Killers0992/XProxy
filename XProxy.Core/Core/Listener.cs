@@ -15,7 +15,6 @@ using XProxy.Core.Events.Args;
 using XProxy.Core.Models;
 using XProxy.Models;
 using XProxy.Services;
-using XProxy.Shared.Models;
 
 namespace XProxy
 {

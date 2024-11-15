@@ -1,233 +1,273 @@
 ﻿using Microsoft.Extensions.Hosting;
 using Newtonsoft.Json;
 using System.IO.Compression;
-using System.Runtime.InteropServices;
+using System.Reflection;
 using System.Security.Cryptography;
-using XProxy.Patcher.Services;
-using XProxy.Services;
-using XProxy.Shared.Models;
+using XProxy.Misc;
+using XProxy.Models;
 
-namespace XProxy.Shared.Services
+namespace XProxy.Services
 {
     public class UpdaterService : BackgroundService
     {
-        public static bool ForceReDownload;
+        private static HttpClient _client = new HttpClient();
+        private static BuildInfo _latestBuild;
 
-        public static bool CheckForUpdates = true;
+        public const string BuildsProviderUrl = "https://killers0992.github.io/XProxy/builds.json";
+        public const string VersionsUrls = "https://raw.githubusercontent.com/Killers0992/XProxy/master/Storage/gameVersions.json";
 
-        string _buildsUrl = "https://killers0992.github.io/XProxy/builds.json";
+        public const int CheckUpdatesEveryMs = 30000;
 
-        string _verionsUrl = "https://raw.githubusercontent.com/Killers0992/XProxy/master/Storage/gameVersions.json";
-        string[] _remoteVersions = new string[0];
+        public static Version InstalledVersion;
+        public static string[] RemoteGameVersions;
 
-        HttpClient _client;
-        ConfigService _config;
-        BuildInfo _latest = null;
+        public static string DependenciesFolder => Path.Combine(Environment.CurrentDirectory, "Dependencies");
+        public static string ProxyFile => Path.Combine(Environment.CurrentDirectory, "XProxy.Core.dll");
 
-        bool upToDateNotify = false;
-        int seconds = 0;
-
-        public UpdaterService(ConfigService config)
+        public static void FetchVersion()
         {
-            _config = config;
+            if (!File.Exists(ProxyFile))
+            {
+                InstalledVersion = new Version(0,0,0);
+                return;
+            }
+
+            AssemblyName name = AssemblyName.GetAssemblyName(ProxyFile);
+
+            if (name == null)
+            {
+                InstalledVersion = new Version(0, 0, 0);
+                return;
+            }
+
+            InstalledVersion = name.Version;
         }
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
-            _client = new HttpClient();
+            while(!stoppingToken.IsCancellationRequested)
+            {
+                await Task.Delay(CheckUpdatesEveryMs);
 
-            using (var response = await _client.GetAsync(_verionsUrl))
+                try
+                {
+                    await CheckUpdates();
+                }
+                catch (Exception ex)
+                {
+                    ConsoleLogger.Error($"Failed checking updates {ex}", "XProxy");
+                }
+            }
+        }
+
+        public static async Task IntialRun()
+        {
+            FetchVersion();
+            await CheckUpdates(true);
+        }
+
+        public static async Task CheckUpdates(bool isIntial = false)
+        {
+            using (var response = await _client.GetAsync(VersionsUrls))
             {
                 string textResponse = await response.Content.ReadAsStringAsync();
 
                 string[] versions = JsonConvert.DeserializeObject<string[]>(textResponse);
 
                 if (versions != null)
-                    _remoteVersions = versions;
+                    RemoteGameVersions = versions;
             }
 
-            int currentVersionPosition = Array.IndexOf(_remoteVersions, _config.Value.GameVersion);
-
-            if (currentVersionPosition != -1)
+            BuildsListing listing = null;
+            try
             {
-                if (currentVersionPosition == 0)
-                {
-                    Logger.Info($"Using latest game version (f=green){_config.Value.GameVersion}(f=white) supported by XProxy!", "XProxy");
-                }
-                else
-                {
-                    Logger.Info($"New game version (f=green){_remoteVersions[0]}(f=white) is supported by XProxy, if you want to update change (f=cyan)gameVersion(f=white) in (f=cyan)config_patcher.yml(f=white)!", "XProxy");
-                }
+                listing = await FetchBuilds();
+            }
+            catch (HttpRequestException ex)
+            {
+                ConsoleLogger.Error($"Failed to fetch builds ({(ex.StatusCode.HasValue ? ex.StatusCode.Value : $"Website Down")}) !", "XProxy");
+            }
+
+            if (listing == null)
+            {
+                ConsoleLogger.Error($"Fetched listing is invalid!", "XProxy");
+                return;
+            }
+
+            BuildInfo[] builds = listing.Builds
+                .Where(x => x.Value.ParsedVersion.CompareTo(InstalledVersion) > 0 && x.Value.SupportedGameVersions.Contains(LauncherSettings.Value.GameVersion == "latest" ? RemoteGameVersions[0] : LauncherSettings.Value.GameVersion))
+                .OrderByDescending(x => x.Value.ParsedVersion)
+                .Select(x => x.Value)
+                .ToArray();
+
+            if (builds.Length == 0)
+            {
+                ConsoleLogger.Info("Proxy is up to date!", "XProxy");
             }
             else
             {
-                Logger.Warn($"Game version (f=green){_config.Value.GameVersion}(f=yellow) is not supported by XProxy!", "XProxy");
-                Logger.Info($"Supported versions (f=green){(string.Join("(f=white), (f=green)", _remoteVersions))}(f=white)", "XProxy");
-            }
+                BuildInfo latest = builds.FirstOrDefault();
 
-            while (!stoppingToken.IsCancellationRequested)
-            {
-                using (var response = await _client.GetAsync(_buildsUrl))
+                if (latest != _latestBuild)
                 {
-                    string textResponse = await response.Content.ReadAsStringAsync();
+                    if (InstalledVersion.Major == 0)
+                        ConsoleLogger.Info($"Installing (f=cyan)XProxy(f=white) ((f=green){latest.ParsedVersion.ToString(3)}(f=white))", "XProxy");
+                    else
+                        ConsoleLogger.Info($"New version of (f=cyan)XProxy(f=white) found, (f=darkgreen){InstalledVersion.ToString(3)}(f=white) => (f=green){latest.ParsedVersion.ToString(3)}(f=white)", "XProxy");
 
-                    ListingInfo listing = JsonConvert.DeserializeObject<ListingInfo>(textResponse);
-
-                    BuildInfo[] latestBuildsForCurrentGameVersion = listing.Versions
-                        .Where(x => x.Value.ParsedVersion.CompareTo(MainProcessService.AssemblyVersion) > 0 && x.Value.GameVersion == _config.Value.GameVersion)
-                        .OrderByDescending(x => x.Value.ParsedVersion)
-                        .Select(x => x.Value)
-                        .ToArray();
-
-                    bool anyBuildsExists = listing.Versions.Any(x => x.Value.GameVersion == _config.Value.GameVersion);
-
-                    BuildInfo firstLatest = latestBuildsForCurrentGameVersion.FirstOrDefault();
-
-                    if (firstLatest != null)
+                    if (latest.Changelogs.Length == 0)
+                        ConsoleLogger.Info("Changelogs not found...", "XProxy.Launcher");
+                    else
                     {
-                        if (_latest != null)
+                        ConsoleLogger.Info("Changelogs:", "XProxy.Launcher");
+                        foreach (var changelog in  latest.Changelogs)
                         {
-                            if (_latest.Version != firstLatest.Version)
-                                _latest = firstLatest;
+                            ConsoleLogger.Info($" - (f=green){changelog}(f=white)");
                         }
-                        else
-                            _latest = firstLatest;
-
-                        Logger.Info($"Proxy is outdated (f=green){MainProcessService.AssemblyVersion.ToString(3)}(f=white), new version (f=green){_latest.Version}(f=white)", "XProxy");
-        
-                        if (MainProcessService.IsWaitingForProcessExit)
-                        {
-                            Logger.Info("If you want to update now press (f=red)CTRL+C(f=white) ( kill process )", "XProxy");
-                            while (MainProcessService.IsWaitingForProcessExit)
-                            {
-                                await Task.Delay(1000);
-                            }
-                        }
-
-                        await DoUpdate();
-                        MainProcessService.AssemblyUpdated = true;
-                        CheckForUpdates = false;
-                        MainProcessService.IsUpdating = false;
                     }
-                    else if (!upToDateNotify)
-                    {
-                        if (anyBuildsExists)
-                        {
-                            Logger.Info("Proxy is up to date!", "XProxy");
-                        }
-                        else
-                        {
-                            Logger.Warn($"Game version (f=red){_config.Value.GameVersion}(f=yellow) don't have any builds! ( this game version is not supported )", "XProxy");
-                        }
 
-                        upToDateNotify = true;
-                        CheckForUpdates = false;
-                    }
+                    _latestBuild = latest;
                 }
 
-                while (seconds < 30 && !MainProcessService.IsUpdating)
+                if (isIntial)
                 {
-                    await Task.Delay(1000);
-                    seconds++;
+                    if (LauncherSettings.Value.DisableUpdater)
+                    {
+                        ConsoleLogger.Warn($"Updater is disabled, skipping build download!", "XProxy");
+                    }
+                    else
+                        await DownloadBuild(_latestBuild);
                 }
-
-                seconds = 0;
             }
         }
 
-        async Task DoUpdate()
+        private static async Task<BuildsListing> FetchBuilds()
         {
-            string targetBuildFile = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "XProxy_win64.zip" : "XProxy_linux64.zip";
-
-            if (!_latest.Files.TryGetValue(targetBuildFile, out BuildFileInfo file))
-                return;
-
-            if (!Directory.Exists("Core"))
-                Directory.CreateDirectory("Core");
-
-            else
+            using (HttpResponseMessage response = await _client.GetAsync(BuildsProviderUrl))
             {
-                Directory.Delete("Core", true);
-                Directory.CreateDirectory("Core");
+                string textResponse = await response.Content.ReadAsStringAsync();
+
+                try
+                {
+                    BuildsListing listing = JsonConvert.DeserializeObject<BuildsListing>(textResponse);
+                    return listing;
+                }
+                catch(Exception ex)
+                {
+                    ConsoleLogger.Error($"Failed deserializing builds listing! {ex}", "XProxy");
+                    return null;
+                }
+            }
+        }
+
+        private static async Task DownloadBuild(BuildInfo build)
+        {
+            using (FileStream proxyStream = new FileStream(ProxyFile, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None))
+            {
+                CustomProgressReporter reporter = new CustomProgressReporter("Downloading (f=cyan)XProxy.Core.dll(f=white) (f=green)%percentage%%(f=white)...", null);
+
+                await _client.DownloadAsync(build.CoreUrl, proxyStream, reporter);
             }
 
-            Logger.Info($"Downloading update...", "XProxy");
+            FetchVersion();
+            ConsoleLogger.Info($"Downloaded (f=cyan)XProxy.Core.dll(f=white) ((f=green){InstalledVersion.ToString(3)}(f=white))", "XProxy");
 
-            string _tempFile = "_update.zip";
+            string _dependencies = "./_dependencies.zip";
 
-            using(var tempFileStream = new FileStream(_tempFile, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None))
+            if (!Directory.Exists(DependenciesFolder))
+                Directory.CreateDirectory(DependenciesFolder);
+
+            using (FileStream depsStream = new FileStream(_dependencies, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None))
             {
-                CustomProgressReporter reporter = new CustomProgressReporter("Downloading update (f=green)%percentage%%(f=white)...", null);
+                CustomProgressReporter reporter = new CustomProgressReporter("Downloading dependencies (f=green)%percentage%%(f=white)...", null);
 
-                await _client.DownloadAsync(file.Url, tempFileStream, reporter);
+                await _client.DownloadAsync(build.DependenciesUrl, depsStream, reporter);
 
-                int currentEntry = 0;
-                var md5 = MD5.Create();
-
-                using (ZipArchive zip = new ZipArchive(tempFileStream))
+                using (ZipArchive depsZip = new ZipArchive(depsStream))
                 {
-                    foreach (var entry in zip.Entries)
+                    Dictionary<string, string> dependenciesHashes = GetDependenciesHashes();
+                    List<string> dependenciesToRemove = dependenciesHashes.Values.ToList();
+
+                    MD5 md5 = MD5.Create();
+
+                    foreach (ZipArchiveEntry entry in depsZip.Entries)
                     {
-                        currentEntry++;
+                        byte[] buffer = new byte[16*1024];
 
-                        string name = entry.FullName;
+                        byte[] data = null;
 
-                        bool isDirectory = string.IsNullOrEmpty(Path.GetExtension(name)) && name.EndsWith("/");
+                        Stream stream = entry.Open();
 
-                        if (name.EndsWith("/"))
-                            name = name.Substring(0, name.Length - 1);
-
-                        if (isDirectory)
+                        using (MemoryStream ms = new MemoryStream())
                         {
-                            if (!Directory.Exists(Path.Combine(MainProcessService.CoreFolder, name)))
-                                Directory.CreateDirectory(Path.Combine(MainProcessService.CoreFolder, name));
+                            int read;
+                            while ((read = stream.Read(buffer, 0, buffer.Length)) > 0)
+                            {
+                                ms.Write(buffer, 0, read);
+                            }
+
+                            data = ms.ToArray();
+                        }
+
+                        string entryHash = Convert.ToBase64String(md5.ComputeHash(data));
+
+                        string entryName = entry.Name;
+
+                        if (dependenciesHashes.TryGetValue(entryName, out string depHash))
+                        {
+                            if (depHash == entryHash)
+                            {
+                                // This dependency is uptodate! skip
+                                dependenciesToRemove.Remove(entryName);
+                                continue;
+                            }
+                            else
+                            {
+                                // This dependency neets to be updated!
+                                File.WriteAllBytes(Path.Combine(DependenciesFolder, entryName), data);
+                                dependenciesToRemove.Remove(entryName);
+                                ConsoleLogger.Info($"Update dependency (f=cyan){entryName}(f=white)", "XProxy");
+                            }
                         }
                         else
                         {
-                            var stream = entry.Open();                               
-                            byte[] buffer = new byte[16*1024];
-
-                            byte[] data = null;
-
-                            using (MemoryStream ms = new MemoryStream())
-                            {
-                                int read;
-                                while ((read = stream.Read(buffer, 0, buffer.Length)) > 0)
-                                {
-                                    ms.Write(buffer, 0, read);
-                                }
-
-                                data = ms.ToArray();
-                            }
-
-                            string hash = Convert.ToBase64String(md5.ComputeHash(data));
-
-                            string targetHash = null;
-
-                            bool fileExists = File.Exists(Path.Combine(MainProcessService.CoreFolder, name));
-
-                            if (fileExists)
-                            {
-                                using (var fileStream = File.OpenRead(Path.Combine(MainProcessService.CoreFolder, name)))
-                                {
-                                    targetHash = Convert.ToBase64String(md5.ComputeHash(fileStream));
-                                }
-                            }
-
-                            if (hash != targetHash)
-                            {
-                                try
-                                {
-                                    File.WriteAllBytes(Path.Combine(MainProcessService.CoreFolder, name), data);
-                                }
-                                catch (Exception) { }
-                            }
+                            // This dependency not exists, create one!
+                            File.WriteAllBytes(Path.Combine(DependenciesFolder, entryName), data);
+                            ConsoleLogger.Info($"Download dependency (f=cyan){entryName}(f=white)", "XProxy");
                         }
+                    }
+
+                    foreach(var dependencyToRemove in dependenciesToRemove)
+                    {
+                        string targetPath = Path.Combine(DependenciesFolder, dependencyToRemove);
+
+                        if (!File.Exists(targetPath))
+                            continue;
+
+                        File.Delete(targetPath);
                     }
                 }
             }
 
-            Logger.Info("Update downloaded!", "XProxy");
+            ConsoleLogger.Info($"Downloaded (f=cyan)XProxy(f=white) dependencies", "XProxy");
+        }
+
+        private static Dictionary<string, string> GetDependenciesHashes()
+        {
+            MD5 md5 = MD5.Create();
+
+            Dictionary<string, string> hashes = new Dictionary<string, string>();
+
+            foreach (var file in Directory.GetFiles(DependenciesFolder))
+            {
+                byte[] hashAlgo = md5.ComputeHash(File.ReadAllBytes(file));
+
+                string name = Path.GetFileName(file);
+
+                hashes[name] = Convert.ToBase64String(hashAlgo);
+            }
+
+            return hashes;
         }
     }
 }

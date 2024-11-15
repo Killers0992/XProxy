@@ -2,6 +2,7 @@
 using LiteNetLib.Utils;
 using Mirror;
 using System;
+using XProxy;
 using XProxy.Core.Events;
 using static XProxy.Core.Events.EventManager;
 

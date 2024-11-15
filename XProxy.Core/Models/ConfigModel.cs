@@ -1,8 +1,9 @@
-﻿using System.ComponentModel;
-using XProxy.Shared.Enums;
+﻿using System.Collections.Generic;
+using System.ComponentModel;
+using XProxy.Enums;
 using YamlDotNet.Serialization;
 
-namespace XProxy.Shared.Models
+namespace XProxy.Models
 {
     public class ConfigModel
     {

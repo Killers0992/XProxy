@@ -1,7 +1,7 @@
 ﻿using System.IO;
 using XProxy.Shared.Serialization;
-using XProxy.Shared.Models;
-using System;
+using XProxy.Models;
+using XProxy.Core;
 
 namespace XProxy.Services
 {
@@ -23,7 +23,7 @@ namespace XProxy.Services
 
             Load(true);
 
-            Logger.Info(Messages.ProxyVersion.Replace("%version%", ProxyBuildInfo.ReleaseInfo.Version).Replace("%gameVersion%", ProxyBuildInfo.ReleaseInfo.GameVersion), "XProxy");
+            Logger.Info(Messages.ProxyVersion.Replace("%version%", BuildInformation.VersionText).Replace("%gameVersion%", string.Join(", ", BuildInformation.SupportedGameVersions)), "XProxy");
         }
 
         public ConfigModel Value { get; private set; } = new ConfigModel();

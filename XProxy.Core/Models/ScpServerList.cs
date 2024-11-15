@@ -1,7 +1,7 @@
 ﻿using System.ComponentModel;
 using YamlDotNet.Serialization;
 
-namespace XProxy.Shared.Models
+namespace XProxy.Models
 {
     public class ScpServerList
     {
