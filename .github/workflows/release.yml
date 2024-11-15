@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
 
 env:
-  DEPOT_DOWNLOADER_VERSION: 2.7.3 
+  DEPOT_DOWNLOADER_VERSION: 2.7.4
   SL_REFERENCES: "${{ github.workspace }}/References/SCPSL_Data/Managed"
   UNITY_REFERENCES: "${{ github.workspace }}/References/SCPSL_Data/Managed"
 
