@@ -8,21 +8,12 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-	  <Compile Include="..\XProxy\Models\BuildInfo.cs" Link="Models\BuildInfo.cs" />
-	  <Compile Include="..\XProxy\Models\BuildsListing.cs" Link="Models\BuildsListing.cs" />
-	</ItemGroup>
-
-	<ItemGroup>
 		<PackageReference Include="McMaster.Extensions.CommandLineUtils" Version="4.1.1" />
 		<PackageReference Include="McMaster.Extensions.Hosting.CommandLine" Version="4.1.1" />
 		<PackageReference Include="Microsoft.Extensions.Hosting" Version="9.0.0" />
 		<PackageReference Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" Version="1.21.0" />
 		<PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
 		<PackageReference Include="Octokit" Version="13.0.1" />
-	</ItemGroup>
-
-	<ItemGroup>
-	  <Folder Include="Models\" />
 	</ItemGroup>
 
 </Project>

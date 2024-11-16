@@ -3,7 +3,6 @@ using McMaster.Extensions.CommandLineUtils;
 using Microsoft.Extensions.Hosting;
 using Newtonsoft.Json;
 using System.Reflection;
-using XProxy.Core;
 using XProxy.Models;
 
 await Host.CreateDefaultBuilder()
@@ -50,7 +49,7 @@ public class AppCommand
 
             string targetCoreLocation = Path.Combine(MainPath, "XProxy.Core.dll");
 
-            Assembly.LoadFrom(targetCoreLocation);
+            var coreAssembly = Assembly.LoadFrom(targetCoreLocation);
 
             File.Move(coreFile, targetCoreLocation);
 
@@ -88,16 +87,26 @@ public class AppCommand
 
             console.WriteLine($" [INFO] Archive dependencies.zip created");
 
+            var type = coreAssembly.GetType("XProxy.Core.BuildInformation");
+
+            FieldInfo textVersion = type.GetField("VersionText", BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic);
+            FieldInfo supportedGameVersions = type.GetField("SupportedGameVersions", BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic);
+            FieldInfo ChangelogsText = type.GetField("Changelogs", BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic);
+
+            string version = (string) textVersion.GetValue(null);
+            string[] changelogs = (string[])ChangelogsText.GetValue(null);
+            string[] versions = (string[])supportedGameVersions.GetValue(null);
+
             BuildInfo bInfo = new BuildInfo()
             {
-                DependenciesUrl = $"https://github.com/Killers0992/XProxy/releases/download/{BuildInformation.VersionText}/dependencies.zip",
-                CoreUrl = $"https://github.com/Killers0992/XProxy/releases/download/{BuildInformation.VersionText}/XProxy.Core.dll",
-                Changelogs = BuildInformation.Changelogs,
-                Version = BuildInformation.VersionText,
-                SupportedGameVersions = BuildInformation.SupportedGameVersions,
+                DependenciesUrl = $"https://github.com/Killers0992/XProxy/releases/download/{version}/dependencies.zip",
+                CoreUrl = $"https://github.com/Killers0992/XProxy/releases/download/{version}/XProxy.Core.dll",
+                Changelogs = changelogs,
+                Version = version,
+                SupportedGameVersions = versions,
             };
 
-            Environment.SetEnvironmentVariable("XPROXY_VERSION", BuildInformation.VersionText);
+            Environment.SetEnvironmentVariable("XPROXY_VERSION", version);
 
             string serialized = JsonConvert.SerializeObject(bInfo, Formatting.Indented);
 
