@@ -20,18 +20,11 @@ jobs:
       uses: actions/checkout@v4
       with:
         path: main
-    - name: Download depot downloader
-      shell: pwsh
-      run: |
-        New-Item -ItemType Directory -Force -Path ${{ github.workspace }}/DepotDownloader
-        Invoke-WebRequest -Uri "https://github.com/SteamRE/DepotDownloader/releases/download/DepotDownloader_${{ env.DEPOT_DOWNLOADER_VERSION }}/DepotDownloader-linux-x64.zip" -OutFile "${{ github.workspace }}/depotdownloader.zip"
-        Expand-Archive -Path ${{ github.workspace }}\depotdownloader.zip -PassThru -DestinationPath ${{ github.workspace }}/DepotDownloader
-        New-Item -ItemType Directory -Force -Path ${{ github.workspace }}/References
-    - name: Download SCPSL Refs
-      run: |
-        chmod 777 ${{ github.workspace }}/DepotDownloader/DepotDownloader
-        chmod 777 ${{ github.workspace }}/References
-        ${{ github.workspace }}/DepotDownloader/DepotDownloader -app 996560 -os windows -dir "${{ github.workspace }}/References"
+    - name: Download SCP SL References
+      uses: killers0992/scpsl.downloadfiles@master
+      with:
+        branch: 'public'
+        filesToDownload: 'Assembly-CSharp.dll,Mirror.dll,BouncyCastle.Cryptography.dll,NorthwoodLib.dll,UnityEngine.CoreModule.dll'
     - name: Setup .NET
       uses: actions/setup-dotnet@v2
       with:
@@ -40,12 +33,11 @@ jobs:
       run: dotnet publish ${{ github.workspace }}/main/XProxy/XProxy.csproj --configuration Release --self-contained false -p:PublishSingleFile=true --runtime linux-x64
     - name: Publish Windows x64
       run: dotnet publish ${{ github.workspace }}/main/XProxy/XProxy.csproj --configuration Release --self-contained false -p:PublishSingleFile=true --runtime win-x64
-    - name: Publish Core Windows x64
+    - name: Publish Core
       run: dotnet publish ${{ github.workspace }}/main/XProxy.Core/XProxy.Core.csproj --configuration Release --self-contained --runtime linux-x64
     - name: Build release
       id: build-release
-      uses: ./XProxy.BuildRelease
-
+      uses: ${{ github.workspace }}/main//XProxy.BuildRelease/XProxy.BuildRelease
     - name: Create Tag
       id: tag_version
       uses: mathieudutour/github-tag-action@v6.1
