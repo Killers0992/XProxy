@@ -37,7 +37,7 @@ jobs:
       run: dotnet publish ${{ github.workspace }}/main/XProxy.Core/XProxy.Core.csproj --configuration Release --self-contained --runtime linux-x64
     - name: Build release
       id: build-release
-      uses: ${{ github.workspace }}/main/XProxy.BuildRelease/XProxy.BuildRelease
+      uses: ./main/XProxy.BuildRelease/XProxy.BuildRelease
     - name: Create Tag
       id: tag_version
       uses: mathieudutour/github-tag-action@v6.1
