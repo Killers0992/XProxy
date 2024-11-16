@@ -106,8 +106,6 @@ public class AppCommand
                 SupportedGameVersions = versions,
             };
 
-            Environment.SetEnvironmentVariable("XPROXY_VERSION", version);
-
             string serialized = JsonConvert.SerializeObject(bInfo, Formatting.Indented);
 
             File.WriteAllText(Path.Combine(MainPath, "releaseinfo.json"), serialized);
