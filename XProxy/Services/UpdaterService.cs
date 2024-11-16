@@ -121,10 +121,10 @@ namespace XProxy.Services
                         ConsoleLogger.Info($"New version of (f=cyan)XProxy(f=white) found, (f=darkgreen){InstalledVersion.ToString(3)}(f=white) => (f=green){latest.ParsedVersion.ToString(3)}(f=white)", "XProxy");
 
                     if (latest.Changelogs.Length == 0)
-                        ConsoleLogger.Info("Changelogs not found...", "XProxy.Launcher");
+                        ConsoleLogger.Info("Changelogs not found...", "XProxy");
                     else
                     {
-                        ConsoleLogger.Info("Changelogs:", "XProxy.Launcher");
+                        ConsoleLogger.Info("Changelogs:", "XProxy");
                         foreach (var changelog in  latest.Changelogs)
                         {
                             ConsoleLogger.Info($" - (f=green){changelog}(f=white)");

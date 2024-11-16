@@ -2,7 +2,7 @@
 using System.Reflection;
 
 [assembly: AssemblyVersion(
-    "1.7.1"
+    "1.7.2"
 )]
 
 namespace XProxy.Core
@@ -31,7 +31,7 @@ namespace XProxy.Core
 
         public static string[] Changelogs =
         {
-            "New Updater",
+            "Fixes",
         };
     }
 }

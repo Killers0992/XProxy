@@ -6,7 +6,7 @@ namespace XProxy.Models
 {
     public class LauncherSettings
     {
-        public const string LauncherPath = "./launcher_settings.yml";
+        public const string LauncherPath = "./config.yml";
         public const int MaxRetries = 5;
 
         public static LauncherSettings Value;
@@ -29,7 +29,7 @@ namespace XProxy.Models
             }
             catch (Exception ex)
             {
-                ConsoleLogger.Error("Failed loading config \"launcher_settings.yml\", press any key to retry");
+                ConsoleLogger.Error("Failed loading config \"config.yml\", press any key to retry");
                 ConsoleLogger.Error(ex);
 
                 Console.ReadKey();

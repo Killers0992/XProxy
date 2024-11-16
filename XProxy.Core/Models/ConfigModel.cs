@@ -10,6 +10,12 @@ namespace XProxy.Models
         [Description("Enables debug logs.")]
         public bool Debug { get; set; }
 
+        [Description("If set to true updater will not try to update XProxy on startup.")]
+        public bool DisableUpdater { get; set; } = false;
+
+        [Description("For which version of game XProxy will be downloaded")]
+        public string GameVersion { get; set; } = "latest";
+
         [Description("Language of messages.")]
         public string Langauge { get; set; } = "en";
 
