@@ -11,7 +11,7 @@
     "description": "Proxy for SCP: Secret Laboratory",
     "features": [],
     "docker_images": {
-        "Dotnet 7": "ghcr.io\/parkervcp\/yolks:dotnet_7"
+        "Dotnet 7": "ghcr.io\/parkervcp\/yolks:dotnet_8"
     },
     "file_denylist": [],
     "startup": ".\/XProxy",
