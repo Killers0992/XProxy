@@ -49,7 +49,7 @@ public class AppCommand
 
             string targetCoreLocation = Path.Combine(MainPath, "XProxy.Core.dll");
 
-            var coreAssembly = Assembly.LoadFrom(targetCoreLocation);
+            var coreAssembly = Assembly.LoadFrom(coreFile);
 
             File.Move(coreFile, targetCoreLocation);
 
