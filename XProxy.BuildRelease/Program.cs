@@ -89,7 +89,7 @@ public class AppCommand
 
             var type = coreAssembly.GetType("XProxy.Core.BuildInformation");
 
-            FieldInfo textVersion = type.GetField("VersionText", BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic);
+            PropertyInfo textVersion = type.GetProperty("VersionText", BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic);
             FieldInfo supportedGameVersions = type.GetField("SupportedGameVersions", BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic);
             FieldInfo ChangelogsText = type.GetField("Changelogs", BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic);
 
