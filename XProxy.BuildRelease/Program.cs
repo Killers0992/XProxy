@@ -1,7 +1,7 @@
-﻿using IronZip;
-using McMaster.Extensions.CommandLineUtils;
+﻿using McMaster.Extensions.CommandLineUtils;
 using Microsoft.Extensions.Hosting;
 using Newtonsoft.Json;
+using System.IO.Compression;
 using System.Reflection;
 using XProxy.Models;
 
@@ -79,10 +79,10 @@ public class AppCommand
 
             console.WriteLine($" [INFO] Create dependencies.zip archive with\n-{string.Join("\n -",validReferences)}");
 
-            using (var archive = new IronZipArchive(Path.Combine(MainPath, "dependencies.zip")))
+            using (ZipArchive archive = ZipFile.Open(Path.Combine(MainPath, "dependencies.zip"), ZipArchiveMode.Create))
             {
                 foreach (var file in validReferences)
-                    archive.Add(file);
+                    archive.CreateEntryFromFile(file, Path.GetFileName(file));
             }
 
             console.WriteLine($" [INFO] Archive dependencies.zip created");
