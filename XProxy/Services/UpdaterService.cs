@@ -10,6 +10,7 @@ namespace XProxy.Services
 {
     public class UpdaterService : BackgroundService
     {
+        private static bool _uptodateNotice;
         private static HttpClient _client = new HttpClient();
         private static BuildInfo _latestBuild;
 
@@ -95,14 +96,18 @@ namespace XProxy.Services
             }
 
             BuildInfo[] builds = listing.Builds
-                .Where(x => x.Value.ParsedVersion.CompareTo(InstalledVersion) > 0 && x.Value.SupportedGameVersions.Contains(LauncherSettings.Value.GameVersion == "latest" ? RemoteGameVersions[0] : LauncherSettings.Value.GameVersion))
+                .Where(x => x.Value.ParsedVersion.CompareTo(InstalledVersion) > 0 && x.Value.SupportedGameVersions.Contains(LauncherSettings.Value.GameVersion.ToUpper() == "LATEST" ? RemoteGameVersions[0] : LauncherSettings.Value.GameVersion))
                 .OrderByDescending(x => x.Value.ParsedVersion)
                 .Select(x => x.Value)
                 .ToArray();
 
             if (builds.Length == 0)
             {
-                ConsoleLogger.Info("Proxy is up to date!", "XProxy");
+                if (!_uptodateNotice && InstalledVersion.Major != 0)
+                {
+                    ConsoleLogger.Info("Proxy is up to date!", "XProxy");
+                    _uptodateNotice = true;
+                }
             }
             else
             {
