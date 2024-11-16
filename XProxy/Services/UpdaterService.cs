@@ -241,16 +241,6 @@ namespace XProxy.Services
                             ConsoleLogger.Info($"Download dependency (f=cyan){entryName}(f=white)", "XProxy");
                         }
                     }
-
-                    foreach(var dependencyToRemove in dependenciesToRemove)
-                    {
-                        string targetPath = Path.Combine(DependenciesFolder, dependencyToRemove);
-
-                        if (!File.Exists(targetPath))
-                            continue;
-
-                        File.Delete(targetPath);
-                    }
                 }
             }
 
