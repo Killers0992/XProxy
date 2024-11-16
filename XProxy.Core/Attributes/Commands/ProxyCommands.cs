@@ -209,20 +209,31 @@ namespace XProxy.Commands
         [ConsoleCommand("broadcast")]
         public static void BroadcastCommand(CommandsService service, string[] args)
         {
-            if (args.Length == 0)
+            if (args.Length < 2)
             {
-                Logger.Info("Syntax: broadcast <message>", "broadcast");
+                Logger.Info("Syntax: broadcast <duration> <message>", "broadcast");
                 return;
             }
-
-            string message = string.Join(" ", args);
+            
+            if (!int.TryParse(args[0], out int duration) || duration <= 0 || duration > ushort.MaxValue)
+            {
+                Logger.Info("Invalid duration. Please enter a positive number up to 65535.", "broadcast");
+                return;
+            }
+            
+            ushort broadcastDuration = (ushort)duration;
+            
+            string message = string.Join(" ", args.Skip(1));
 
             foreach (var client in Listener.GetAllPlayers())
             {
-                client.SendBroadcast(message, 3, Broadcast.BroadcastFlags.Normal);
+                client.SendBroadcast(message, broadcastDuration, Broadcast.BroadcastFlags.Normal);
             }
-            Logger.Info($"Send broadcast with message (f=green){message}(f=white) to {Listener.GetTotalPlayersOnline()} players", "broadcast");
+
+            Logger.Info($"Sent broadcast with message (f=green){message}(f=white) for {broadcastDuration} seconds to {Listener.GetTotalPlayersOnline()} players", "broadcast");
         }
+
+
 
         [ConsoleCommand("stats")]
         public static void StatsCommand(CommandsService service, string[] args)
