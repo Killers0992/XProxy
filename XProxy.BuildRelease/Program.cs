@@ -37,7 +37,7 @@ public class AppCommand
     {
         try
         {
-            string releaseFolder = Path.Combine(XProxyCoreProject, "bin", "Release", "net9.0", "win-x64");
+            string releaseFolder = Path.Combine(XProxyCoreProject, "bin", "Release", "net8.0", "win-x64");
 
             string coreFile = Path.Combine(releaseFolder, "XProxy.Core.dll");
 
