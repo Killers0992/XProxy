@@ -10,6 +10,7 @@ namespace XProxy.Models
     public class ListenerServer
     {
         private Version _version;
+        private HttpClient _httpClient;
 
         #region YAML Settings
 
@@ -35,7 +36,20 @@ namespace XProxy.Models
         /// <summary>
         /// Gets http client for this listener.
         /// </summary>
-        public HttpClient Http;
+        public HttpClient Http
+        {
+            get
+            {
+                if (_httpClient == null)
+                {
+                    _httpClient = new HttpClient();
+                    _httpClient.DefaultRequestHeaders.Add("User-Agent", "SCP SL");
+                    _httpClient.DefaultRequestHeaders.Add("Game-Version", Version);
+                }
+
+                return _httpClient;
+            }
+        }
 
         /// <summary>
         /// Gets final public ip of this listener.
@@ -74,10 +88,6 @@ namespace XProxy.Models
         /// <returns></returns>
         public async Task Initialize()
         {
-            Http = new HttpClient();
-            Http.DefaultRequestHeaders.Add("User-Agent", "SCP SL");
-            Http.DefaultRequestHeaders.Add("Game-Version", Version);
-
             if (ServerList.AddressIp != "auto")
                 PublicIp = ServerList.AddressIp;
             else

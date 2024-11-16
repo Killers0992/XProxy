@@ -26,9 +26,8 @@ namespace XProxy.Core.Models
         {
             get
             {
-                var plr = Listener.GetPlayerByUserId(UserId);
-
-                if (plr == null) return false;
+                if (Player.TryGet(UserId, out Player plr))
+                    return false;
 
                 return plr.IsConnectedToCurrentServer;
             }
@@ -37,9 +36,7 @@ namespace XProxy.Core.Models
         public bool IsTicketExpired()
         {
             if (IsConnecting)
-            {
                 return TicketLifetime < DateTime.Now;
-            }
 
             if (IsPlayerOffline)
             {

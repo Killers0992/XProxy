@@ -1,4 +1,5 @@
-﻿using System.Collections.Concurrent;
+﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using XProxy.Core.Core.Events.Args;
@@ -10,8 +11,12 @@ using XProxy.Services;
 
 namespace XProxy.Core
 {
-    public class Server
+    public class Server : IDisposable
     {
+        static bool intialRefresh;
+
+        public static bool UpdateServers;
+
         public static Dictionary<string, Server> ServersByName = new Dictionary<string, Server>();
         public static List<Server> List => ServersByName.Values.ToList();
 
@@ -73,8 +78,16 @@ namespace XProxy.Core
             return server != null;
         }
 
-        public static void Refresh()
+        public static void Refresh(bool intial)
         {
+            if (intial)
+            {
+                if (intialRefresh)
+                    return;
+
+                intialRefresh = true;
+            }
+
             List<string> newServers = ConfigService.Singleton.Value.Servers.Keys.ToList();
 
             List<string> currentServers = ServersByName.Keys.ToList();
@@ -91,18 +104,7 @@ namespace XProxy.Core
             {
                 if (TryGetByName(server, out Server serv))
                 {
-                    foreach (Player player in serv.Players)
-                        player.InternalDisconnect();
-
-                    foreach(var player in Listener.GetAllPlayers())
-                    {
-                        if (!serv.PlayersInQueueByUserId.Contains(player.UserId))
-                            continue;
-
-                        player.InternalDisconnect();
-                    }
-
-                    serv.Destroy();
+                    serv.Dispose();
                 }
 
                 Logger.Info($" - (f=red)Remove(f=white) - (f=magenta){server}(f=white)", "XProxy");
@@ -249,14 +251,32 @@ namespace XProxy.Core
             Logger.Info($"{plr.UserId} is connecting from queue to {Name}!", "QueueService");
         }
 
-        public void Destroy()
-        {
-            ServersByName.Remove(Name);
-        }
-
         public override string ToString()
         {
             return $"{Settings.Ip}:{Settings.Port}";
         }
+
+        public void Dispose()
+        {
+            foreach (Player player in Players)
+                player.InternalDisconnect();
+
+            foreach (string userId in PlayersInQueueByUserId)
+            {
+                if (Player.TryGet(userId, out Player plr))
+                    plr.InternalDisconnect();
+            }
+
+            foreach (Player player in Player.List)
+            {
+                if (!PlayersInQueueByUserId.Contains(player.UserId))
+                    continue;
+
+                player.InternalDisconnect();
+            }
+
+            ServersByName.Remove(Name);
+        }
+
     }
 }

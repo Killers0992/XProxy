@@ -8,7 +8,7 @@
         public string Proxy { get; set; } = "proxy";
         public string CurrentServer { get; set; } = "current server";
         public string ServerIsOfflineKickMessage { get; set; } = "Server %server% is offline!";
-        public string ProxyStartedListeningMessage { get; set; } = "Listening on server (f=green)0.0.0.0:%port%(f=white), accepting clients with game version (f=green)%version%(f=white)";
+        public string ProxyStartedListeningMessage { get; set; } = "Listening on (f=green)%ip%:%port%(f=white), accepting clients with game version (f=green)%version%(f=white)";
         public string ProxyClientClosedConnectionMessage { get; set; } = "%tag% Client (f=green)%address%(f=white) ((f=green)%userid%(f=white)) closed connection.";
         public string ProxyClientDisconnectedWithReasonMessage { get; set; } = "%tag% Client (f=green)%address%(f=white) ((f=green)%userid%(f=white)) disconnected with reason (f=green)%reason%(f=white).";
         public string CommandRegisteredMessage { get; set; } = "Command (f=green)%name%(f=white) registered!";

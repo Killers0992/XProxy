@@ -48,29 +48,20 @@ namespace XProxy.Services
 
                 if (string.IsNullOrEmpty(cmd)) continue;
 
-                if (cmd.StartsWith("!"))
-                {
-                    string[] centralCmd = cmd.Substring(1).Split(' ');
-
-                    if (!string.IsNullOrEmpty(centralCmd[0]))
-                    {
-                        // TODO
-                        await RunCentralServerCommand(null, centralCmd[0], string.Join(" ", centralCmd.Skip(1)));
-                    }
-                    else
-                    {
-                        Logger.Info($"!<command>", "CommandService");
-                    }
-                    continue;
-                }
-
                 string[] args = cmd.Split(' ');
 
                 if (Commands.TryGetValue(args[0].ToLower(), out Delegate del))
                 {
                     if (del is CommandDelegate d2)
                     {
-                        d2?.Invoke(this, args.Skip(1).ToArray());
+                        try
+                        {
+                            d2?.Invoke(this, args.Skip(1).ToArray());
+                        }
+                        catch (Exception ex)
+                        {
+                            Logger.Error($"Failed to execute command {cmd}\n" + ex);
+                        }
                     }
                 }
                 else

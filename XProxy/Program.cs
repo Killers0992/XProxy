@@ -61,7 +61,9 @@ namespace XProxy
                 return false;
             }
 
+#if !DEBUG
             Assembly.LoadFrom(UpdaterService.ProxyFile);
+#endif
 
             try
             {

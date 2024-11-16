@@ -1,5 +1,7 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
+using System.Net.Http;
 using System.Text;
 using XProxy.Attributes;
 using XProxy.Core;
@@ -53,6 +55,59 @@ namespace XProxy.Commands
             Logger.Info(sb.ToString(), "servers");
         }
 
+        [ConsoleCommand("listeners")]
+        public static void ListenersCommand(CommandsService service, string[] args)
+        {
+            StringBuilder sb = new StringBuilder();
+            sb.AppendLine("Listeners:");
+            foreach (var listener in Listener.NamesByListener.Values)
+            {
+                sb.AppendLine($" - (f=cyan){listener.Settings.ListenIp}:{listener.Settings.Port}(f=white) [ (f=green){listener.Connections.Count}/{listener.Settings.MaxPlayers}(f=white) ] ((f=darkcyan){listener.ListenerName}(f=white))");
+            }
+            Logger.Info(sb.ToString(), "listeners");
+        }
+
+        [ConsoleCommand("runcentralcmd")]
+        public static void RunCentralCommand(CommandsService service, string[] args)
+        {
+            if (args.Length < 2)
+            {
+                Logger.Info("Syntax: runcentralcmd <listenerName> <cmd>", "send");
+                return;
+            }
+
+            if (!Listener.NamesByListener.TryGetValue(args[0], out Listener listener))
+            {
+                Logger.Info($"Listener with name {args[0]} not exists! check \"listeners\" command", "runcentralcmd");
+                return;
+            }
+
+            string[] rawCmd = args.Skip(1).ToArray();
+
+            string cmd = rawCmd[0].ToLower();
+            string[] cmdArgs = rawCmd.Skip(1).ToArray();
+
+            StringBuilder sb = new StringBuilder();
+            sb.AppendLine("Listeners:");
+
+            Dictionary<string, string> data = new Dictionary<string, string>()
+            {
+                { "ip", listener.Settings.PublicIp },
+                { "port", $"{listener.Settings.Port}" },
+                { "cmd", ListService.Base64Encode(cmd) },
+                { "args", ListService.Base64Encode(string.Join(" ", cmdArgs)) },
+            };
+
+            if (!string.IsNullOrEmpty(ListService.Password))
+                data.Add("passcode", ListService.Password);
+
+            var postResult = listener.Settings.Http.PostAsync($"https://api.scpslgame.com/centralcommands/{cmd}.php", new FormUrlEncodedContent(data)).Result;
+            string responseText = postResult.Content.ReadAsStringAsync().Result;
+            postResult.Dispose();
+
+            Logger.Info(ConfigService.Singleton.Messages.CentralCommandMessage.Replace("%command%", cmd).Replace("%message%", responseText), $"runcentralcmd");
+        }
+
         [ConsoleCommand("players")]
         public static void PlayersCommand(CommandsService service, string[] args)
         {
@@ -72,7 +127,7 @@ namespace XProxy.Commands
                     sb.AppendLine($"  -> In Queue  ");
                     foreach (var queuePlayers in server.PlayersInQueue.OrderBy(x => x.Value.Position))
                     {
-                        var plr = Listener.GetPlayerByUserId(queuePlayers.Key);
+                        Player plr = Player.Get(queuePlayers.Key);
 
                         sb.AppendLine($"  [(f=green){queuePlayers.Value.Position}(f=white)/(f=green){server.PlayersInQueueCount}(f=white)] (f=cyan){queuePlayers.Key}(f=white) {(plr == null ? $"(f=darkred)OFFLINE(f=white) ( slot expires in few seconds )" : $"connection time (f=darkcyan){plr.Connectiontime.ToReadableString()}(f=white)")}");
                     }
@@ -103,9 +158,10 @@ namespace XProxy.Commands
             {
                 case "all":
                     int sent = 0;
-                    foreach (Player player in Listener.GetAllPlayers())
+                    foreach (Player player in Player.List)
                     {
-                        if (player.CurrentServer == server) continue;
+                        if (player.CurrentServer == server) 
+                            continue;
 
                         if (player.RedirectTo(server.Name))
                         {
@@ -121,9 +177,7 @@ namespace XProxy.Commands
                 default:
                     if (args[0].Contains("@"))
                     {
-                        Player targetPlayer = Listener.GetPlayerByUserId(args[0]);
-
-                        if (targetPlayer == null)
+                        if (!Player.TryGet(args[0], out Player targetPlayer))
                         {
                             Logger.Info($"Player with userid {args[0]} not exists!", "send");
                             return;
@@ -199,11 +253,11 @@ namespace XProxy.Commands
 
             string message = string.Join(" ", args);
 
-            foreach (var client in Listener.GetAllPlayers())
+            foreach (Player plr in Player.List)
             {
-                client.SendHint(message);
+                plr.SendHint(message);
             }
-            Logger.Info($"Send hint with message (f=green){message}(f=white) to {Listener.GetTotalPlayersOnline()} players", "sendhint");
+            Logger.Info($"Send hint with message (f=green){message}(f=white) to {Player.Count} players", "sendhint");
         }
 
         [ConsoleCommand("broadcast")]
@@ -225,9 +279,9 @@ namespace XProxy.Commands
             
             string message = string.Join(" ", args.Skip(1));
 
-            foreach (var client in Listener.GetAllPlayers())
+            foreach (Player plr in Player.List)
             {
-                client.SendBroadcast(message, broadcastDuration, Broadcast.BroadcastFlags.Normal);
+                plr.SendBroadcast(message, broadcastDuration, Broadcast.BroadcastFlags.Normal);
             }
 
             Logger.Info($"Sent broadcast with message (f=green){message}(f=white) for {broadcastDuration} seconds to {Listener.GetTotalPlayersOnline()} players", "broadcast");

@@ -60,7 +60,7 @@ namespace XProxy.Services
             Messages = GetMessagesForLanguage(Value.Langauge);
 
             if (!intial)
-                Listener.UpdateServers = true;
+                Server.UpdateServers = true;
 
             Save();
             Logger.Debug(Messages.ConfigLoadedMessage, "ConfigService");

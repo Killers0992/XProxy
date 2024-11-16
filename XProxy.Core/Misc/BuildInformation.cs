@@ -2,7 +2,7 @@
 using System.Reflection;
 
 [assembly: AssemblyVersion(
-    "1.7.3"
+    "1.7.4"
 )]
 
 namespace XProxy.Core
@@ -31,7 +31,9 @@ namespace XProxy.Core
 
         public static string[] Changelogs =
         {
-            "Fixes",
+            "Added \"listeners\" command",
+            "Added \"runcentralcmd\" command",
+            "Command \"broadcast\" not contains parameter duration broadcast <duration> <message>",
         };
     }
 }

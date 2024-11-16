@@ -22,6 +22,41 @@ namespace XProxy.Core
 {
     public class Player : IDisposable
     {
+        /// <summary>
+        /// Gets all players.
+        /// </summary>
+        public static List<Player> List => Listener.ConnectionToUserId.Values.ToList();
+
+        /// <summary>
+        /// Gets total amount of players.
+        /// </summary>
+        public static int Count => Listener.ConnectionToUserId.Count;
+
+        /// <summary>
+        /// Gets specific player by userid.
+        /// </summary>
+        /// <param name="userId">The userid of player.</param>
+        /// <param name="player">The player.</param>
+        /// <returns>If its successfull.</returns>
+        public static bool TryGet(string userId, out Player player)
+        {
+            if (Listener.ConnectionToUserId.TryGetValue(userId, out player)) 
+                return true;
+
+            return false;
+        }
+
+        /// <summary>
+        /// Gets specific player by userid.
+        /// </summary>
+        /// <param name="userId">The userid of player.</param>
+        /// <returns>Player</returns>
+        public static Player Get(string userId)
+        {
+            TryGet(userId, out Player player);
+            return player;
+        }
+
         public const ushort RpcMessageId = 33978;
         public const ushort ReadyMessageId = 40252;
         public const ushort SceneMessageId = 30259;

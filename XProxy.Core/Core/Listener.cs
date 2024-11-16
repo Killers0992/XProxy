@@ -25,14 +25,11 @@ namespace XProxy
         private NetManager _manager;
         private EventBasedNetListener _listener;
 
-        public static bool UpdateServers = false;
-
         internal ConfigService _config => ConfigService.Singleton;
        
         // Shared data between all listeners.
 
         public static ConcurrentDictionary<string, Player> ConnectionToUserId { get; private set; } = new ConcurrentDictionary<string, Player>();
-
         public static ConcurrentDictionary<string, LastServerInfo> ForceServerForUserID { get; set; } = new ConcurrentDictionary<string, LastServerInfo>();
 
         public static int GetTotalPlayersOnline()
@@ -43,29 +40,6 @@ namespace XProxy
                 count += listener.Connections.Count;
 
             return count;
-        }
-
-        public static List<Player> GetAllPlayers()
-        {
-            var list = new List<Player>();
-
-            foreach (var listener in NamesByListener.Values)
-                list.AddRange(listener.Connections.Values);
-
-            return list;
-        }
-
-        public static Player GetPlayerByUserId(string userId)
-        {
-            Player plr = null;
-
-            foreach (var listener in NamesByListener.Values)
-            {
-                if (!ConnectionToUserId.TryGetValue(userId, out plr))
-                    continue;
-            }
-
-            return plr;
         }
 
         // --
@@ -108,7 +82,7 @@ namespace XProxy
 
             NamesByListener.Add(ListenerName, this);
 
-            Server.Refresh();
+            Server.Refresh(true);
 
             NetDebug.Logger = new CustomNetLogger();
 
@@ -130,10 +104,12 @@ namespace XProxy
 
             EventManager.Proxy.InvokeStartedListening(new ProxyStartedListening(this, Settings.Port));
 
-            Logger.Info($"{_config.Messages.ProxyStartedListeningMessage.Replace("%port%", $"{Settings.Port}").Replace("%version%", Settings.Version)}", $"XProxy");
+            Logger.Info($"[(f=white)[(f=darkcyan){listenerName}(f=white)]] {_config.Messages.ProxyStartedListeningMessage
+                .Replace("%port%", $"{Settings.Port}")
+                .Replace("%ip%", Settings.ListenIp)
+                .Replace("%version%", Settings.Version)}", $"XProxy");
 
             Task.Run(() => RunEventPolling(CancellationToken), CancellationToken);
-            Task.Run(() => RunServerUpdater(CancellationToken), CancellationToken);
         }
 
         private async Task RunEventPolling(CancellationToken token)
@@ -165,26 +141,6 @@ namespace XProxy
                 }
 
                 await Task.Delay(msDelay, token);
-            }
-        }
-
-        private async Task RunServerUpdater(CancellationToken token)
-        {
-            while (!token.IsCancellationRequested)
-            {
-                if (UpdateServers)
-                {
-                    try
-                    {
-                        Server.Refresh();
-                    }
-                    catch (Exception ex)
-                    {
-                        Logger.Error(ex);
-                    }
-                    UpdateServers = false;
-                }
-                await Task.Delay(1000, token);
             }
         }
 

@@ -1,6 +1,8 @@
 ﻿using Microsoft.Extensions.Hosting;
+using System;
 using System.Threading;
 using System.Threading.Tasks;
+using XProxy.Core;
 
 namespace XProxy.Services
 {
@@ -13,10 +15,26 @@ namespace XProxy.Services
                 new Listener(listener.Key, stoppingToken);
             }
 
-            while (!stoppingToken.IsCancellationRequested)
+            await RunServerUpdater(stoppingToken);
+        }
+
+        private async Task RunServerUpdater(CancellationToken token)
+        {
+            while (!token.IsCancellationRequested)
             {
-                // Run 
-                await Task.Delay(1000);
+                if (Server.UpdateServers)
+                {
+                    try
+                    {
+                        Server.Refresh(false);
+                    }
+                    catch (Exception ex)
+                    {
+                        Logger.Error(ex);
+                    }
+                    Server.UpdateServers = false;
+                }
+                await Task.Delay(1000, token);
             }
         }
     }

@@ -11,7 +11,8 @@
 	</ItemGroup>
 
 	<ItemGroup>
-	  <ProjectReference Private="false" Include="..\XProxy.Core\XProxy.Core.csproj" />
+		<ProjectReference Condition="'$(Configuration)' == 'Debug'" Include="..\XProxy.Core\XProxy.Core.csproj" />
+		<ProjectReference Private="false" Condition="'$(Configuration)' == 'Release'" Include="..\XProxy.Core\XProxy.Core.csproj" />
 	</ItemGroup>
 	
 </Project>
