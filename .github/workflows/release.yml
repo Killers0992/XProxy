@@ -33,7 +33,7 @@ jobs:
     - name: Publish Windows x64
       run: dotnet publish ${{ github.workspace }}/main/XProxy/XProxy.csproj --configuration Release --self-contained false -p:PublishSingleFile=true --runtime win-x64
     - name: Publish Core
-      run: dotnet publish ${{ github.workspace }}/main/XProxy.Core/XProxy.Core.csproj --configuration Release --self-contained --runtime linux-x64
+      run: dotnet publish ${{ github.workspace }}/main/XProxy.Core/XProxy.Core.csproj --configuration Release --self-contained --runtime win-x64
     - name: Build release
       id: build-release
       uses: ./main/XProxy.BuildRelease
