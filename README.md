@@ -16,8 +16,8 @@ Features
    - [Windows x64](https://github.com/Killers0992/XProxy/releases/latest/download/XProxy.exe)
    - [Linux x64](https://github.com/Killers0992/XProxy/releases/latest/download/XProxy)
 
-2. Make sure you have Dotnet 7.0 Runtime installed
-   - [Windows](https://aka.ms/dotnet-core-applaunch?missing_runtime=true&arch=x64&rid=win10-x64&apphost_version=7.0.2)
+2. Make sure you have Dotnet 8.0 Runtime installed
+   - [Windows](https://aka.ms/dotnet-core-applaunch?missing_runtime=true&arch=x64&rid=win10-x64&apphost_version=8.0.0)
    - [Linux](https://learn.microsoft.com/dotnet/core/install/linux?WT.mc_id=dotnet-35129-website)
 
 3. Run proxy by using **XProxy.exe** on windows or **XProxy** on linux.
