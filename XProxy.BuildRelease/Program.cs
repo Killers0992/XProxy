@@ -28,7 +28,8 @@ public class AppCommand
 
     public string SlReferences => Environment.GetEnvironmentVariable("SL_REFERENCES");
 
-    public string MainPath => "/home/runner/work/XProxy/XProxy/main";
+    public string Workspace => Environment.GetEnvironmentVariable("GITHUB_WORKSPACE");
+    public string MainPath => Path.Combine(Workspace, "main");
 
     public string XProxyCoreProject => Path.Combine(MainPath, "XProxy.Core");
 
