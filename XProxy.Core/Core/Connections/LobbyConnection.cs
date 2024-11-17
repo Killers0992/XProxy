@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
+using XProxy.Services;
 
 namespace XProxy.Core.Connections
 {
@@ -32,7 +33,7 @@ namespace XProxy.Core.Connections
 
         public override void OnConnected()
         {
-            Logger.Info(Player.Proxy._config.Messages.LobbyConnectedMessage.Replace("%tag%", Player.Tag).Replace("%address%", $"{Player.ClientEndPoint}").Replace("%userid%", Player.UserId), $"Player");
+            Logger.Info(ConfigService.Singleton.Messages.LobbyConnectedMessage.Replace("%tag%", Player.Tag).Replace("%address%", $"{Player.ClientEndPoint}").Replace("%userid%", Player.UserId), $"Player");
             Player.SendToScene("Facility");
         }
 
@@ -89,7 +90,7 @@ namespace XProxy.Core.Connections
 
                 if (canJoin)
                 {
-                    Player.SendHint(Player.Proxy._config.Messages.LobbyConnectingToServerHint.Replace("%server%", SelectedServer), 1f);
+                    Player.SendHint(ConfigService.Singleton.Messages.LobbyConnectingToServerHint.Replace("%server%", SelectedServer), 1f);
                 }
 
                 if (_timer <= 0)
@@ -165,10 +166,10 @@ namespace XProxy.Core.Connections
 
                 bool last = x == names.Count - 1;
 
-                string serverLine = Player.Proxy._config.Messages.LobbyServerLine1.Replace("%selectedColor%", $"{(names[x] == SelectedServer ? Player.Proxy._config.Messages.SelectedServerColor : Player.Proxy._config.Messages.DefaultServerColor)}").Replace("%server%", srv.Settings.Name);
+                string serverLine = ConfigService.Singleton.Messages.LobbyServerLine1.Replace("%selectedColor%", $"{(names[x] == SelectedServer ? ConfigService.Singleton.Messages.SelectedServerColor : ConfigService.Singleton.Messages.DefaultServerColor)}").Replace("%server%", srv.Settings.Name);
                 int serverLineLength = Regex.Replace(serverLine, @"\<.*\>", "").Length;
 
-                string serverLine2 = Player.Proxy._config.Messages.LobbyServerLine2.Replace("%selectedColor%", $"{(names[x] == SelectedServer ? Player.Proxy._config.Messages.SelectedServerColor : Player.Proxy._config.Messages.DefaultServerColor)}").Replace("%onlinePlayers%", $"{srv.PlayersCount}").Replace("%maxPlayers%", $"{srv.Settings.MaxPlayers}");
+                string serverLine2 = ConfigService.Singleton.Messages.LobbyServerLine2.Replace("%selectedColor%", $"{(names[x] == SelectedServer ? ConfigService.Singleton.Messages.SelectedServerColor : ConfigService.Singleton.Messages.DefaultServerColor)}").Replace("%onlinePlayers%", $"{srv.PlayersCount}").Replace("%maxPlayers%", $"{srv.Settings.MaxPlayers}");
                 int serverLine2Length = Regex.Replace(serverLine2, @"\<.*\>", "").Length;
 
                 int additionalSpacing = (serverLineLength - serverLine2Length);
@@ -179,7 +180,7 @@ namespace XProxy.Core.Connections
                 line2 += $"{spacing}{serverLine2}{spacing}{(last ? string.Empty : _spacing)}";
             }
 
-            foreach (var line in Player.Proxy._config.Messages.LobbyMainHint)
+            foreach (var line in ConfigService.Singleton.Messages.LobbyMainHint)
             {
                 sb.AppendLine(line.Replace("%serversLine1%", line1).Replace("%serversLine2%", line2).Replace("%server%", currentServer));
             }

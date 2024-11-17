@@ -14,8 +14,8 @@ namespace XProxy.Models
         [Description("This NAME is used for listing your server on SCPSL Server List.")]
         [YamlMember(ScalarStyle = YamlDotNet.Core.ScalarStyle.Literal)]
         public string Name { get; set; } =
-@" Example server name.
-  Proxy Server";
+@"Example server name.
+Proxy Server";
 
         [Description("This PASTEBIN is used for server information on SCPSL Server List.")]
         public string Pastebin { get; set; } = "7wV681fT";

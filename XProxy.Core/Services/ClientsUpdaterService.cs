@@ -1,6 +1,7 @@
 ﻿using Microsoft.Extensions.Hosting;
 using System.Threading;
 using System.Threading.Tasks;
+using XProxy.Core;
 
 namespace XProxy.Services
 {
@@ -10,12 +11,9 @@ namespace XProxy.Services
         {
             while (!stoppingToken.IsCancellationRequested)
             {
-                foreach(var listener in Listener.NamesByListener.Values)
+                foreach(Player plr in Player.List)
                 {
-                    foreach(var player in listener.Connections.Values)
-                    {
-                        player?.InternalUpdate();
-                    }
+                    plr?.InternalUpdate();
                 }
 
                 await Task.Delay(1000);

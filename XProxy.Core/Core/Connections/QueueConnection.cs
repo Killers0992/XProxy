@@ -1,5 +1,6 @@
 ﻿using System;
 using XProxy.Enums;
+using XProxy.Services;
 
 namespace XProxy.Core.Connections
 {
@@ -42,12 +43,12 @@ namespace XProxy.Core.Connections
                 }
                 else
                 {
-                    Player.SendHint(Player.Proxy._config.Messages.FirstPositionInQueue.Replace("%position%", $"{pos}").Replace("%totalInQueue%", $"{Player.CurrentServer.PlayersInQueueCount}"), 1);
+                    Player.SendHint(ConfigService.Singleton.Messages.FirstPositionInQueue.Replace("%position%", $"{pos}").Replace("%totalInQueue%", $"{Player.CurrentServer.PlayersInQueueCount}"), 1);
                 }
             }
             else
             {
-                Player.SendHint(Player.Proxy._config.Messages.PositionInQueue.Replace("%position%", $"{pos}").Replace("%totalInQueue%", $"{Player.CurrentServer.PlayersInQueueCount}"), 1);
+                Player.SendHint(ConfigService.Singleton.Messages.PositionInQueue.Replace("%position%", $"{pos}").Replace("%totalInQueue%", $"{Player.CurrentServer.PlayersInQueueCount}"), 1);
             }
         }
 

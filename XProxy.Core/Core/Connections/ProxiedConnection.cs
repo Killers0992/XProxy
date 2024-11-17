@@ -1,5 +1,6 @@
 ﻿using LiteNetLib;
 using System;
+using XProxy.Services;
 
 namespace XProxy.Core.Connections
 {
@@ -14,7 +15,7 @@ namespace XProxy.Core.Connections
 
         public override void OnConnected()
         {
-            Logger.Info(Player.Proxy._config.Messages.PlayerConnectedMessage.Replace("%tag%", Player.Tag).Replace("%address%", $"{Player.ClientEndPoint}").Replace("%userid%", Player.UserId), $"Player");
+            Logger.Info(ConfigService.Singleton.Messages.PlayerConnectedMessage.Replace("%tag%", Player.Tag).Replace("%address%", $"{Player.ClientEndPoint}").Replace("%userid%", Player.UserId), $"Player");
         }
 
         public override void OnReceiveDataFromProxy(NetPacketReader reader, DeliveryMethod method)
@@ -25,7 +26,7 @@ namespace XProxy.Core.Connections
             }
             catch (Exception ex)
             {
-                Logger.Error(Player.Proxy._config.Messages.PlayerExceptionSendToServerMessage.Replace("%tag%", Player.ErrorTag).Replace("%address%", $"{Player.ClientEndPoint}").Replace("%userid%", Player.UserId).Replace("%message%", $"{ex}"), "Player");
+                Logger.Error(ConfigService.Singleton.Messages.PlayerExceptionSendToServerMessage.Replace("%tag%", Player.ErrorTag).Replace("%address%", $"{Player.ClientEndPoint}").Replace("%userid%", Player.UserId).Replace("%message%", $"{ex}"), "Player");
             }
         }
     }

@@ -3,6 +3,7 @@
 	public enum ClientType : byte
 	{
 		GameClient,
-		VerificationService
+		VerificationService,
+		Proxy,
 	}
 }

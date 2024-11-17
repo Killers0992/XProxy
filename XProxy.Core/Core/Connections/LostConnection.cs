@@ -1,5 +1,5 @@
-﻿using System.Linq;
-using XProxy.Enums;
+﻿using XProxy.Enums;
+using XProxy.Services;
 
 namespace XProxy.Core.Connections
 {
@@ -7,7 +7,7 @@ namespace XProxy.Core.Connections
     {
         bool _searching;
         bool _disconnecting;
-        int _timer = 5;
+        int _timer = 1;
         bool _foundNextServer;
 
         public LostConnectionType LostConnectionType { get; private set; }
@@ -20,17 +20,16 @@ namespace XProxy.Core.Connections
 
         public override void Update()
         {
-            if (LostConnectionTime != 10)
+            if (LostConnectionTime != 2)
             {
                 LostConnectionTime++;
-                Player.SendHint(Player.Proxy._config.Messages.LostConnectionHint.Replace("%time%", $"{LostConnectionTime}"), 1);
+                Player.SendHint(ConfigService.Singleton.Messages.LostConnectionHint.Replace("%time%", $"{LostConnectionTime}"), 1);
                 return;
             }
 
-
             if (_timer != 0 && !_searching)
             {
-                Player.SendHint(Player.Proxy._config.Messages.SearchingForFallbackServerHint, 1);
+                Player.SendHint(ConfigService.Singleton.Messages.SearchingForFallbackServerHint, 1);
                 _timer--;
                 return;
             }
@@ -52,17 +51,17 @@ namespace XProxy.Core.Connections
             }
             else
             {
-                string targetServer = Player.Proxy.GetRandomServerFromPriorities().Name;
+                Server fallback = Player.CurrentServer.GetFallbackServer(Player);
 
-                if (string.IsNullOrEmpty(targetServer))
+                if (fallback == null)
                 {
-                    Player.SendHint(Player.Proxy._config.Messages.OnlineServerNotFoundHint, 4);
+                    Player.SendHint(ConfigService.Singleton.Messages.OnlineServerNotFoundHint, 4);
                 }
                 else
                 {
                     _foundNextServer = true;
-                    Player.SaveServerForNextSession(targetServer, 7f);
-                    Player.SendHint(Player.Proxy._config.Messages.ConnectingToServerHint.Replace("%server%", targetServer), 4);
+                    Player.SaveServerForNextSession(fallback.Name, 7f);
+                    Player.SendHint(ConfigService.Singleton.Messages.ConnectingToServerHint.Replace("%server%", fallback.Name), 4);
                 }
 
                 _disconnecting = true;

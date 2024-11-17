@@ -36,6 +36,7 @@ namespace XProxy.Models
         /// <summary>
         /// Gets http client for this listener.
         /// </summary>
+        [YamlIgnore]
         public HttpClient Http
         {
             get

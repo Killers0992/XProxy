@@ -31,7 +31,7 @@ namespace XProxy.Core
 
                         return $"{targetServer.PlayersCount}";
                     case "proxyonlineplayers":
-                        return Listener.GetTotalPlayersOnline().ToString();
+                        return Player.Count.ToString();
                     default:
                         return "%placeholder_not_found%";
                 }

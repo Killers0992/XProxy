@@ -13,6 +13,7 @@ using XProxy.Core.Core.Events.Args;
 using XProxy.Core.Events;
 using XProxy.Core.Events.Args;
 using XProxy.Core.Models;
+using XProxy.Enums;
 using XProxy.Models;
 using XProxy.Services;
 
@@ -20,27 +21,36 @@ namespace XProxy
 {
     public class Listener
     {
-        public static Dictionary<string, Listener> NamesByListener = new Dictionary<string, Listener>();
+        /// <summary>
+        /// Gets total amount of listeners.
+        /// </summary>
+        public static int Count => ListenerByName.Count;
 
-        private NetManager _manager;
+        /// <summary>
+        /// Gets all listeners.
+        /// </summary>
+        public static List<Listener> List => ListenerByName.Values.ToList();
+
+        /// <summary>
+        /// Gets listeners identified by name.
+        /// </summary>
+        public static Dictionary<string, Listener> ListenerByName { get; private set; } = new Dictionary<string, Listener>();
+
+        /// <summary>
+        /// Gets listener by name.
+        /// </summary>
+        /// <param name="name">The name of listener.</param>
+        /// <param name="listener">The listener.</param>
+        /// <returns>If successfull.</returns>
+        public static bool TryGet(string name, out Listener listener) => ListenerByName.TryGetValue(name, out listener);
+
+        internal NetManager _manager;
         private EventBasedNetListener _listener;
-
-        internal ConfigService _config => ConfigService.Singleton;
        
         // Shared data between all listeners.
 
         public static ConcurrentDictionary<string, Player> ConnectionToUserId { get; private set; } = new ConcurrentDictionary<string, Player>();
         public static ConcurrentDictionary<string, LastServerInfo> ForceServerForUserID { get; set; } = new ConcurrentDictionary<string, LastServerInfo>();
-
-        public static int GetTotalPlayersOnline()
-        {
-            int count = 0;
-
-            foreach (var listener in NamesByListener.Values)
-                count += listener.Connections.Count;
-
-            return count;
-        }
 
         // --
 
@@ -73,14 +83,19 @@ namespace XProxy
         /// </summary>
         public Dictionary<IPEndPoint, Player> Connections { get; private set; } = new Dictionary<IPEndPoint, Player>();
 
+        /// <summary>
+        /// Gets all servers connected to this listener.
+        /// </summary>
+        public Dictionary<IPEndPoint, Server> ServerConnections { get; private set; } = new Dictionary<IPEndPoint, Server>();
+
         public CancellationToken CancellationToken { get; }
 
         public Listener(string listenerName, CancellationToken token)
         {
             ListenerName = listenerName;
-            CancellationToken = token;
+            ListenerByName.Add(ListenerName, this);
 
-            NamesByListener.Add(ListenerName, this);
+            CancellationToken = token;
 
             Server.Refresh(true);
 
@@ -104,7 +119,7 @@ namespace XProxy
 
             EventManager.Proxy.InvokeStartedListening(new ProxyStartedListening(this, Settings.Port));
 
-            Logger.Info($"[(f=white)[(f=darkcyan){listenerName}(f=white)]] {_config.Messages.ProxyStartedListeningMessage
+            Logger.Info($"(f=white)[(f=darkcyan){listenerName}(f=white)] {ConfigService.Singleton.Messages.ProxyStartedListeningMessage
                 .Replace("%port%", $"{Settings.Port}")
                 .Replace("%ip%", Settings.ListenIp)
                 .Replace("%version%", Settings.Version)}", $"XProxy");
@@ -218,35 +233,43 @@ namespace XProxy
 
             var preAuth = PreAuthModel.ReadPreAuth(ip, request.Data, ref failed);
 
+            if (preAuth.Server != null)
+            {
+                NetPeer peer = request.Accept();
+                preAuth.Server.OnConnected(peer);
+                ServerConnections.Add(peer.EndPoint, preAuth.Server);
+                return;
+            }
+
             if (!preAuth.IsValid)
             {
-                Logger.Warn(_config.Messages.PreAuthIsInvalidMessage.Replace("%address%", $"{request.RemoteEndPoint.Address}").Replace("%failed%", failed), "XProxy");
+                Logger.Warn(ConfigService.Singleton.Messages.PreAuthIsInvalidMessage.Replace("%address%", $"{request.RemoteEndPoint.Address}").Replace("%failed%", failed), "XProxy");
                 request.RejectForce();
                 return;
             }
 
             if (preAuth.Major != Settings.GameVersionParsed.Major || preAuth.Minor != Settings.GameVersionParsed.Minor || preAuth.Revision != Settings.GameVersionParsed.Build)
             {
-                Logger.Info(_config.Messages.WrongVersion.Replace("%address%", $"{request.RemoteEndPoint.Address}").Replace("%userid%", preAuth.UserID).Replace("%version%", preAuth.Version), "XProxy");
+                Logger.Info(ConfigService.Singleton.Messages.WrongVersion.Replace("%address%", $"{request.RemoteEndPoint.Address}").Replace("%userid%", preAuth.UserID).Replace("%version%", preAuth.Version), "XProxy");
                 request.DisconnectWrongVersion();
                 return;
             }
 
-            bool ignoreSlots = preAuth.Flags.HasFlagFast(CentralAuthPreauthFlags.ReservedSlot) || preAuth.Flags.HasFlagFast(CentralAuthPreauthFlags.NorthwoodStaff) && _config.Value.NorthwoodStaffIgnoresSlots;
+            bool ignoreSlots = preAuth.Flags.HasFlagFast(CentralAuthPreauthFlags.ReservedSlot) || preAuth.Flags.HasFlagFast(CentralAuthPreauthFlags.NorthwoodStaff) && ConfigService.Singleton.Value.NorthwoodStaffIgnoresSlots;
 
             if (!ignoreSlots && _manager.ConnectedPeersCount >= Settings.MaxPlayers)
             {
-                Logger.Info(_config.Messages.ProxyIsFull.Replace("%address%", $"{request.RemoteEndPoint.Address}").Replace("%userid%", preAuth.UserID), "XProxy");
+                Logger.Info(ConfigService.Singleton.Messages.ProxyIsFull.Replace("%address%", $"{request.RemoteEndPoint.Address}").Replace("%userid%", preAuth.UserID), "XProxy");
                 request.DisconnectServerFull();
                 return;
             }
 
-            _config.Value.Users.TryGetValue(preAuth.UserID, out UserModel model);
+            ConfigService.Singleton.Value.Users.TryGetValue(preAuth.UserID, out UserModel model);
 
-            if (!ignoreSlots && _config.Value.MaintenanceMode && (model == null || !model.IgnoreMaintenance))
+            if (!ignoreSlots && ConfigService.Singleton.Value.MaintenanceMode && (model == null || !model.IgnoreMaintenance))
             {
-                Logger.Info(_config.Messages.MaintenanceDisconnectMessage.Replace("%address%", $"{request.RemoteEndPoint.Address}").Replace("%userid%", preAuth.UserID), $"XProxy");
-                request.Disconnect(_config.Messages.MaintenanceKickMessage);
+                Logger.Info(ConfigService.Singleton.Messages.MaintenanceDisconnectMessage.Replace("%address%", $"{request.RemoteEndPoint.Address}").Replace("%userid%", preAuth.UserID), $"XProxy");
+                request.Disconnect(ConfigService.Singleton.Messages.MaintenanceKickMessage);
                 return;
             }
 
@@ -267,8 +290,7 @@ namespace XProxy
 
             if (target == null)
             {
-                Logger.Info(_config.Messages.ProxyIsFull.Replace("%address%", $"{request.RemoteEndPoint.Address}").Replace("%userid%", preAuth.UserID), "XProxy");
-                player.DisconnectFromProxy(rejectionReason: RejectionReason.ServerFull);
+                player.DisconnectFromProxy("No server found!");
                 return;
             }
 
@@ -285,8 +307,13 @@ namespace XProxy
 
         public void OnNetworkReceive(NetPeer peer, NetPacketReader reader, byte channelNumber, DeliveryMethod deliveryMethod)
         {
-            if (!Connections.TryGetValue(peer.EndPoint, out Player player)) 
+            if (!Connections.TryGetValue(peer.EndPoint, out Player player))
+            {
+                if (ServerConnections.TryGetValue(peer.EndPoint, out Server server))
+                    server.OnReceiveData(reader);
+
                 return;
+            }
 
             player.InternalReceiveDataFromProxy(reader, deliveryMethod);
         }
@@ -294,7 +321,14 @@ namespace XProxy
         public void OnPeerDisconnected(NetPeer peer, DisconnectInfo disconnectInfo)
         {
             if (!Connections.TryGetValue(peer.EndPoint, out Player player))
+            {
+                if (ServerConnections.TryGetValue(peer.EndPoint, out Server server))
+                {
+                    server.OnDisconnected();
+                    ServerConnections.Remove(peer.EndPoint);
+                }
                 return;
+            }
 
             bool showDisconnectMessage = disconnectInfo.Reason != DisconnectReason.DisconnectPeerCalled;
 
@@ -303,10 +337,10 @@ namespace XProxy
                 switch (disconnectInfo.Reason)
                 {
                     case DisconnectReason.RemoteConnectionClose:
-                        Logger.Info(_config.Messages.ProxyClientClosedConnectionMessage.Replace("%tag%", player.Tag).Replace("%address%", $"{peer.EndPoint.Address}").Replace("%userid%", player.UserId), $"XProxy");
+                        Logger.Info(ConfigService.Singleton.Messages.ProxyClientClosedConnectionMessage.Replace("%tag%", player.Tag).Replace("%address%", $"{peer.EndPoint.Address}").Replace("%userid%", player.UserId), $"XProxy");
                         break;
                     default:
-                        Logger.Info(_config.Messages.ProxyClientClosedConnectionMessage.Replace("%tag%", player.Tag).Replace("%address%", $"{peer.EndPoint.Address}").Replace("%userid%", player.UserId).Replace("%reason%", $"{disconnectInfo.Reason}"), $"XProxy");
+                        Logger.Info(ConfigService.Singleton.Messages.ProxyClientClosedConnectionMessage.Replace("%tag%", player.Tag).Replace("%address%", $"{peer.EndPoint.Address}").Replace("%userid%", player.UserId).Replace("%reason%", $"{disconnectInfo.Reason}"), $"XProxy");
                         break;
                 }
             }

@@ -1,4 +1,6 @@
-﻿using System;
+﻿using LiteNetLib;
+using LiteNetLib.Utils;
+using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
@@ -48,6 +50,12 @@ namespace XProxy.Core
 
             server = null;
             return false;
+        }
+
+        public static bool TryGetByIp(string ip, ushort port, out Server server)
+        {
+            server = List.FirstOrDefault(x => (x.Settings.Ip == ip || x.Settings.PublicIp == ip) && x.Settings.Port == port);
+            return server != null;
         }
 
         public static bool TryGetByPublicIp(string ip, out Server server)
@@ -178,7 +186,47 @@ namespace XProxy.Core
             }
         }
 
+        /// <summary>
+        /// Gets connection made by XProxy.Plugin to server.
+        /// </summary>
+        public NetPeer ConnectionToServer;
+
+        /// <summary>
+        /// Gets if server is online.
+        /// </summary>
+        public bool IsServerOnline
+        {
+            get
+            {
+                if (Settings.PluginExtension.UseAccurateOnlineStatus)
+                    return IsConnectedToServer;
+
+                // Server is always online because theres no way to predict without any external plugins to check if its really online.
+                return true;
+            }
+        }
+
+        /// <summary>
+        /// Gets if server is connected to XProxy.Plugin.
+        /// </summary>
+        public bool IsConnectedToServer => ConnectionToServer != null;
+
+        public string Tag => ConfigService.Singleton.Messages.PlayerTag.Replace("%serverIpPort%", ToString()).Replace("%server%", Name);
+
+
         public List<string> PlayersInQueueByUserId = new List<string>();
+
+        public Server GetFallbackServer(Player plr = null)
+        {
+            Server random = List
+                    .Where(x => Settings.FallbackServers.Contains(x.Name))
+                    .OrderBy(pair => Settings.FallbackServers.IndexOf(pair.Name))
+                    .Where(x => plr != null ? x.CanPlayerJoin(plr) : !x.IsServerFull)
+                    .ToList()
+                    .FirstOrDefault();
+
+            return random;
+        }
 
         public bool CanPlayerJoin(Player player)
         {
@@ -194,6 +242,9 @@ namespace XProxy.Core
 
             if (Settings.ConnectionType == ConnectionType.Simulated)
                 return true;
+
+            if (!IsServerOnline)
+                return false;
 
             if (player.PreAuth.Flags.HasFlagFast(CentralAuthPreauthFlags.ReservedSlot))
                 return true;
@@ -251,10 +302,49 @@ namespace XProxy.Core
             Logger.Info($"{plr.UserId} is connecting from queue to {Name}!", "QueueService");
         }
 
-        public override string ToString()
+        /// <summary>
+        /// Sends data to XProxy.Plugin.
+        /// </summary>
+        /// <param name="writer">The writer.</param>
+        public void SendData(NetDataWriter writer)
         {
-            return $"{Settings.Ip}:{Settings.Port}";
+            if (!IsConnectedToServer)
+                return;
+
+            ConnectionToServer.Send(writer, DeliveryMethod.ReliableOrdered);
         }
+
+        /// <summary>
+        /// Invoked when XProxy.Plugin makes connection with proxy.
+        /// </summary>
+        public void OnConnected(NetPeer peer)
+        {
+            if (IsConnectedToServer)
+                ConnectionToServer.Disconnect();
+
+            ConnectionToServer = peer;
+            Logger.Info($"{Tag} Connection to (f=cyan)XProxy.Plugin(f=white) has been (f=green)established(f=white).", "XProxy");
+        }
+
+        /// <summary>
+        /// Invoked when XProxy.Plugin sends data to proxy.
+        /// </summary>
+        /// <param name="reader">The reader.</param>
+        public void OnReceiveData(NetDataReader reader)
+        {
+
+        }
+
+        /// <summary>
+        /// Invoked when XProxy.Plugin loses connection with proxy.
+        /// </summary>
+        public void OnDisconnected()
+        {
+            ConnectionToServer = null;
+            Logger.Info($"{Tag} Connection to (f=cyan)XProxy.Plugin(f=white) has been (f=red)broken(f=white).", "XProxy");
+        }
+
+        public override string ToString() => $"{Settings.Ip}:{Settings.Port}";
 
         public void Dispose()
         {

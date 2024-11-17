@@ -76,7 +76,9 @@ namespace XProxy.Core
 
         public const ushort RoundRestartMessageId = 21154;
         public const ushort BroadcastAddId = 5862;
-        public const ushort BroadcastClearId = 15261; 
+        public const ushort BroadcastClearId = 15261;
+
+        public const ushort ServerShutdownMessageId = 45879;
 
         private bool _forceDisconnect;
         private string _forceDisconnectReason;
@@ -88,6 +90,7 @@ namespace XProxy.Core
         private EventBasedNetListener _listener;
 
         public IPEndPoint IpAddress;
+        private Server _currentServer;
 
         public Player(Listener proxy, ConnectionRequest request, PreAuthModel preAuth)
         {
@@ -126,7 +129,7 @@ namespace XProxy.Core
 
         public double RemoteTimestamp { get; private set; }
         public uint NetworkId { get; private set; } = Database.GetNextNetworkId();
-        public string UserId => PreAuth.UserID;
+        public string UserId => PreAuth.UserID ?? "unknown";
         public bool IsPlayerSpawned { get; private set; }
         public bool IsRoundRestarting { get; private set; }
         public bool IsRedirecting { get; private set; }
@@ -140,7 +143,17 @@ namespace XProxy.Core
         public Listener Proxy { get; private set; }
         public PreAuthModel PreAuth { get; private set; }
         public BaseConnection Connection { get; set; }
-        public Server CurrentServer { get; set; }
+        public Server CurrentServer
+        {
+            get => _currentServer;
+            set
+            {
+                if (_currentServer != null)
+                    _currentServer.PlayersById.TryRemove(Id, out _);
+
+                _currentServer = value;
+            }
+        }
 
         public CustomUnbatcher UnbatcherCurrentServer { get; private set; } = new CustomUnbatcher();
         public CustomUnbatcher UnbatcherProxy { get; private set; } = new CustomUnbatcher();
@@ -149,8 +162,8 @@ namespace XProxy.Core
 
         public IPEndPoint ClientEndPoint => _connectionRequest != null ? _connectionRequest.RemoteEndPoint : _proxyPeer.EndPoint;
 
-        public string Tag => Proxy._config.Messages.PlayerTag.Replace("%serverIpPort%", CurrentServer.ToString()).Replace("%server%", CurrentServer.Name);
-        public string ErrorTag => Proxy._config.Messages.PlayerErrorTag.Replace("%serverIpPort%", CurrentServer.ToString()).Replace("%server%", CurrentServer.Name);
+        public string Tag => ConfigService.Singleton.Messages.PlayerTag.Replace("%serverIpPort%", CurrentServer.ToString()).Replace("%server%", CurrentServer.Name);
+        public string ErrorTag => ConfigService.Singleton.Messages.PlayerErrorTag.Replace("%serverIpPort%", CurrentServer.ToString()).Replace("%server%", CurrentServer.Name);
 
         // QUEUE SYSTEM
 
@@ -430,7 +443,7 @@ namespace XProxy.Core
                 CurrentServer.MarkPlayerInQueueAsConnecting(this);
 
             IsRedirecting = true;
-            Logger.Info(Proxy._config.Messages.PlayerRedirectToMessage.Replace("%tag%", Tag).Replace("%address%", $"{ClientEndPoint}").Replace("%userid%", UserId).Replace("%server%", server.Name), $"Player");
+            Logger.Info(ConfigService.Singleton.Messages.PlayerRedirectToMessage.Replace("%tag%", Tag).Replace("%address%", $"{ClientEndPoint}").Replace("%userid%", UserId).Replace("%server%", server.Name), $"Player");
             SaveServerForNextSession(server.Name, 7f);
             Roundrestart();
             return true;
@@ -565,7 +578,11 @@ namespace XProxy.Core
                     IsRoundRestarting = true;
                     RoundRestartMessage rrm = RoundRestartMessageReaderWriter.ReadRoundRestartMessage(reader);
                     SaveCurrentServerForNextSession(rrm.TimeOffset + 10f);
-                    Logger.Info(Proxy._config.Messages.PlayerRoundRestartMessage.Replace("%tag%", Tag).Replace("%address%", $"{ClientEndPoint}").Replace("%userid%", UserId).Replace("%time%", $"{rrm.TimeOffset}"), $"Player");
+                    Logger.Info(ConfigService.Singleton.Messages.PlayerRoundRestartMessage.Replace("%tag%", Tag).Replace("%address%", $"{ClientEndPoint}").Replace("%userid%", UserId).Replace("%time%", $"{rrm.TimeOffset}"), $"Player");
+                    break;
+                case ServerShutdownMessageId:
+                    cancelProcessor = true;
+                    Connection = new LostConnection(this, LostConnectionType.Shutdown);
                     break;
                 case SpawnMessageId:
                     uint netid = reader.ReadUInt();
@@ -633,9 +650,9 @@ namespace XProxy.Core
             {
                 case ConnectionType.Proxied:
                     if (IsChallenging)
-                        Logger.Info(Proxy._config.Messages.PlayerSentChallengeMessage.Replace("%tag%", Tag).Replace("%address%", $"{ClientEndPoint}").Replace("%userid%", UserId), $"Player");
+                        Logger.Info(ConfigService.Singleton.Messages.PlayerSentChallengeMessage.Replace("%tag%", Tag).Replace("%address%", $"{ClientEndPoint}").Replace("%userid%", UserId), $"Player");
                     else
-                        Logger.Info(Proxy._config.Messages.PlayerIsConnectingMessage.Replace("%tag%", Tag).Replace("%address%", $"{ClientEndPoint}").Replace("%userid%", UserId), $"Player");
+                        Logger.Info(ConfigService.Singleton.Messages.PlayerIsConnectingMessage.Replace("%tag%", Tag).Replace("%address%", $"{ClientEndPoint}").Replace("%userid%", UserId), $"Player");
 
                     _netManager.Connect(CurrentServer.Settings.Ip, CurrentServer.Settings.Port, PreAuth.RawPreAuth);
                     break;
@@ -704,7 +721,7 @@ namespace XProxy.Core
         internal void InternalDisconnect()
         {
             _netManager.FirstPeer.Disconnect();
-            Logger.Info(Proxy._config.Messages.PlayerServerShutdownMessage.Replace("%tag%", Tag).Replace("%address%", $"{ClientEndPoint}").Replace("%userid%", UserId), $"Player");
+            Logger.Info(ConfigService.Singleton.Messages.PlayerServerShutdownMessage.Replace("%tag%", Tag).Replace("%address%", $"{ClientEndPoint}").Replace("%userid%", UserId), $"Player");
             DisconnectFromProxy();
         }
 
@@ -790,7 +807,7 @@ namespace XProxy.Core
             }
             catch (Exception ex)
             {
-                Logger.Error(Proxy._config.Messages.PlayerUnbatchingExceptionMessage.Replace("%tag%", ErrorTag).Replace("%address%", $"{ClientEndPoint}").Replace("%userid%", UserId).Replace("%message%", $"{ex}").Replace("%conditon%", fromProxy ? Proxy._config.Messages.Proxy : Proxy._config.Messages.CurrentServer), "Player");
+                Logger.Error(ConfigService.Singleton.Messages.PlayerUnbatchingExceptionMessage.Replace("%tag%", ErrorTag).Replace("%address%", $"{ClientEndPoint}").Replace("%userid%", UserId).Replace("%message%", $"{ex}").Replace("%conditon%", fromProxy ? ConfigService.Singleton.Messages.Proxy : ConfigService.Singleton.Messages.CurrentServer), "Player");
             }
         }
 
@@ -813,7 +830,7 @@ namespace XProxy.Core
                 }
                 catch (Exception ex)
                 {
-                    Logger.Error(Proxy._config.Messages.PlayerExceptionSendToProxyMessage.Replace("%tag%", ErrorTag).Replace("%address%", $"{ClientEndPoint}").Replace("%userid%", UserId).Replace("%message%", $"{ex}"), "Player");
+                    Logger.Error(ConfigService.Singleton.Messages.PlayerExceptionSendToProxyMessage.Replace("%tag%", ErrorTag).Replace("%address%", $"{ClientEndPoint}").Replace("%userid%", UserId).Replace("%message%", $"{ex}"), "Player");
                 }
             }
 
@@ -825,8 +842,8 @@ namespace XProxy.Core
             switch (disconnectInfo.Reason)
             {
                 case DisconnectReason.ConnectionFailed when disconnectInfo.AdditionalData.RawData == null:
-                    DisconnectFromProxy(Proxy._config.Messages.ServerIsOfflineKickMessage.Replace("%server%", CurrentServer.Name));
-                    Logger.Info(Proxy._config.Messages.PlayerServerIsOfflineMessage.Replace("%tag%", Tag).Replace("%address%", $"{ClientEndPoint}").Replace("%userid%", UserId), $"Player");
+                    DisconnectFromProxy(ConfigService.Singleton.Messages.ServerIsOfflineKickMessage.Replace("%server%", CurrentServer.Name));
+                    Logger.Info(ConfigService.Singleton.Messages.PlayerServerIsOfflineMessage.Replace("%tag%", Tag).Replace("%address%", $"{ClientEndPoint}").Replace("%userid%", UserId), $"Player");
                     return;
 
                 case DisconnectReason.ConnectionRejected when disconnectInfo.AdditionalData.RawData != null:
@@ -845,12 +862,12 @@ namespace XProxy.Core
                             if (disconnectInfo.AdditionalData.TryGetByte(out byte offset))
                             {
                                 SaveCurrentServerForNextSession(offset + 10f);
-                                Logger.Info(Proxy._config.Messages.PlayerDelayedConnectionMessage.Replace("%tag%", Tag).Replace("%address%", $"{ClientEndPoint}").Replace("%userid%", UserId).Replace("%time%", $"{offset}"), $"Player");
+                                Logger.Info(ConfigService.Singleton.Messages.PlayerDelayedConnectionMessage.Replace("%tag%", Tag).Replace("%address%", $"{ClientEndPoint}").Replace("%userid%", UserId).Replace("%time%", $"{offset}"), $"Player");
                             }
                             break;
 
                         case RejectionReason.ServerFull:
-                            Logger.Info(Proxy._config.Messages.PlayerServerIsFullMessage.Replace("%tag%", Tag).Replace("%address%", $"{ClientEndPoint}").Replace("%userid%", UserId), $"Player");
+                            Logger.Info(ConfigService.Singleton.Messages.PlayerServerIsFullMessage.Replace("%tag%", Tag).Replace("%address%", $"{ClientEndPoint}").Replace("%userid%", UserId), $"Player");
 
                             if (CanJoinQueue())
                             {
@@ -865,17 +882,17 @@ namespace XProxy.Core
 
                             var date = new DateTime(expireTime, DateTimeKind.Utc).ToLocalTime();
 
-                            Logger.Info(Proxy._config.Messages.PlayerBannedMessage.Replace("%tag%", Tag).Replace("%address%", $"{ClientEndPoint}").Replace("%userid%", UserId).Replace("%reason%", banReason).Replace("%date%", date.ToShortDateString()).Replace("%time%", date.ToLongTimeString()), $"Player");
+                            Logger.Info(ConfigService.Singleton.Messages.PlayerBannedMessage.Replace("%tag%", Tag).Replace("%address%", $"{ClientEndPoint}").Replace("%userid%", UserId).Replace("%reason%", banReason).Replace("%date%", date.ToShortDateString()).Replace("%time%", date.ToLongTimeString()), $"Player");
                             break;
 
                         case RejectionReason.Challenge:
                             //We need to save current server because after client tries to reconnect it will connect to random server from priority list.
                             SaveCurrentServerForNextSession();
-                            Logger.Info(Proxy._config.Messages.PlayerReceivedChallengeMessage.Replace("%tag%", Tag).Replace("%address%", $"{ClientEndPoint}").Replace("%userid%", UserId), "Player");
+                            Logger.Info(ConfigService.Singleton.Messages.PlayerReceivedChallengeMessage.Replace("%tag%", Tag).Replace("%address%", $"{ClientEndPoint}").Replace("%userid%", UserId), "Player");
                             break;
 
                         default:
-                            Logger.Info(Proxy._config.Messages.PlayerDisconnectedMessage.Replace("%tag%", Tag).Replace("%address%", $"{ClientEndPoint}").Replace("%userid%", UserId).Replace("%reason%", $"{reason}"), $"Player");
+                            Logger.Info(ConfigService.Singleton.Messages.PlayerDisconnectedMessage.Replace("%tag%", Tag).Replace("%address%", $"{ClientEndPoint}").Replace("%userid%", UserId).Replace("%reason%", $"{reason}"), $"Player");
                             break;
                     }
 
@@ -888,16 +905,16 @@ namespace XProxy.Core
                 case DisconnectReason.Timeout:
                 case DisconnectReason.PeerNotFound:
                     Connection = new LostConnection(this, LostConnectionType.Timeout);
-                    Logger.Info(Proxy._config.Messages.PlayerServerTimeoutMessage.Replace("%tag%", Tag).Replace("%address%", $"{ClientEndPoint}").Replace("%userid%", UserId), $"Player");
+                    Logger.Info(ConfigService.Singleton.Messages.PlayerServerTimeoutMessage.Replace("%tag%", Tag).Replace("%address%", $"{ClientEndPoint}").Replace("%userid%", UserId), $"Player");
                     return;
 
                 case DisconnectReason.RemoteConnectionClose when _forceDisconnect:
-                    Logger.Info(Proxy._config.Messages.PlayerDisconnectedWithReasonMessage.Replace("%tag%", Tag).Replace("%address%", $"{ClientEndPoint}").Replace("%userid%", UserId).Replace("%reason%", _forceDisconnectReason), $"Player");
+                    Logger.Info(ConfigService.Singleton.Messages.PlayerDisconnectedWithReasonMessage.Replace("%tag%", Tag).Replace("%address%", $"{ClientEndPoint}").Replace("%userid%", UserId).Replace("%reason%", _forceDisconnectReason), $"Player");
                     break;
 
                 case DisconnectReason.RemoteConnectionClose when !_forceDisconnect:
                     Connection = new LostConnection(this, LostConnectionType.Shutdown);
-                    Logger.Info(Proxy._config.Messages.PlayerServerShutdownMessage.Replace("%tag%", Tag).Replace("%address%", $"{ClientEndPoint}").Replace("%userid%", UserId), $"Player");
+                    Logger.Info(ConfigService.Singleton.Messages.PlayerServerShutdownMessage.Replace("%tag%", Tag).Replace("%address%", $"{ClientEndPoint}").Replace("%userid%", UserId), $"Player");
                     return;
             }
 
@@ -908,9 +925,7 @@ namespace XProxy.Core
         {
             Proxy.Connections.Remove(IpAddress);
 
-            // If player is connected to any server remove their id.
-            if (CurrentServer != null)
-                CurrentServer.PlayersById.TryRemove(Id, out _);
+            CurrentServer = null;
 
             Listener.ConnectionToUserId.Remove(UserId, out _);
 

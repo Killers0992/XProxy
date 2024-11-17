@@ -336,14 +336,13 @@ namespace XProxy.Services
             {
                 init = false;
 
-                foreach (var listener in Listener.NamesByListener)
+                foreach (Listener listener in Listener.List)
                 {
-                    if (!listener.Value.Settings.ServerList.UseScpServerList)
+                    if (!listener.Settings.ServerList.UseScpServerList)
                         continue;
 
-                    string listenerName = listener.Key;
-                    Listener proxyServer = listener.Value;
-                    ListenerServer settings = proxyServer.Settings;
+                    string listenerName = listener.ListenerName;
+                    ListenerServer settings = listener.Settings;
 
                     if (settings.PublicIp == null)
                         await settings.Initialize();
@@ -352,7 +351,7 @@ namespace XProxy.Services
 
                     string str = JsonConvert.SerializeObject(new AuthPlayersModel());
 
-                    string playersStr = $"{proxyServer.Connections.Count}/{settings.MaxPlayers}";
+                    string playersStr = $"{listener.Connections.Count}/{settings.MaxPlayers}";
 
                     if (Server.TryGetByName(settings.ServerList.TakePlayerCountFromServer, out Server targetServer))
                         playersStr = $"{targetServer.PlayersCount}/{targetServer.Settings.MaxPlayers}";
@@ -395,7 +394,7 @@ namespace XProxy.Services
 
                     settings.ServerListUpdate = false;
 
-                    bool result = await SendData(proxyServer, upd);
+                    bool result = await SendData(listener, upd);
 
                     if (result && !_verifyNotice)
                     {

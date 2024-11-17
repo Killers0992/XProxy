@@ -60,7 +60,7 @@ namespace XProxy.Commands
         {
             StringBuilder sb = new StringBuilder();
             sb.AppendLine("Listeners:");
-            foreach (var listener in Listener.NamesByListener.Values)
+            foreach (Listener listener in Listener.List)
             {
                 sb.AppendLine($" - (f=cyan){listener.Settings.ListenIp}:{listener.Settings.Port}(f=white) [ (f=green){listener.Connections.Count}/{listener.Settings.MaxPlayers}(f=white) ] ((f=darkcyan){listener.ListenerName}(f=white))");
             }
@@ -76,7 +76,7 @@ namespace XProxy.Commands
                 return;
             }
 
-            if (!Listener.NamesByListener.TryGetValue(args[0], out Listener listener))
+            if (!Listener.TryGet(args[0], out Listener listener))
             {
                 Logger.Info($"Listener with name {args[0]} not exists! check \"listeners\" command", "runcentralcmd");
                 return;
@@ -133,7 +133,7 @@ namespace XProxy.Commands
                     }
                 }
             }
-            sb.AppendLine($" Total online players (f=green){Listener.GetTotalPlayersOnline()}(f=white)!");
+            sb.AppendLine($" Total online players (f=green){Player.Count}(f=white)!");
             Logger.Info(sb.ToString(), "players");
         }
 
@@ -257,6 +257,7 @@ namespace XProxy.Commands
             {
                 plr.SendHint(message);
             }
+
             Logger.Info($"Send hint with message (f=green){message}(f=white) to {Player.Count} players", "sendhint");
         }
 
@@ -284,10 +285,8 @@ namespace XProxy.Commands
                 plr.SendBroadcast(message, broadcastDuration, Broadcast.BroadcastFlags.Normal);
             }
 
-            Logger.Info($"Sent broadcast with message (f=green){message}(f=white) for {broadcastDuration} seconds to {Listener.GetTotalPlayersOnline()} players", "broadcast");
+            Logger.Info($"Sent broadcast with message (f=green){message}(f=white) for (f=green){broadcastDuration}(f=white) seconds to (f=green){Player.Count}(f=white) players", "broadcast");
         }
-
-
 
         [ConsoleCommand("stats")]
         public static void StatsCommand(CommandsService service, string[] args)
@@ -295,6 +294,46 @@ namespace XProxy.Commands
             Logger.Info($"XProxy Stats");
             Logger.Info($" - CPU Usage {CpuProfiler.GetCpuUsage():0.00}%");
             Logger.Info($" - Running Tasks: {TaskMonitor.GetRunningTaskCount()}");
+        }
+
+        [ConsoleCommand("debuginfo")]
+        public static void DebugInfoCommand(CommandsService service, string[] args)
+        {
+            foreach(Server server in Server.List)
+            {
+                Logger.Info("Server " + server);
+                Logger.Info(" IsOnline " + server.IsServerOnline);
+                Logger.Info(" IsFull " + server.IsServerFull);
+                Logger.Info(" IsConnected to plugin " + server.IsConnectedToServer);
+                Logger.Info(" Players " + server.PlayersCount);
+                Logger.Info($" PlayersById ( count {server.PlayersById.Count} )");
+                foreach (var player in server.PlayersById)
+                {
+                    Logger.Info($" [{player.Key}] {player.Value.UserId}");
+                }
+                Logger.Info($" PlayersInQueue ( count {server.PlayersInQueue.Count} )");
+                foreach (var player in server.PlayersInQueue)
+                {
+                    Logger.Info($" [{player.Key}] {player.Value.UserId} ( is connecting {player.Value.IsConnecting} )");
+                }
+                Logger.Info($" PlayersInQueueByUserId ( count {server.PlayersInQueueByUserId.Count} )");
+                int pos = 0;
+                foreach (var player in server.PlayersInQueueByUserId)
+                {
+                    pos++;
+                    Logger.Info($" {pos}/{server.PlayersInQueueCount} [{player}]");
+                }
+            }
+
+            foreach(Listener listener in Listener.List)
+            {
+                Logger.Info("Listener " + listener.ListenerName);
+                Logger.Info(" Peers connected " + listener._manager.ConnectedPeersCount);
+                foreach(var peer in listener._manager.ConnectedPeerList)
+                {
+                    Logger.Info($" [{peer.Id}] {peer.EndPoint.Address} ( ping {peer.Ping}ms, state {peer.ConnectionState}, time since last packet {peer.TimeSinceLastPacket} )");
+                }
+            }
         }
     }
 }

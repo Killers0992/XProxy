@@ -1,7 +1,7 @@
 ﻿using LiteNetLib.Utils;
 using System;
-using System.Diagnostics.Metrics;
 using System.Text;
+using XProxy.Core;
 using XProxy.Cryptography;
 using XProxy.Enums;
 using XProxy.Services;
@@ -11,6 +11,7 @@ namespace XProxy.Models
     public class PreAuthModel
     {
         public NetDataWriter RawPreAuth;
+        public Server Server;
 
         public static PreAuthModel ReadPreAuth(string endpoint, NetDataReader reader, ref string failedOn)
         {
@@ -20,8 +21,36 @@ namespace XProxy.Models
             model.RawPreAuth = NetDataWriter.FromBytes(reader.RawData, reader.UserDataOffset, reader.UserDataSize);
 
             failedOn = "Client Type";
-            if (!reader.TryGetByte(out byte clientType)) return model;
+
+            if (!reader.TryGetByte(out byte clientType)) 
+                return model;
+
             model.ClientType = (ClientType)clientType;
+
+            if (model.ClientType == ClientType.Proxy)
+            {
+                if (!reader.TryGetString(out string connectionKey))
+                    return model;
+
+                if (!reader.TryGetUShort(out ushort port))
+                    return model;
+
+                if (!Server.TryGetByIp(endpoint, port, out Server server))
+                    return model;
+
+                if (connectionKey != server.Settings.PluginExtension.ConnectionKey)
+                    return model;
+
+                // If allowed connections contains any defined ip check if incoming endpoint is in that list.
+                if (server.Settings.PluginExtension.AllowedConnections.Length > 0)
+                {
+                    if (!server.Settings.PluginExtension.AllowedConnections.Contains(endpoint))
+                        return null;
+                }
+
+                model.Server = server;
+                return model;
+            }
 
             failedOn = "Major Version";
             if (!reader.TryGetByte(out byte major)) return model;
