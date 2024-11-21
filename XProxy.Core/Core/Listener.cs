@@ -42,7 +42,16 @@ namespace XProxy
         /// <param name="name">The name of listener.</param>
         /// <param name="listener">The listener.</param>
         /// <returns>If successfull.</returns>
-        public static bool TryGet(string name, out Listener listener) => ListenerByName.TryGetValue(name, out listener);
+        public static bool TryGet(string name, out Listener listener)
+        {
+            if (string.IsNullOrEmpty(name))
+            {
+                listener = null;
+                return false;
+            }
+
+            return ListenerByName.TryGetValue(name, out listener);
+        }
 
         internal NetManager _manager;
         private EventBasedNetListener _listener;
