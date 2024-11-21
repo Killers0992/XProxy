@@ -2,7 +2,7 @@
 using System.Reflection;
 
 [assembly: AssemblyVersion(
-    "1.7.7"
+    "1.7.8"
 )]
 
 namespace XProxy.Core
@@ -29,10 +29,6 @@ namespace XProxy.Core
             "13.5.1",
         };
 
-        public static string[] Changelogs = new[]
-        {
-            "Add %proxyMaxPlayers_<listenername>% placeholder",
-            "Add multiline support for server names",
-        };
+        public static string[] Changelogs = new string [0];
     }
 }

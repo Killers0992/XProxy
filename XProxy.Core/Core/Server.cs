@@ -5,6 +5,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using XProxy.Core.Core.Events.Args;
+using XProxy.Core.Enums;
 using XProxy.Core.Events;
 using XProxy.Core.Models;
 using XProxy.Enums;
@@ -207,6 +208,11 @@ namespace XProxy.Core
         }
 
         /// <summary>
+        /// Gets status of server.
+        /// </summary>
+        public ServerStatus Status { get; private set; }
+
+        /// <summary>
         /// Gets if server is connected to XProxy.Plugin.
         /// </summary>
         public bool IsConnectedToServer => ConnectionToServer != null;
@@ -230,6 +236,20 @@ namespace XProxy.Core
 
         public bool CanPlayerJoin(Player player)
         {
+            if (!IsServerOnline)
+                return false;
+
+            if (Settings.PluginExtension.UseAccurateOnlineStatus)
+            {
+                switch (Status)
+                {
+                    case ServerStatus.Starting:
+                    case ServerStatus.RoundEnding:
+                    case ServerStatus.RoundRestart:
+                        return false;
+                }
+            }
+
             //
             PlayerCanJoinEvent ev = new PlayerCanJoinEvent(player, this);
             EventManager.Player.InvokeCanJoin(ev);
@@ -332,7 +352,16 @@ namespace XProxy.Core
         /// <param name="reader">The reader.</param>
         public void OnReceiveData(NetDataReader reader)
         {
+            byte b = reader.GetByte();
 
+            switch (b)
+            {
+                // Status
+                case 0:
+                    ServerStatus status = (ServerStatus)reader.GetByte();
+                    Status = status;
+                    break;
+            }
         }
 
         /// <summary>

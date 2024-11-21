@@ -17,6 +17,7 @@ using static PlayerStatsSystem.SyncedStatMessages;
 using XProxy.Services;
 using XProxy.Core.Monitors;
 using System.Collections.Generic;
+using XProxy.Core.Enums;
 
 namespace XProxy.Core
 {
@@ -452,6 +453,19 @@ namespace XProxy.Core
         public void SaveCurrentServerForNextSession(float duration = 4f) => Proxy.SaveLastServerForUser(UserId, CurrentServer.Name, duration);
         public void SaveServerForNextSession(string name, float duration = 4f) => Proxy.SaveLastServerForUser(UserId, name, duration);
 
+        public void DelayConnection(byte seconds)
+        {
+            if (_connectionRequest == null)
+                return;
+
+            NetDataWriter customWriter = new NetDataWriter();
+            customWriter.Put((byte)RejectionReason.Delay);
+            customWriter.Put(seconds);
+            _connectionRequest.Reject(customWriter);
+
+            Dispose();
+        }
+
         public void DisconnectFromProxy(string reason = null, NetDataWriter writer = null, RejectionReason? rejectionReason = null)
         {
             if (_connectionRequest != null)
@@ -842,6 +856,17 @@ namespace XProxy.Core
             switch (disconnectInfo.Reason)
             {
                 case DisconnectReason.ConnectionFailed when disconnectInfo.AdditionalData.RawData == null:
+                    if (CurrentServer.Settings.PluginExtension.UseAccurateOnlineStatus)
+                    {
+                        switch (CurrentServer.Status)
+                        {
+                            case ServerStatus.RoundRestart:
+                            case ServerStatus.Starting:
+                                DelayConnection(3);
+                                return;
+                        }
+                    }
+
                     DisconnectFromProxy(ConfigService.Singleton.Messages.ServerIsOfflineKickMessage.Replace("%server%", CurrentServer.Name));
                     Logger.Info(ConfigService.Singleton.Messages.PlayerServerIsOfflineMessage.Replace("%tag%", Tag).Replace("%address%", $"{ClientEndPoint}").Replace("%userid%", UserId), $"Player");
                     return;

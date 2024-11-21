@@ -1,8 +1,10 @@
 ﻿using LiteNetLib;
 using LiteNetLib.Utils;
 using PluginAPI.Core;
+using RemoteAdmin.Communication;
 using System;
 using UnityEngine;
+using XProxy.Core.Enums;
 
 namespace XProxy.Plugin.Core
 {
@@ -23,6 +25,26 @@ namespace XProxy.Plugin.Core
 
             _manager = new NetManager(_listener);
             _manager.Start();
+        }
+
+        void SendIntialData()
+        {
+            SendStatus();
+        }
+
+        void SendStatus()
+        {
+            if (!_manager.IsRunning)
+                return;
+
+            if (_manager.FirstPeer == null)
+                return;
+
+            NetDataWriter wr = new NetDataWriter();
+            wr.Put((byte)0);
+            wr.Put((byte)MainClass.Status);
+
+            _manager.FirstPeer.Send(wr, DeliveryMethod.ReliableOrdered);
         }
 
         void Update()
@@ -54,6 +76,7 @@ namespace XProxy.Plugin.Core
         void OnConnected(NetPeer peer)
         {
             Log.Info($"Connected!", "XProxy");
+            SendIntialData();
         }
 
         void OnDisconnected(NetPeer peer, DisconnectInfo disconnectInfo)
