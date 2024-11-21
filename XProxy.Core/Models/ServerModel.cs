@@ -5,12 +5,14 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using XProxy.Enums;
+using YamlDotNet.Serialization;
 
 namespace XProxy.Core.Models
 {
     public class ServerModel
     {
         [Description("Name of server.")]
+        [YamlMember(ScalarStyle = YamlDotNet.Core.ScalarStyle.Literal)]
         public string Name { get; set; }
 
         [Description("IP Address of target server.")]
