@@ -7,6 +7,7 @@ using System.Linq;
 using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
+using LiteNetLib.Utils;
 using XProxy.Core;
 using XProxy.Core.Connections;
 using XProxy.Core.Core.Events.Args;
@@ -21,6 +22,10 @@ namespace XProxy
 {
     public class Listener
     {
+        /// <summary>
+        /// UseAccurateOnlineStatus Toggle For Server Status.
+        /// </summary>
+        public bool UseAccurateOnlineStatus { get; set; } = false;
         /// <summary>
         /// Gets total amount of listeners.
         /// </summary>
@@ -181,16 +186,28 @@ namespace XProxy
 
         public Server GetRandomServerFromPriorities(Player plr = null)
         {
-            Server random = Server.List
-                    .Where(x => Settings.Priorities.Contains(x.Name))
-                    .OrderBy(pair => Settings.Priorities.IndexOf(pair.Name))
-                    .Where(x => plr != null ? x.CanPlayerJoin(plr) : !x.IsServerFull)
-                    .ToList()
-                    .FirstOrDefault();
+            var matchingServers = Server.List
+                .Where(x => Settings.Priorities.Contains(x.Name))
+                .OrderBy(pair => Settings.Priorities.IndexOf(pair.Name));
+
+            Logger.Debug($"Matching servers by priority: {string.Join(", ", matchingServers.Select(s => s.Name))}");
+
+            var filteredServers = matchingServers
+                .Where(x => x.IsServerOnline) 
+                .Where(x => plr != null ? x.CanPlayerJoin(plr) : !x.IsServerFull);
+
+            Logger.Debug($"Joinable servers: {string.Join(", ", filteredServers.Select(s => s.Name))}");
+
+            Server random = filteredServers.FirstOrDefault();
+
+            if (random == null)
+            {
+                Logger.Warn("No servers matched the join conditions!");
+            }
 
             return random;
         }
-
+        
         public void SaveLastServerForUser(string userid, string serverIndex, float duration)
         {
             LastServerInfo newInfo = new LastServerInfo()
@@ -239,7 +256,7 @@ namespace XProxy
 
             string failed = string.Empty;
             string ip = $"{request.RemoteEndPoint.Address}";
-
+            
             var preAuth = PreAuthModel.ReadPreAuth(ip, request.Data, ref failed);
 
             if (preAuth.Server != null)
@@ -252,7 +269,7 @@ namespace XProxy
 
             if (!preAuth.IsValid)
             {
-                Logger.Warn(ConfigService.Singleton.Messages.PreAuthIsInvalidMessage.Replace("%address%", $"{request.RemoteEndPoint.Address}").Replace("%failed%", failed), "XProxy");
+                Logger.Debug(ConfigService.Singleton.Messages.PreAuthIsInvalidMessage.Replace("%address%", $"{request.RemoteEndPoint.Address}").Replace("%failed%", failed), "XProxy");
                 request.RejectForce();
                 return;
             }
@@ -299,10 +316,21 @@ namespace XProxy
 
             if (target == null)
             {
+                Logger.Debug($"UserID: {preAuth.UserID}, HasSavedLastServer: {HasSavedLastServer(preAuth.UserID)}");
+                
+                foreach (var listener in Listener.List)
+                {
+                    var servers = listener.ServerConnections.Values.Select(s => $"{s.Name} ({s.Settings.Port})");
+                    Logger.Debug($"Listener: {listener.ListenerName}, Servers: {string.Join(", ", servers)}");
+                }
+                
+                Logger.Debug($"Global Server List: {string.Join(", ", Server.List.Select(s => s.Name))}");
+
                 player.DisconnectFromProxy("No server found!");
                 return;
             }
 
+            
             PlayerAssignTargetServer ev2 = new PlayerAssignTargetServer(player, target);
 
             EventManager.Player.InvokeAssignTargetServer(ev2);
