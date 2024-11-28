@@ -16,6 +16,17 @@ namespace XProxy.Core
 {
     public class Server : IDisposable
     {
+        /// <summary>
+        /// Xproxy.Plugin Push Updates
+        /// </summary>
+        private DateTime _lastStatusUpdate = DateTime.MinValue;
+        
+        public bool HasRecentStatusUpdate()
+        {
+            const int StatusUpdateTimeoutSeconds = 30; // Timeout threshold in seconds
+            return (DateTime.Now - _lastStatusUpdate).TotalSeconds <= StatusUpdateTimeoutSeconds;
+        }
+        
         static bool intialRefresh;
 
         public static bool UpdateServers;
@@ -200,9 +211,10 @@ namespace XProxy.Core
             get
             {
                 if (Settings.PluginExtension.UseAccurateOnlineStatus)
-                    return IsConnectedToServer;
-
-                // Server is always online because theres no way to predict without any external plugins to check if its really online.
+                {
+                    return IsConnectedToServer && HasRecentStatusUpdate();
+                }
+                
                 return true;
             }
         }
@@ -360,6 +372,7 @@ namespace XProxy.Core
                 case 0:
                     ServerStatus status = (ServerStatus)reader.GetByte();
                     Status = status;
+                    _lastStatusUpdate = DateTime.Now;
                     break;
             }
         }
