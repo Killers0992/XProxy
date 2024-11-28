@@ -174,7 +174,7 @@ namespace XProxy.Commands
 
                     Logger.Info($"Sent (f=green){sent}(f=white) players to server (f=green){server.Name}(f=white)", "send");
                     break;
-                case true when args[0].Contains('@'):
+                case true when args[0].ToLower().Contains('@'):
                     if (!Player.TryGet(args[0], out Player targetPlayer))
                     {
                         Logger.Info($"Player with userid {args[0]} does not exist!", "send");
