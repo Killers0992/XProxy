@@ -15,7 +15,7 @@ namespace XProxy.Plugin.Core
 
         private bool _isConnecting;
         private DateTime _nextConnectiobRetry = DateTime.Now;
-
+        private DateTime _nextStatusUpdate = DateTime.MinValue; 
         void Awake()
         {
             _listener = new EventBasedNetListener();
@@ -34,10 +34,7 @@ namespace XProxy.Plugin.Core
 
         void SendStatus()
         {
-            if (!_manager.IsRunning)
-                return;
-
-            if (_manager.FirstPeer == null)
+            if (!_manager.IsRunning || _manager.FirstPeer == null)
                 return;
 
             NetDataWriter wr = new NetDataWriter();
@@ -71,7 +68,14 @@ namespace XProxy.Plugin.Core
                     _isConnecting = true;
                 }
             }
+            
+            if (_manager.FirstPeer != null && DateTime.Now >= _nextStatusUpdate)
+            {
+                SendStatus();
+                _nextStatusUpdate = DateTime.Now.AddSeconds(10); 
+            }
         }
+
 
         void OnConnected(NetPeer peer)
         {
@@ -81,9 +85,9 @@ namespace XProxy.Plugin.Core
 
         void OnDisconnected(NetPeer peer, DisconnectInfo disconnectInfo)
         {
-            _nextConnectiobRetry = DateTime.Now.AddSeconds(10);
+            _nextConnectiobRetry = DateTime.Now.AddSeconds(5);
             _isConnecting = false;
-            Log.Info($"Disconnected from proxy with reason {disconnectInfo.Reason}, reconnecting in 10 seconds...", "XProxy");
+            Log.Info($"Disconnected from proxy with reason {disconnectInfo.Reason}, reconnecting in 5 seconds...", "XProxy");
         }
     }
 }
