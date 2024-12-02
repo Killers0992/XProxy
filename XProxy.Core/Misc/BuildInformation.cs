@@ -2,7 +2,7 @@
 using System.Reflection;
 
 [assembly: AssemblyVersion(
-    "1.7.8"
+    "1.7.9"
 )]
 
 namespace XProxy.Core
@@ -29,6 +29,10 @@ namespace XProxy.Core
             "13.5.1",
         };
 
-        public static string[] Changelogs = new string [0];
+        public static string[] Changelogs = new string[]
+        {
+            " Merge PR #8 \"solution file fix, send command additions\" by laraproto",
+            " Merge PR #7 \"Server Availability Issue With XProxy Plugin\" by CookiesOfficial",
+        };
     }
 }
