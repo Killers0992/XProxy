@@ -142,7 +142,7 @@ namespace XProxy.Commands
         {
             if (args.Length < 2)
             {
-                Logger.Info("Syntax: send <all/player> <server>", "send");
+                Logger.Info("Syntax: send <all/player/server> <server>", "send");
                 return;
             }
 
@@ -150,13 +150,13 @@ namespace XProxy.Commands
 
             if (!Server.TryGetByName(serverName, out Server server))
             {
-                Logger.Info($"Server with name {args[1]} not exists!", "send");
+                Logger.Info($"Server to send to with name {args[1]} does not exist!", "send");
                 return;
             }
 
-            switch (args[0].ToLower())
+            switch (true)
             {
-                case "all":
+                case true when args[0].ToLower() == "all":
                     int sent = 0;
                     foreach (Player player in Player.List)
                     {
@@ -169,32 +169,46 @@ namespace XProxy.Commands
                             player.SendHint($"Connecting to <color=green>{server.Name}</color>...", 10f);
                         }
                         else
-                            player.SendHint($"<color=red>Server <color=green>{server.Name}</color> is full...</color>", 3f);
+                            player.SendHint($"<color=red>Server <color=green>{server.Name}</color> is full...</color>");
                     }
 
                     Logger.Info($"Sent (f=green){sent}(f=white) players to server (f=green){server.Name}(f=white)", "send");
                     break;
-                default:
-                    if (args[0].Contains("@"))
+                case true when args[0].ToLower().Contains('@'):
+                    if (!Player.TryGet(args[0], out Player targetPlayer))
                     {
-                        if (!Player.TryGet(args[0], out Player targetPlayer))
-                        {
-                            Logger.Info($"Player with userid {args[0]} not exists!", "send");
-                            return;
-                        }
-
-                        if (targetPlayer.RedirectTo(server.Name))
-                            targetPlayer.SendHint($"Connecting to <color=green>{server.Name}</color>...", 10f);
-                        else
-                            targetPlayer.SendHint($"<color=red>Server <color=green>{server.Name}</color> is full...</color>", 3f);
-
-                        Logger.Info($"Sent (f=green){targetPlayer.UserId} to server (f=green){server.Name}(f=white)", "send");
+                        Logger.Info($"Player with userid {args[0]} does not exist!", "send");
+                        break;
                     }
+                    
+                    if (targetPlayer.RedirectTo(server.Name))
+                        targetPlayer.SendHint($"Connecting to <color=green>{server.Name}</color>...", 10f);
                     else
+                        targetPlayer.SendHint($"<color=red>Server <color=green>{server.Name}</color> is full...</color>");
+                    break;
+                case true when Server.TryGetByName(args[0], out Server serverFrom) && server != null:
+                    if (server == serverFrom)
                     {
-                        Logger.Info($"You need to use format ID@steam, ID@discord, ID@northwood!", "send");
+                        Logger.Info("You can't send the population of a server to the server they are already on!", "send");
                     }
-                    return;
+
+                    int sentPopulation = 0;
+                    foreach (Player player in serverFrom.Players)
+                    {
+                        if (player.RedirectTo(server.Name))
+                        {
+                            sentPopulation++;
+                            player.SendHint($"Connecting to <color=green>{server.Name}</color>...", 10f);
+                        }
+                        else
+                            player.SendHint($"<color=red>Server <color=green>{server.Name}</color> is full...</color>");
+                    }
+
+                    Logger.Info($"Sent (f=green){sentPopulation}(f=white) players from {serverFrom.Name} to server (f=green){server.Name}(f=white)", "send");
+                    break;
+                default:
+                    Logger.Info("You must use a player id in format of ID@Steam, ID@discord or ID@northwood or the name of a server to send from", "send");
+                    break;
             }
         }
 
