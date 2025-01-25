@@ -2,7 +2,7 @@
 using System.Reflection;
 
 [assembly: AssemblyVersion(
-    "1.7.9"
+    "1.8.0"
 )]
 
 namespace XProxy.Core
@@ -26,13 +26,12 @@ namespace XProxy.Core
 
         public static string[] SupportedGameVersions =
         {
-            "13.5.1",
+            "14.0.2",
         };
 
         public static string[] Changelogs = new string[]
         {
-            " Merge PR #8 \"solution file fix, send command additions\" by laraproto",
-            " Merge PR #7 \"Server Availability Issue With XProxy Plugin\" by CookiesOfficial",
+            " Updated to latest SL version 14.0.2"
         };
     }
 }
