@@ -24,7 +24,7 @@ namespace XProxy.Models
         public int MaxPlayers { get; set; } = 50;
 
         [Description("Version of game for which listener will run, this version is also used for listing your server on SCP Server List.")]
-        public string Version { get; set; } = "13.6.9";
+        public string Version { get; set; } = "14.0.2";
 
         [Description("Priority servers used for first connection and fallback servers.")]
         public List<string> Priorities { get; set; } = new List<string>() { "lobby" };
