@@ -2,7 +2,7 @@
 using System.Reflection;
 
 [assembly: AssemblyVersion(
-    "1.8.0"
+    "1.8.1"
 )]
 
 namespace XProxy.Core
@@ -31,7 +31,8 @@ namespace XProxy.Core
 
         public static string[] Changelogs = new string[]
         {
-            " Updated to latest SL version 14.0.2"
+            " Merge PR #9 \"Update default game version and remove trailing comma\" by okunamayanad",
+            " Merge PR #10 \" Only allow proxied connections\" by okunamayanad",
         };
     }
 }
