@@ -1,4 +1,5 @@
-﻿using LiteNetLib.Utils;
+﻿using CentralAuth;
+using LiteNetLib.Utils;
 using System;
 using System.Text;
 using XProxy.Core;
@@ -108,7 +109,7 @@ namespace XProxy.Models
 
             failedOn = "Region";
             if (!reader.TryGetString(out string region)) return model;
-            model.Region = region;
+            model.Country = region;
 
             failedOn = "Signature";
             if (!reader.TryGetBytesWithLength(out byte[] signature)) return model;
@@ -120,6 +121,33 @@ namespace XProxy.Models
 
             model.IsValid = true;
             return model;
+        }
+
+        public NetDataWriter CreateChallenge(int challengeId, byte[] challengeResponse)
+        {
+            NetDataWriter writer = new NetDataWriter();
+
+            writer.Put((byte)ClientType.GameClient);
+            writer.Put(Major);
+            writer.Put(Minor);
+            writer.Put(Revision);
+            writer.Put(BackwardCompatibility);
+
+            if (BackwardCompatibility)
+                writer.Put(BackwardRevision);
+
+            writer.Put(challengeId);
+            writer.PutBytesWithLength(challengeResponse);
+
+            writer.Put(UserID);
+            writer.Put(Expiration);
+            writer.Put((byte)Flags);
+            writer.Put(Country);
+            writer.PutBytesWithLength(Signature);
+
+            writer.Put(IpAddress);
+
+            return writer;
         }
 
         public bool IsValid { get; set; }
@@ -141,7 +169,7 @@ namespace XProxy.Models
 
         public CentralAuthPreauthFlags Flags { get; set; }
 
-        public string Region { get; set; } = "Unknown Region";
+        public string Country { get; set; } = "Unknown Country";
 
         public byte[] Signature { get; set; } = new byte[0];
 
@@ -162,7 +190,7 @@ namespace XProxy.Models
                 Environment.NewLine,
                 $"Flags: {Flags}",
                 Environment.NewLine,
-                $"Region: {Region}",
+                $"Region: {Country}",
                 Environment.NewLine,
                 $"Signature length: {Signature.Length}");
         }

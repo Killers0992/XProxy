@@ -22,7 +22,7 @@ namespace XProxy.Core.Connections
         {
             try
             {
-                Player.SendDataToCurrentServer(reader.RawData, reader.Position, reader.AvailableBytes, method);
+                Player.MainConnectionHandler.Send(reader.RawData, reader.Position, reader.AvailableBytes, method);
             }
             catch (Exception ex)
             {

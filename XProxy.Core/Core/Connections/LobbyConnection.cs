@@ -1,8 +1,8 @@
 ﻿using Mirror;
+using Org.BouncyCastle.Tls;
+using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Text.RegularExpressions;
 using XProxy.Services;
 
 namespace XProxy.Core.Connections
@@ -12,23 +12,20 @@ namespace XProxy.Core.Connections
         public const ushort NoclipToggleId = 48298;
         public const ushort VoiceMessageId = 41876;
 
-        private const string _spacing = "           ";
+        public List<string> Servers;
+        public int CurrentIndex;
 
-        private string SelectedServer = string.Empty;
+        public bool Connect;
+        public bool IsConnecting;
 
-        public int CurrentIndex = 0;
-        private bool connect;
+        public string InfoMessage;
+        public int InfoMessageDuration;
 
         public LobbyConnection(Player plr) : base(plr)
         {
-            var names = Server.GetServerNames(Player);
-            string firstServer = names.FirstOrDefault();
-
-            if (!string.IsNullOrEmpty(firstServer))
-            {
-                if (Server.TryGetByName(firstServer, out Server srv))
-                    SelectedServer = srv.Name;
-            }
+            Servers = Server.GetServerNames(Player);
+            Player.ServerIsOffline += OnServerIsOffline;
+            Player.ServerIsFull += OnServerIsFull;
         }
 
         public override void OnConnected()
@@ -50,142 +47,87 @@ namespace XProxy.Core.Connections
             Player.SetHealth(100f);
         }
 
-        int _timer = 3;
-        bool checkIfCanJoin = true;
-
-        bool canJoin = false;
+        public void ShowInfo(string message, int duration)
+        {
+            InfoMessage = message;
+            InfoMessageDuration = duration;
+        }
 
         public override void Update()
         {
-            if (connect)
+            if (InfoMessageDuration != 0)
+                InfoMessageDuration--;
+
+            if (Connect && !IsConnecting)
             {
-                if (string.IsNullOrEmpty(SelectedServer))
+                string serverName = Servers[CurrentIndex];
+
+                if (!Server.TryGetByName(serverName, out Server server))
                 {
-                    connect = false;
+                    ShowInfo($"Server <color=green>{serverName}</color> not found!", 3);
+                    Connect = false;
                     return;
                 }
 
-                if (checkIfCanJoin)
-                {
-                    if (!Server.TryGetByName(SelectedServer, out Server srv))
-                    {
-                        checkIfCanJoin = false;
-                        connect = false;
-                        return;
-                    }
-
-                    canJoin = srv.CanPlayerJoin(Player);
-
-                    if (!canJoin)
-                    {
-                        if (Player.CanJoinQueue(srv))
-                        {
-                            Player.JoinQueue(srv);
-                        }
-                        return;
-                    }
-
-                    checkIfCanJoin = false;
-                }
-
-                if (canJoin)
-                {
-                    Player.SendHint(ConfigService.Singleton.Messages.LobbyConnectingToServerHint.Replace("%server%", SelectedServer), 1f);
-                }
-
-                if (_timer <= 0)
-                {
-                    if (canJoin)
-                    {
-                        Player.RedirectTo(SelectedServer);
-                        connect = false;
-                        _timer = 0;
-                    }
-                    else
-                    {
-                        _timer = 3;
-                        connect = false;
-                    }
-                }
-                else
-                    _timer--;
-                return;
+                Player.ConnectTo(server);
+                IsConnecting = true;
             }
 
             SendInfoHint();
         }
 
-        string Spaces(int num)
+        private void OnServerIsOffline(Server server)
         {
-            string str = string.Empty;
-            for(int x =0; x < num; x++)
-            {
-                str += " ";
-            }
-
-            return str;
+            ShowInfo($"Server <color=green>{server.Name}</color> is offline!", 3);
+            IsConnecting = false;
+            Connect = false;
         }
 
-        public void SendInfoHint(float dur = 1f)
+        private void OnServerIsFull(Server server)
         {
-            string currentServer;
+            ShowInfo($"Server <color=green>{server.Name}</color> is full!", 3);
+            IsConnecting = false;
+            Connect = false;
+        }
 
-            var names = Server.GetServerNames(Player);
+        public void SendInfoHint(float dur = 1.2f)
+        {
+            HintBuilder builder = new HintBuilder();
 
-            if (Server.TryGetByName(SelectedServer, out Server selectedServer))
+            int startingLine = 12;
+
+            startingLine = startingLine - (Server.List.Count >= 12 ? 0 : Server.List.Count);
+
+            builder.SetRightLine(startingLine, "<mark=#00000082>  Servers                                     </mark>‎‎");
+
+            for(int x = 0; x < 16; x++)
             {
-                currentServer = selectedServer.Settings.Name;
-            }
-            else
-            {
-                string firstServer = names.FirstOrDefault();
+                Server serv = Server.List.ElementAtOrDefault(x);
+                
+                if (serv == null)
+                    break;
 
-                if (!string.IsNullOrEmpty(firstServer))
-                {
-                    if (Server.TryGetByName(firstServer, out Server srv))
-                    {
-                        SelectedServer = srv.Name;
-                        currentServer = SelectedServer;
-                    }
-                    else
-                        currentServer = "none";
-                }
-                else
-                    currentServer = "none";
-            }
-
-            StringBuilder sb = new StringBuilder();
-
-            string line1 = string.Empty;
-            string line2 = string.Empty;
-
-            for (int x = 0; x < names.Count; x++)
-            {
-                if (!Server.TryGetByName(names[x], out Server srv))
+                if (serv == Player.CurrentServer)
                     continue;
 
-                bool last = x == names.Count - 1;
+                int serverIndex = Servers.IndexOf(serv.Name);
 
-                string serverLine = ConfigService.Singleton.Messages.LobbyServerLine1.Replace("%selectedColor%", $"{(names[x] == SelectedServer ? ConfigService.Singleton.Messages.SelectedServerColor : ConfigService.Singleton.Messages.DefaultServerColor)}").Replace("%server%", srv.Settings.Name);
-                int serverLineLength = Regex.Replace(serverLine, @"\<.*\>", "").Length;
-
-                string serverLine2 = ConfigService.Singleton.Messages.LobbyServerLine2.Replace("%selectedColor%", $"{(names[x] == SelectedServer ? ConfigService.Singleton.Messages.SelectedServerColor : ConfigService.Singleton.Messages.DefaultServerColor)}").Replace("%onlinePlayers%", $"{srv.PlayersCount}").Replace("%maxPlayers%", $"{srv.Settings.MaxPlayers}");
-                int serverLine2Length = Regex.Replace(serverLine2, @"\<.*\>", "").Length;
-
-                int additionalSpacing = (serverLineLength - serverLine2Length);
-
-                string spacing = Spaces(additionalSpacing);
-
-                line1 += serverLine + (last ? string.Empty : _spacing);
-                line2 += $"{spacing}{serverLine2}{spacing}{(last ? string.Empty : _spacing)}";
+                startingLine++;
+                builder.SetRightLine(startingLine, $"<color=orange><b>{(serverIndex == CurrentIndex ? ">" : string.Empty)}</b></color>  {serv.Name} <color=orange>{serv.PlayersCount}</color>/<color=orange>{serv.Settings.MaxPlayers}</color> <mark=#00cf00>[</mark>");
             }
 
-            foreach (var line in ConfigService.Singleton.Messages.LobbyMainHint)
-            {
-                sb.AppendLine(line.Replace("%serversLine1%", line1).Replace("%serversLine2%", line2).Replace("%server%", currentServer));
-            }
+            startingLine++;
+            builder.SetRightLine(startingLine, $"<mark=#00000082><size=29>     Total players connected <color=orange>{Player.Count}</color>   </size></mark>‎‎");
+            startingLine += 2;
+            builder.SetRightLine(startingLine, $"<size=27><mark=#00000082>Switch server by pressing <color=green>Noclip Keybind</color></mark></size>");
 
-            Player.SendHint(sb.ToString(), dur);
+            if (InfoMessageDuration > 0)
+                builder.SetCenterLine(15, InfoMessage);
+
+            builder.SetCenterLine(23, $"You will be connecting to server <color=orange>{Servers[CurrentIndex]}</color>");
+            builder.SetCenterLine(24, $"<size=26>Press <color=green>Voicechat Keybind</color> to connect</size>");
+
+            Player.SendHint(builder.ToString(), dur);
         }
 
         public override void OnReceiveGameConsoleCommand(string command, string[] args)
@@ -244,17 +186,17 @@ namespace XProxy.Core.Connections
             switch (key)
             {
                 case NoclipToggleId:
-                    List<string> names = Server.GetServerNames(Player);
-
-                    CurrentIndex = names.Count <= CurrentIndex + 1 ? 0 : CurrentIndex + 1;
-                    SelectedServer = names[CurrentIndex];
-                    SendInfoHint(2f);
+                    CurrentIndex = Servers.Count <= CurrentIndex + 1 ? 0 : CurrentIndex + 1;
                     break;
                 case VoiceMessageId:
-                    checkIfCanJoin = true;
-                    connect = true;
+                    Connect = true;
                     break;
             }
+        }
+
+        public override void Dispose()
+        {
+            Player.ServerIsOffline -= OnServerIsOffline;
         }
     }
 }

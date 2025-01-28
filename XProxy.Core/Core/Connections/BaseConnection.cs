@@ -4,7 +4,7 @@ using System;
 
 namespace XProxy.Core.Connections
 {
-    public class BaseConnection
+    public class BaseConnection : IDisposable
     {
         public Player Player { get; private set; }
 
@@ -63,6 +63,10 @@ namespace XProxy.Core.Connections
         public virtual void Update()
         {
 
+        }
+
+        public virtual void Dispose()
+        {
         }
     }
 }

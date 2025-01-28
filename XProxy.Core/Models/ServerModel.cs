@@ -27,6 +27,9 @@ namespace XProxy.Core.Models
         [Description("Maximum amount of players which can connect to server.")]
         public int MaxPlayers { get; set; } = 20;
 
+        [Description("Enables queue system for this server.")]
+        public bool IsQueueEnabled { get; set; } = false;
+
         [Description("Maximum amount of players which can be in queue for this server.")]
         public int QueueSlots { get; set; } = 50;
 
