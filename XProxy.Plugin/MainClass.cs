@@ -48,18 +48,17 @@ public class MainClass
     }
 
     [PluginEvent]
-    public void OnPlayerPreauth(PlayerPreauthEvent ev)
+    public PreauthCancellationData OnPlayerPreauth(PlayerPreauthEvent ev)
     {
         Log.Info($"Player {ev?.UserId} is trying to connect from {ev?.IpAddress}.");
         Log.Info($"ProxyIP: {Singleton.Config.ProxyIP}"); // Config.ProxyIP doesn't work for some reason
         Log.Info($"OnlyAllowProxyConnections: {Singleton.Config.OnlyAllowProxyConnections}");
         if (ev.IpAddress != Singleton.Config.ProxyIP && Singleton.Config.OnlyAllowProxyConnections)
         {
-            Log.Info($"Player tried to connect from {ev.IpAddress} which is not proxy IP.");
-            Server.BanPlayerByUserId(ev.UserId, "test", 0);
             string proxyRejectionMessage = Singleton.Config.RejectionMessage.Replace("%ProxyIP%", Singleton.Config.ProxyIP).Replace("%ProxyPort%", Singleton.Config.ProxyPort.ToString());
-            CustomLiteNetLib4MirrorTransport.ProcessCancellationData(ev.ConnectionRequest, PreauthCancellationData.Reject(proxyRejectionMessage, true));
-
+            Log.Info($"Player tried to connect from {ev.IpAddress} which is not proxy IP.");
+            return PreauthCancellationData.Reject(proxyRejectionMessage, true);
         }
+        return PreauthCancellationData.Accept();
     }
 }
