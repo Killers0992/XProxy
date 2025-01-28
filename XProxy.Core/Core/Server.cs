@@ -20,13 +20,13 @@ namespace XProxy.Core
         /// Xproxy.Plugin Push Updates
         /// </summary>
         private DateTime _lastStatusUpdate = DateTime.MinValue;
-        
+
         public bool HasRecentStatusUpdate()
         {
             const int StatusUpdateTimeoutSeconds = 30; // Timeout threshold in seconds
             return (DateTime.Now - _lastStatusUpdate).TotalSeconds <= StatusUpdateTimeoutSeconds;
         }
-        
+
         static bool intialRefresh;
 
         public static bool UpdateServers;
@@ -38,7 +38,7 @@ namespace XProxy.Core
         {
             List<string> names = new List<string>();
 
-            foreach(var server in List)
+            foreach (var server in List)
             {
                 if (server.Name == plr.CurrentServer.Name)
                     continue;
@@ -49,7 +49,7 @@ namespace XProxy.Core
             return names;
         }
 
-        public static bool TryGetByName(string name , out Server server)
+        public static bool TryGetByName(string name, out Server server)
         {
             if (string.IsNullOrEmpty(name))
             {
@@ -119,7 +119,7 @@ namespace XProxy.Core
                 return;
 
             Logger.Info($"Initializing (f=green){serversToAdd.Count}(f=white) servers", "XProxy");
-            
+
             foreach (string server in serversToDestroy)
             {
                 if (TryGetByName(server, out Server serv))
@@ -214,7 +214,7 @@ namespace XProxy.Core
                 {
                     return IsConnectedToServer && HasRecentStatusUpdate();
                 }
-                
+
                 return true;
             }
         }
