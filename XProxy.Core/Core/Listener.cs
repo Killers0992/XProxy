@@ -190,15 +190,7 @@ namespace XProxy
                 .Where(x => Settings.Priorities.Contains(x.Name))
                 .OrderBy(pair => Settings.Priorities.IndexOf(pair.Name));
 
-            Logger.Debug($"Matching servers by priority: {string.Join(", ", matchingServers.Select(s => s.Name))}");
-
-            var filteredServers = matchingServers
-                .Where(x => x.IsServerOnline) 
-                .Where(x => plr != null ? x.CanPlayerJoin(plr) : !x.IsServerFull);
-
-            Logger.Debug($"Joinable servers: {string.Join(", ", filteredServers.Select(s => s.Name))}");
-
-            Server random = filteredServers.FirstOrDefault();
+            Server random = matchingServers.FirstOrDefault();
 
             if (random == null)
             {

@@ -28,8 +28,7 @@ namespace XProxy.Core.Core.Connections
                 case ChallengeType.Reply:
                     if (reader.TryGetBytesWithLength(out ClientChallengeResponse))
                     {
-                        Logger.Info($"Received challenge {challengeType}, reconnect to {Parent.ServerIpAddress}:{Parent.ServerPort}");
-                        Parent.Reconnect(Parent.Owner.PreAuth.CreateChallenge(ClientChallengeId, ClientChallengeResponse));
+                        Parent.Reconnect(Parent.Owner.PreAuth.CreateChallenge(ClientChallengeId, ClientChallengeResponse, Parent.Server.Settings.SendIpAddressInPreAuth));
                     }
                     break;
 

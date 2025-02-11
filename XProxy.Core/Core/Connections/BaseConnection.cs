@@ -1,6 +1,7 @@
 ﻿using LiteNetLib;
 using Mirror;
 using System;
+using XProxy.Core.Core.Connections.Responses;
 
 namespace XProxy.Core.Connections
 {
@@ -36,6 +37,11 @@ namespace XProxy.Core.Connections
         }
 
         public virtual void OnReceiveMirrorDataFromProxy(uint key, NetworkReader reader)
+        {
+
+        }
+
+        public virtual void OnConnectionResponse(Server server, BaseResponse response)
         {
 
         }

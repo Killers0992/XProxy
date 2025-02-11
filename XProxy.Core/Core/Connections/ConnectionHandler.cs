@@ -2,6 +2,7 @@
 using LiteNetLib;
 using LiteNetLib.Utils;
 using XProxy.Core.Connections;
+using XProxy.Core.Core.Connections.Responses;
 using XProxy.Enums;
 using XProxy.Services;
 
@@ -18,6 +19,7 @@ namespace XProxy.Core.Core.Connections
         public bool IsValid => _netManager != null;
 
         public bool IsConnected => IsValid && _netManager.FirstPeer != null;
+        public bool IsConnecting;
 
         public Server Server;
 
@@ -25,39 +27,14 @@ namespace XProxy.Core.Core.Connections
 
         public int ServerPort => Server.Settings.Port;
 
-        /// <summary>
-        /// Invoked when server is offline.
-        /// </summary>
-        public Action ServerIsOffline;
-
-        /// <summary>
-        /// Invoked when server is full.
-        /// </summary>
-        public Action ServerIsFull;
-
         public ConnectionValidator Validator
         {
             get => _validator;
             set
             {
-                if (_validator != null)
-                {
-                    ServerIsFull -= OnServerIsFull;
-                    ServerIsOffline -= OnServerIsOffline;
-                }
-
-                if (value != null)
-                {
-                    ServerIsFull += OnServerIsFull;
-                    ServerIsOffline += OnServerIsOffline;
-                }
-
                 _validator = value;
             }
         }
-
-        private void OnServerIsOffline() => Owner.InvokeOnServerIsOffline(Server);
-        private void OnServerIsFull() => Owner.InvokeOnServerIsFull(Server);
 
         public void Setup(Player player)
         {
@@ -101,9 +78,13 @@ namespace XProxy.Core.Core.Connections
             if (!IsValid)
                 return;
 
+            if (IsConnecting)
+                return;
+
             Server = server;
 
             _netManager.Connect(ServerIpAddress, ServerPort, connectionData);
+            IsConnecting = true;
         }
 
         public void Reconnect(NetDataWriter connectionData)
@@ -124,12 +105,14 @@ namespace XProxy.Core.Core.Connections
 
         private void OnDisconnected(NetPeer peer, DisconnectInfo disconnectInfo)
         {
+            IsConnecting = false;
+
             switch (disconnectInfo.Reason)
             {
                 case DisconnectReason.ConnectionFailed when disconnectInfo.AdditionalData.RawData == null:
-                    if (ServerIsOffline != null)
+                    if (Validator != null)
                     {
-                        ServerIsOffline?.Invoke();
+                        Owner.OnConnectionResponse(Server, new ServerIsOfflineResponse());
                         return;
                     }
 
@@ -158,9 +141,12 @@ namespace XProxy.Core.Core.Connections
                             break;
 
                         case RejectionReason.ServerFull:
-                            if (ServerIsFull != null)
+                            if (Validator != null)
                             {
-                                ServerIsFull?.Invoke();
+                                if (Owner.TryJoinQueue(Server))
+                                    return;
+
+                                Owner.OnConnectionResponse(Server, new ServerIsFullResponse());
                                 return;
                             }
 
@@ -173,13 +159,16 @@ namespace XProxy.Core.Core.Connections
 
                             var date = new DateTime(expireTime, DateTimeKind.Utc).ToLocalTime();
 
+                            if (Validator != null)
+                            {
+                                Owner.OnConnectionResponse(Server, new BannedResponse(banReason, date));
+                                return;
+                            }
+
                             Logger.Info(ConfigService.Singleton.Messages.PlayerBannedMessage.Replace("%tag%", Owner.Tag).Replace("%address%", $"{Owner.ClientEndPoint}").Replace("%userid%", Owner.UserId).Replace("%reason%", banReason).Replace("%date%", date.ToShortDateString()).Replace("%time%", date.ToLongTimeString()), $"Player");
                             break;
 
                         case RejectionReason.Challenge:
-
-                            Logger.Info($"Received challenge {Validator == null}");
-
                             if (Validator != null)
                             {
                                 Validator.ProcessChallenge(disconnectInfo.AdditionalData);
@@ -242,21 +231,28 @@ namespace XProxy.Core.Core.Connections
 
         private void OnConnected(NetPeer peer)
         {
+            IsConnecting = false;
+
+            // If main connection is not done se connection as proxied.
+            if (!Owner.MainConnectionHandler.IsConnected)
+            {
+                Owner.CurrentServer = Server;
+
+                Owner.Connection = new ProxiedConnection(Owner);
+
+                Owner.MainConnectionHandler = this;
+                return;
+            }
+
             if (Validator != null)
             {
                 Owner.FastRoundrestart();
                 Owner.NotReady();
 
-                Logger.Info($"Client connected to {ServerIpAddress}:{ServerPort}, replace connection handlers!");
-                Owner.IsReady = false;
-
                 Owner.MainConnectionHandler = this;
                 Owner.CurrentServer = Server;
                 return;
             }
-
-            Owner.Connection = new ProxiedConnection(Owner);
-            Logger.Info($"Client connected on first try to {ServerIpAddress}:{ServerPort}");
         }
 
         public void Dispose()

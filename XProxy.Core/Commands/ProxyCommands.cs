@@ -163,13 +163,7 @@ namespace XProxy.Commands
                         if (player.CurrentServer == server) 
                             continue;
 
-                        if (player.RedirectTo(server.Name))
-                        {
-                            sent++;
-                            player.SendHint($"Connecting to <color=green>{server.Name}</color>...", 10f);
-                        }
-                        else
-                            player.SendHint($"<color=red>Server <color=green>{server.Name}</color> is full...</color>");
+                        player.ConnectTo(server);
                     }
 
                     Logger.Info($"Sent (f=green){sent}(f=white) players to server (f=green){server.Name}(f=white)", "send");
@@ -180,11 +174,8 @@ namespace XProxy.Commands
                         Logger.Info($"Player with userid {args[0]} does not exist!", "send");
                         break;
                     }
-                    
-                    if (targetPlayer.RedirectTo(server.Name))
-                        targetPlayer.SendHint($"Connecting to <color=green>{server.Name}</color>...", 10f);
-                    else
-                        targetPlayer.SendHint($"<color=red>Server <color=green>{server.Name}</color> is full...</color>");
+
+                    targetPlayer.ConnectTo(server);
                     break;
                 case true when Server.TryGetByName(args[0], out Server serverFrom) && server != null:
                     if (server == serverFrom)
@@ -195,13 +186,7 @@ namespace XProxy.Commands
                     int sentPopulation = 0;
                     foreach (Player player in serverFrom.Players)
                     {
-                        if (player.RedirectTo(server.Name))
-                        {
-                            sentPopulation++;
-                            player.SendHint($"Connecting to <color=green>{server.Name}</color>...", 10f);
-                        }
-                        else
-                            player.SendHint($"<color=red>Server <color=green>{server.Name}</color> is full...</color>");
+                        player.ConnectTo(server);
                     }
 
                     Logger.Info($"Sent (f=green){sentPopulation}(f=white) players from {serverFrom.Name} to server (f=green){server.Name}(f=white)", "send");
@@ -316,7 +301,6 @@ namespace XProxy.Commands
             foreach(Server server in Server.List)
             {
                 Logger.Info("Server " + server);
-                Logger.Info(" IsOnline " + server.IsServerOnline);
                 Logger.Info(" IsFull " + server.IsServerFull);
                 Logger.Info(" IsConnected to plugin " + server.IsConnectedToServer);
                 Logger.Info(" Players " + server.PlayersCount);

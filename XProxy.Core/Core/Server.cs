@@ -204,22 +204,6 @@ namespace XProxy.Core
         public NetPeer ConnectionToServer;
 
         /// <summary>
-        /// Gets if server is online.
-        /// </summary>
-        public bool IsServerOnline
-        {
-            get
-            {
-                if (Settings.PluginExtension.UseAccurateOnlineStatus)
-                {
-                    return IsConnectedToServer && HasRecentStatusUpdate();
-                }
-
-                return true;
-            }
-        }
-
-        /// <summary>
         /// Gets status of server.
         /// </summary>
         public ServerStatus Status { get; private set; }
@@ -239,65 +223,10 @@ namespace XProxy.Core
             Server random = List
                     .Where(x => Settings.FallbackServers.Contains(x.Name))
                     .OrderBy(pair => Settings.FallbackServers.IndexOf(pair.Name))
-                    .Where(x => plr != null ? x.CanPlayerJoin(plr) : !x.IsServerFull)
                     .ToList()
                     .FirstOrDefault();
 
             return random;
-        }
-
-        public bool CanPlayerJoin(Player player)
-        {
-            if (!IsServerOnline)
-                return false;
-
-            if (Settings.PluginExtension.UseAccurateOnlineStatus)
-            {
-                switch (Status)
-                {
-                    case ServerStatus.Starting:
-                    case ServerStatus.RoundEnding:
-                    case ServerStatus.RoundRestart:
-                        return false;
-                }
-            }
-
-            //
-            PlayerCanJoinEvent ev = new PlayerCanJoinEvent(player, this);
-            EventManager.Player.InvokeCanJoin(ev);
-            if (ev.ForceDeny)
-                return false;
-
-            if (ev.ForceAllow)
-                return true;
-            //
-
-            if (Settings.ConnectionType == ConnectionType.Simulated)
-                return true;
-
-            if (!IsServerOnline)
-                return false;
-
-            if (player.PreAuth.Flags.HasFlagFast(CentralAuthPreauthFlags.ReservedSlot))
-                return true;
-
-            if (player.PreAuth.Flags.HasFlagFast(CentralAuthPreauthFlags.NorthwoodStaff) && ConfigService.Singleton.Value.NorthwoodStaffIgnoresSlots)
-                return true;
-
-            if (player.IsInQueue)
-            {
-                if (player.PositionInQueue == 1)
-                    return !IsServerFull;
-                else
-                    return false;
-            }
-            else if (player.CanJoinQueue(this))
-                return true;
-
-            if (PlayersInQueueCount > 0)
-                return false;
-
-            return !IsServerFull;
         }
 
         public bool IsPlayerInQueue(Player plr)

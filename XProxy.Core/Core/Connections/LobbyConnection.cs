@@ -1,8 +1,7 @@
 ﻿using Mirror;
-using Org.BouncyCastle.Tls;
-using System;
 using System.Collections.Generic;
 using System.Linq;
+using XProxy.Core.Core.Connections.Responses;
 using XProxy.Services;
 
 namespace XProxy.Core.Connections
@@ -24,8 +23,6 @@ namespace XProxy.Core.Connections
         public LobbyConnection(Player plr) : base(plr)
         {
             Servers = Server.GetServerNames(Player);
-            Player.ServerIsOffline += OnServerIsOffline;
-            Player.ServerIsFull += OnServerIsFull;
         }
 
         public override void OnConnected()
@@ -76,16 +73,18 @@ namespace XProxy.Core.Connections
             SendInfoHint();
         }
 
-        private void OnServerIsOffline(Server server)
+        public override void OnConnectionResponse(Server server, BaseResponse response)
         {
-            ShowInfo($"Server <color=green>{server.Name}</color> is offline!", 3);
-            IsConnecting = false;
-            Connect = false;
-        }
+            switch (response)
+            {
+                case ServerIsFullResponse _:
+                    ShowInfo($"Server <color=green>{server.Name}</color> is full!", 3);
+                    break;
+                case ServerIsOfflineResponse _:
+                    ShowInfo($"Server <color=green>{server.Name}</color> is offline!", 3);
+                    break;
+            }
 
-        private void OnServerIsFull(Server server)
-        {
-            ShowInfo($"Server <color=green>{server.Name}</color> is full!", 3);
             IsConnecting = false;
             Connect = false;
         }
@@ -166,14 +165,8 @@ namespace XProxy.Core.Connections
                         }
                     }
 
-                    if (!serv.CanPlayerJoin(Player))
-                    {
-                        Player.SendGameConsoleMessage($"Server is full!", "red");
-                        return;
-                    }
-
-                    Player.RedirectTo(serv);
-                    Player.SendGameConsoleMessage($"Connecting to <color=white>{args[0]}</color>!", "green");
+                    Player.ConnectTo(serv);
+                    Player.SendGameConsoleMessage($"Connecting to <color=white>{args[0]}</color>...", "green");
                     break;
             }
         }
@@ -192,11 +185,6 @@ namespace XProxy.Core.Connections
                     Connect = true;
                     break;
             }
-        }
-
-        public override void Dispose()
-        {
-            Player.ServerIsOffline -= OnServerIsOffline;
         }
     }
 }

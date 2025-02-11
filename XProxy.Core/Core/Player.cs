@@ -17,9 +17,9 @@ using static PlayerStatsSystem.SyncedStatMessages;
 using XProxy.Services;
 using XProxy.Core.Monitors;
 using System.Collections.Generic;
-using XProxy.Core.Enums;
 using XProxy.Core.Core.Connections;
 using PlayerRoles.FirstPersonControl.NetworkMessages;
+using XProxy.Core.Core.Connections.Responses;
 
 namespace XProxy.Core
 {
@@ -83,48 +83,14 @@ namespace XProxy.Core
 
         public const ushort ServerShutdownMessageId = 45879;
 
-        private BaseConnection _connection;
-
         public bool _forceDisconnect;
         public string _forceDisconnectReason;
 
         private NetPeer _proxyPeer;
+        private BaseConnection _connection;
         private ConnectionRequest _connectionRequest;
-
-        public IPEndPoint IpAddress;
         private Server _currentServer;
-
         private ConnectionHandler _mainConnectionHandler = new ConnectionHandler();
-
-        public ConnectionHandler MainConnectionHandler
-        {
-            get => _mainConnectionHandler;
-            set
-            {
-                if (_mainConnectionHandler != null)
-                {
-                    _mainConnectionHandler.Dispose();
-                    _mainConnectionHandler.Validator = new ConnectionValidator(_mainConnectionHandler);
-                    BackupConnectionHandler = _mainConnectionHandler;
-                }
-
-                if (value != null)
-                {
-                    value.Validator = null;
-                    Connection = new ProxiedConnection(this);
-                }
-
-                _mainConnectionHandler = value;
-            }
-        }
-
-        public ConnectionHandler BackupConnectionHandler = new ConnectionHandler();
-
-        public Action<Server> ServerIsOffline;
-        public void InvokeOnServerIsOffline(Server server) => ServerIsOffline?.Invoke(server);
-
-        public Action<Server> ServerIsFull;
-        public void InvokeOnServerIsFull(Server server) => ServerIsFull?.Invoke(server);
 
         public Player(Listener proxy, ConnectionRequest request, PreAuthModel preAuth)
         {
@@ -139,46 +105,10 @@ namespace XProxy.Core
             BackupConnectionHandler.Validator = new ConnectionValidator(BackupConnectionHandler);
         }
 
-        public void ConnectTo(Server server)
-        {
-            // If main connection is used use backup one for checking server status.
-            if (!MainConnectionHandler.IsConnected && Connection is not SimulatedConnection)
-            {
-                MainConnectionHandler.Setup(this);
-                MainConnectionHandler.TryMakeConnection(server, PreAuth.RawPreAuth);
-                return;
-            }
-
-            BackupConnectionHandler.Setup(this);
-            BackupConnectionHandler.TryMakeConnection(server, PreAuth.RawPreAuth);
-        }
-
         public int Id { get; private set; } = -1;
-
+        public IPEndPoint IpAddress { get; }
         public bool IsDisposing { get; private set; }
-
         public bool IsReady { get; set; }
-
-        public DateTime ConnectedOn { get; } = DateTime.Now;
-        public TimeSpan Connectiontime => DateTime.Now - ConnectedOn;
-
-        public bool IsConnectionValid
-        {
-            get
-            {
-                if (!MainConnectionHandler.IsValid)
-                    return false;
-
-                if (_connectionRequest != null)
-                    return true;
-
-                if (_proxyPeer.ConnectionState == ConnectionState.Connected)
-                    return true;
-
-                return false;
-            }
-        }
-
         public double RemoteTimestamp { get; private set; }
         public uint NetworkId { get; private set; } = Database.GetNextNetworkId();
         public string UserId => PreAuth.UserID ?? "unknown";
@@ -224,6 +154,48 @@ namespace XProxy.Core
             }
         }
 
+        public ConnectionHandler MainConnectionHandler
+        {
+            get => _mainConnectionHandler;
+            set
+            {
+                if (_mainConnectionHandler != null)
+                {
+                    _mainConnectionHandler.Dispose();
+                    _mainConnectionHandler.Validator = new ConnectionValidator(_mainConnectionHandler);
+                    BackupConnectionHandler = _mainConnectionHandler;
+                }
+
+                if (value != null)
+                {
+                    IsReady = false;
+                    value.Validator = null;
+                    Connection = new ProxiedConnection(this);
+                }
+
+                _mainConnectionHandler = value;
+            }
+        }
+
+        public ConnectionHandler BackupConnectionHandler { get; private set; } = new ConnectionHandler();
+
+        public bool IsConnectionValid
+        {
+            get
+            {
+                if (!MainConnectionHandler.IsValid)
+                    return false;
+
+                if (_connectionRequest != null)
+                    return true;
+
+                if (_proxyPeer.ConnectionState == ConnectionState.Connected)
+                    return true;
+
+                return false;
+            }
+        }
+
         public CustomUnbatcher UnbatcherCurrentServer { get; private set; } = new CustomUnbatcher();
         public CustomUnbatcher UnbatcherProxy { get; private set; } = new CustomUnbatcher();
 
@@ -231,10 +203,48 @@ namespace XProxy.Core
 
         public IPEndPoint ClientEndPoint => _connectionRequest != null ? _connectionRequest.RemoteEndPoint : _proxyPeer.EndPoint;
 
+        public DateTime ConnectedOn { get; } = DateTime.Now;
+        public TimeSpan Connectiontime => DateTime.Now - ConnectedOn;
+
         public string Tag => ConfigService.Singleton.Messages.PlayerTag.Replace("%serverIpPort%", CurrentServer.ToString()).Replace("%server%", CurrentServer.Name);
         public string ErrorTag => ConfigService.Singleton.Messages.PlayerErrorTag.Replace("%serverIpPort%", CurrentServer.ToString()).Replace("%server%", CurrentServer.Name);
 
+        public void ConnectTo(Server server)
+        {
+            if (MainConnectionHandler.IsConnected && server == CurrentServer)
+                return;
+
+            BackupConnectionHandler.Setup(this);
+            BackupConnectionHandler.TryMakeConnection(server, PreAuth.Create(server.Settings.SendIpAddressInPreAuth));
+        }
+
+        public void OnConnectionResponse(Server server, BaseResponse response)
+        {
+            switch (response)
+            {
+                case ServerIsFullResponse _:
+                    Logger.Info($"{Tag} (f=green){ClientEndPoint}(f=white) ((f=green){UserId}(f=white)) failed connecting to {server.Name}, server is full!", $"Player");
+                    break;
+                case ServerIsOfflineResponse _:
+                    Logger.Info($"{Tag} (f=green){ClientEndPoint}(f=white) ((f=green){UserId}(f=white)) failed connecting to {server.Name}, server is (f=red)offline(f=white)!", $"Player");
+                    break;
+                default:
+                    Logger.Info($"{Tag} (f=green){ClientEndPoint}(f=white) ((f=green){UserId}(f=white)) failed connecting to {server.Name}, {response}!", $"Player");
+                    break;
+            }
+
+            Connection?.OnConnectionResponse(server, response);
+        }
+
         // QUEUE SYSTEM
+
+        public bool TryJoinQueue(Server server = null)
+        {
+            if (CanJoinQueue(server))
+                return JoinQueue(server);
+            
+            return false;
+        }
 
         public bool CanJoinQueue(Server server = null)
         {
@@ -246,27 +256,24 @@ namespace XProxy.Core
             if (!targetServer.Settings.IsQueueEnabled)
                 return false;
 
-
-            if (!targetServer.IsServerFull)
-                return false;
-
             return targetServer.PlayersInQueueCount < targetServer.Settings.QueueSlots;
         }
 
-        public void JoinQueue(Server server = null)
+        public bool JoinQueue(Server server = null)
         {
             Server targetServer = server ?? CurrentServer;
 
             if (targetServer == null)
-                return;
+                return false;
 
             CurrentServer = targetServer;
             Connection = new QueueConnection(this);
 
             if (targetServer.IsPlayerInQueue(this))
-                return;
+                return false;
 
             targetServer.AddPlayerToQueue(this);
+            return true;
         }
 
         // METHODS
@@ -290,8 +297,6 @@ namespace XProxy.Core
             ushort id = NetworkMessageId<NotReadyMessage>.Id;
 
             wr.WriteUShort(NetworkMessageId<NotReadyMessage>.Id);
-
-            Logger.Info("Set Not Ready " + id);
 
             SendMirrorMessage(wr);
         }
@@ -527,36 +532,6 @@ namespace XProxy.Core
             writer = null;
         }
 
-        public bool RedirectToLobby()
-        {
-            Server lobby = Proxy.GetRandomServerFromPriorities();
-
-            return RedirectTo(lobby);
-        }
-
-        public bool RedirectTo(string serverName)
-        {
-            if (!Server.TryGetByName(serverName, out Server server))
-                return false;
-
-            return RedirectTo(server);
-        }
-
-        public bool RedirectTo(Server server, bool queue = false)
-        {
-            if (!server.CanPlayerJoin(this))
-                return false;
-
-            if (queue)
-                CurrentServer.MarkPlayerInQueueAsConnecting(this);
-
-            IsRedirecting = true;
-            Logger.Info(ConfigService.Singleton.Messages.PlayerRedirectToMessage.Replace("%tag%", Tag).Replace("%address%", $"{ClientEndPoint}").Replace("%userid%", UserId).Replace("%server%", server.Name), $"Player");
-            SaveServerForNextSession(server.Name, 7f);
-            Roundrestart();
-            return true;
-        }
-
         public void SaveCurrentServerForNextSession(float duration = 4f) => Proxy.SaveLastServerForUser(UserId, CurrentServer.Name, duration);
         public void SaveServerForNextSession(string name, float duration = 4f) => Proxy.SaveLastServerForUser(UserId, name, duration);
 
@@ -632,7 +607,6 @@ namespace XProxy.Core
                 case ReadyMessageId:
                     Connection.OnClientReady();
                     IsReady = true;
-                    Logger.Info("Connection is ready now!");
                     break;
                 case AddPlayerMessageId:
                     Connection.OnAddPlayer();

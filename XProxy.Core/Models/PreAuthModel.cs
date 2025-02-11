@@ -1,5 +1,6 @@
 ﻿using CentralAuth;
 using LiteNetLib.Utils;
+using Org.BouncyCastle.Asn1.Cmp;
 using System;
 using System.Text;
 using XProxy.Core;
@@ -123,33 +124,6 @@ namespace XProxy.Models
             return model;
         }
 
-        public NetDataWriter CreateChallenge(int challengeId, byte[] challengeResponse)
-        {
-            NetDataWriter writer = new NetDataWriter();
-
-            writer.Put((byte)ClientType.GameClient);
-            writer.Put(Major);
-            writer.Put(Minor);
-            writer.Put(Revision);
-            writer.Put(BackwardCompatibility);
-
-            if (BackwardCompatibility)
-                writer.Put(BackwardRevision);
-
-            writer.Put(challengeId);
-            writer.PutBytesWithLength(challengeResponse);
-
-            writer.Put(UserID);
-            writer.Put(Expiration);
-            writer.Put((byte)Flags);
-            writer.Put(Country);
-            writer.PutBytesWithLength(Signature);
-
-            writer.Put(IpAddress);
-
-            return writer;
-        }
-
         public bool IsValid { get; set; }
         public string IpAddress { get; set; }
         public ClientType ClientType { get; set; }
@@ -172,6 +146,62 @@ namespace XProxy.Models
         public string Country { get; set; } = "Unknown Country";
 
         public byte[] Signature { get; set; } = new byte[0];
+
+        public NetDataWriter Create(bool includeIp)
+        {
+            NetDataWriter writer = new NetDataWriter();
+
+            writer.Put((byte)ClientType.GameClient);
+            writer.Put(Major);
+            writer.Put(Minor);
+            writer.Put(Revision);
+            writer.Put(BackwardCompatibility);
+
+            if (BackwardCompatibility)
+                writer.Put(BackwardRevision);
+
+            writer.Put(0);
+            writer.PutBytesWithLength(Array.Empty<byte>());
+
+            writer.Put(UserID);
+            writer.Put(Expiration);
+            writer.Put((byte)Flags);
+            writer.Put(Country);
+            writer.PutBytesWithLength(Signature);
+
+            if (includeIp)
+                writer.Put(IpAddress);
+
+            return writer;
+        }
+
+        public NetDataWriter CreateChallenge(int challengeId, byte[] challengeResponse, bool includeIp)
+        {
+            NetDataWriter writer = new NetDataWriter();
+
+            writer.Put((byte)ClientType.GameClient);
+            writer.Put(Major);
+            writer.Put(Minor);
+            writer.Put(Revision);
+            writer.Put(BackwardCompatibility);
+
+            if (BackwardCompatibility)
+                writer.Put(BackwardRevision);
+
+            writer.Put(challengeId);
+            writer.PutBytesWithLength(challengeResponse);
+
+            writer.Put(UserID);
+            writer.Put(Expiration);
+            writer.Put((byte)Flags);
+            writer.Put(Country);
+            writer.PutBytesWithLength(Signature);
+
+            if (includeIp)
+                writer.Put(IpAddress);
+
+            return writer;
+        }
 
         public override string ToString()
         {

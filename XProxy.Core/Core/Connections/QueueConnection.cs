@@ -6,6 +6,8 @@ namespace XProxy.Core.Connections
 {
     public class QueueConnection : SimulatedConnection
     {
+        public int NextAttempt = 5;
+
         public QueueConnection(Player plr) : base(plr)
         {
         }
@@ -38,13 +40,15 @@ namespace XProxy.Core.Connections
 
             if (pos == 1)
             {
-                if (Player.RedirectTo(Player.CurrentServer, true))
+                if (NextAttempt == 0)
                 {
+                    Player.ConnectTo(Player.CurrentServer);
+                    NextAttempt = 5;
                 }
                 else
-                {
-                    Player.SendHint(ConfigService.Singleton.Messages.FirstPositionInQueue.Replace("%position%", $"{pos}").Replace("%totalInQueue%", $"{Player.CurrentServer.PlayersInQueueCount}"), 1);
-                }
+                    NextAttempt--;
+
+                Player.SendHint(ConfigService.Singleton.Messages.FirstPositionInQueue.Replace("%position%", $"{pos}").Replace("%totalInQueue%", $"{Player.CurrentServer.PlayersInQueueCount}"), 1);
             }
             else
             {
@@ -72,7 +76,6 @@ namespace XProxy.Core.Connections
                     else
                     {
                         Player.SendGameConsoleMessage("Connecting to lobby...");
-                        Player.RedirectToLobby();
                     }
                     break;
             }
