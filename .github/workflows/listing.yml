@@ -30,7 +30,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Main Repository.
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
       - name: Build listing
         id: build-listing
         uses: ./XProxy.BuildListing
