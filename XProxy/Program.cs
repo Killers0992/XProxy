@@ -61,10 +61,21 @@ namespace XProxy
                 return false;
             }
 
-#if !DEBUG
-            Assembly.LoadFrom(UpdaterService.ProxyFile);
-#endif
+            AppDomain.CurrentDomain.AssemblyResolve += (o, e) =>
+            {
+                AssemblyName aName = new AssemblyName(e.Name);
 
+                switch (aName.Name)
+                {
+                    case "XProxy.Core":
+                        return Assembly.LoadFrom(UpdaterService.ProxyFile);
+                    default:
+                        Console.WriteLine($"Failed to resolve assembly for " + aName.Name);
+                        return null;
+                }
+            };
+
+            
             try
             {
                 InitializeProxy(services);

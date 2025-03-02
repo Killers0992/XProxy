@@ -2,7 +2,7 @@
 using System.Reflection;
 
 [assembly: AssemblyVersion(
-    "1.8.2"
+    "1.8.3"
 )]
 
 namespace XProxy.Core
