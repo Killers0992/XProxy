@@ -39,7 +39,7 @@ jobs:
       - name: Setup Pages
         uses: actions/configure-pages@f156874f8191504dae5b037505266ed5dda6c382
       - name: Upload Pages Artifact
-        uses: actions/upload-pages-artifact@v4
+        uses: actions/upload-pages-artifact@v3
         with:
           path: ${{ env.websiteDirectory }}
       - name: Deploy to GitHub Pages
