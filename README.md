@@ -54,7 +54,7 @@ These placeholders can be used in lobby hint or server name.
 | servers  |   |  Shows all servers.  |
 | players  |   |  Shows players playing on servers.  |
 | listeners |  | Shows all listeners. |
-| send | ``all/id@steam`` ``serverName``  |  Sends all players or target to specific server.  |
+| send | ``all/serverName/id@steam`` ``serverName``  |  Sends all players, entire population of a server or target to specific server.  |
 | maintenance toggle  |  |  Toggles maintenance |
 | maintenance servername  | ``name`` |  Changes server name set when maintenance is enabled.  |
 | reload  |   |  Reloads configs.  |
