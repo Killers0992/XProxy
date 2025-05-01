@@ -22,8 +22,8 @@ jobs:
     - name: Download SCP SL References
       uses: killers0992/scpsl.downloadfiles@master
       with:
-        branch: 'public'
-        filesToDownload: 'Assembly-CSharp.dll,Mirror.dll,BouncyCastle.Cryptography.dll,NorthwoodLib.dll,UnityEngine.CoreModule.dll'
+        branch: 'public-beta'
+        filesToDownload: 'Assembly-CSharp.dll,Mirror.dll,BouncyCastle.Cryptography.dll,NorthwoodLib.dll,UnityEngine.CoreModule.dll,LabApi.dll'
     - name: Setup .NET
       uses: actions/setup-dotnet@v2
       with:
