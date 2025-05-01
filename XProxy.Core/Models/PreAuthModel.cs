@@ -161,7 +161,6 @@ namespace XProxy.Models
                 writer.Put(BackwardRevision);
 
             writer.Put(0);
-            writer.PutBytesWithLength(Array.Empty<byte>());
 
             writer.Put(UserID);
             writer.Put(Expiration);
