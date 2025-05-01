@@ -2,7 +2,7 @@
 using System.Reflection;
 
 [assembly: AssemblyVersion(
-    "1.8.3"
+    "1.8.5"
 )]
 
 namespace XProxy.Core
@@ -26,7 +26,7 @@ namespace XProxy.Core
 
         public static string[] SupportedGameVersions =
         {
-            "14.0.2",
+            "14.1.0",
         };
 
         public static string[] Changelogs = new string[0];

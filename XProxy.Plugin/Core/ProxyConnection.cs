@@ -1,14 +1,12 @@
-﻿using LiteNetLib;
+﻿using LabApi.Features.Console;
+using LabApi.Features.Wrappers;
+using LiteNetLib;
 using LiteNetLib.Utils;
-using PluginAPI.Core;
-using RemoteAdmin.Communication;
 using System;
-using UnityEngine;
-using XProxy.Core.Enums;
 
 namespace XProxy.Plugin.Core
 {
-    public class ProxyConnection : MonoBehaviour
+    public class ProxyConnection : UnityEngine.MonoBehaviour
     {
         private NetManager _manager;
         private EventBasedNetListener _listener;
@@ -63,7 +61,7 @@ namespace XProxy.Plugin.Core
                     writer.Put(MainClass.Singleton.Config.ConnectionKey);
                     writer.Put(Server.Port);
 
-                    Log.Info($"Connecting to proxy {MainClass.Singleton.Config.ProxyIP}:{MainClass.Singleton.Config.ProxyPort}...", "XProxy");
+                    Logger.Info($"Connecting to proxy {MainClass.Singleton.Config.ProxyIP}:{MainClass.Singleton.Config.ProxyPort}...");
                     _manager.Connect(MainClass.Singleton.Config.ProxyIP, MainClass.Singleton.Config.ProxyPort, writer);
                     _isConnecting = true;
                 }
@@ -79,7 +77,7 @@ namespace XProxy.Plugin.Core
 
         void OnConnected(NetPeer peer)
         {
-            Log.Info($"Connected!", "XProxy");
+            Logger.Info($"Connected!");
             SendIntialData();
         }
 
@@ -87,7 +85,7 @@ namespace XProxy.Plugin.Core
         {
             _nextConnectiobRetry = DateTime.Now.AddSeconds(5);
             _isConnecting = false;
-            Log.Info($"Disconnected from proxy with reason {disconnectInfo.Reason}, reconnecting in 5 seconds...", "XProxy");
+            Logger.Info($"Disconnected from proxy with reason {disconnectInfo.Reason}, reconnecting in 5 seconds...");
         }
     }
 }
