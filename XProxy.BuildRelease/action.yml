@@ -1,8 +1,0 @@
-name: "Build release"
-description: "Generates release build."
-branding:
-  icon: file
-  color: blue
-runs:
-  using: "docker"
-  image: "Dockerfile"
