@@ -1,7 +1,4 @@
-﻿using Org.BouncyCastle.Asn1.Ocsp;
-using XProxy.Responses;
-
-namespace XProxy.Core;
+﻿namespace XProxy.Core;
 
 public class Connection : IDisposable
 {
@@ -9,7 +6,7 @@ public class Connection : IDisposable
     private NetManager _netManager;
     private EventBasedNetListener _listener;
 
-    public Client Client { get; private set; }
+    public BaseClient Client { get; private set; }
 
     public bool IsValid => _netManager != null;
 
@@ -23,7 +20,7 @@ public class Connection : IDisposable
 
     public ChallengeHandler Challenge;
 
-    public void Setup(Client client)
+    public void Setup(BaseClient client)
     {
         Challenge = new ChallengeHandler(this);
         Client = client;
@@ -80,7 +77,8 @@ public class Connection : IDisposable
 
         Server = server;
 
-        Console.WriteLine($"{Client.PlayerTag} {(reconnect ? "Reconnect" : "Connect")} to {server.IpAddress}:{server.Port}");
+        Logger.Info($"{Client.PlayerTag} {(reconnect ? "Reconnecting" : "Connecting")} to (f=yellow){server.IpAddress}:{server.Port}(f=white)", "Client");
+
         _netManager.Connect(Server.IpAddress, Server.Port, connectionData);
         IsConnecting = true;
     }
@@ -107,6 +105,9 @@ public class Connection : IDisposable
 
         switch (disconnectInfo.Reason)
         {
+            default:
+                Logger.Info($"{Client.PlayerTag} {disconnectInfo.Reason}", "Client");
+                break;
             case DisconnectReason.ConnectionFailed when disconnectInfo.AdditionalData.RawData == null:
                 if (!IsMain)
                 {
@@ -116,6 +117,7 @@ public class Connection : IDisposable
 
                 //Logger.Info(ConfigService.Singleton.Messages.PlayerServerIsOfflineMessage.Replace("%tag%", Owner.Tag).Replace("%address%", $"{Owner.ClientEndPoint}").Replace("%userid%", Owner.UserId), $"Player");
                 //Owner.DisconnectFromProxy(ConfigService.Singleton.Messages.ServerIsOfflineKickMessage.Replace("%server%", Owner.CurrentServer.Name));
+                Logger.Info($"{Client.PlayerTag} Server (f=yellow){Server.IpAddress}:{Server.Port}(f=white) is offline!", "Client");
                 Client.Disconnect();
                 return;
 
@@ -139,7 +141,7 @@ public class Connection : IDisposable
                             //Logger.Info(ConfigService.Singleton.Messages.PlayerDelayedConnectionMessage.Replace("%tag%", Owner.Tag).Replace("%address%", $"{Owner.ClientEndPoint}").Replace("%userid%", Owner.UserId).Replace("%time%", $"{offset}"), $"Player");
                         }
 
-                        Console.WriteLine($"{Client.PlayerTag} Delay connecting by {offset} seconds!");
+                        Logger.Info($"{Client.PlayerTag} Delay connecting to (f=yellow){Server.IpAddress}:{Server.Port}(f=white) by {offset} seconds!", "Client");
                         break;
 
                     case RejectionReason.ServerFull:
@@ -149,7 +151,7 @@ public class Connection : IDisposable
                             return;
                         }
 
-                        Console.WriteLine($"{Client.PlayerTag} Server is full!");
+                        Logger.Info($"{Client.PlayerTag} Server (f=yellow){Server.IpAddress}:{Server.Port}(f=white) is full!", "Client");
                         Client.Disconnect($"Server {Server.IpAddress}:{Server.Port} is full!");
                         break;
 
@@ -165,11 +167,11 @@ public class Connection : IDisposable
                             return;
                         }
 
-                        Console.WriteLine($"{Client.PlayerTag} Banned for reason {banReason}!");
+                        Logger.Info($"{Client.PlayerTag} Banned from (f=yellow){Server.IpAddress}:{Server.Port}(f=white) with reason (f=yellow){banReason}(f=white)!", "Client");
                         break;
 
                     case RejectionReason.Challenge:
-                        Console.WriteLine($"{Client.PlayerTag} Process challenge.");
+                        Logger.Info($"{Client.PlayerTag} Processing challenge.", "Listener");
                         Challenge.ProcessChallenge(disconnectInfo.AdditionalData);
                         break;
 
@@ -214,19 +216,13 @@ public class Connection : IDisposable
         {
             IsConnecting = false;
 
-            if (Client.Request != null)
-            {
-                Client.Peer = Client.Request.Accept();
-                Client.Listener.ClientById.Add(Client.Peer.Id, Client);
-
-                Client.Request = null;
-            }
+            Client.AcceptConnection();
 
             if (!Client.Connection.IsConnected)
             {
                 Client.Server = Server;
                 Client.Connection = this;
-                Console.WriteLine($"{Client.PlayerTag} connected");
+                Client.OnConnectedToServerInternal(Server);
                 return;
             }
 
@@ -237,6 +233,7 @@ public class Connection : IDisposable
 
                 Client.Connection = this;
                 Client.Server = Server;
+                Client.OnConnectedToServerInternal(Server);
                 return;
             }
         }
@@ -249,6 +246,18 @@ public class Connection : IDisposable
 
     public void Dispose()
     {
+        if (_netManager != null)
+        {
+            if (IsMain)
+                Client.OnDisconnectedFromServerInternal(Server);
+
+            if (IsConnected)
+                _netManager.FirstPeer.Disconnect();
+
+            _netManager?.Stop();
+            _netManager = null;
+        }
+
         if (_listener != null)
         {
             _listener.PeerConnectedEvent -= OnConnected;
@@ -256,15 +265,6 @@ public class Connection : IDisposable
             _listener.PeerDisconnectedEvent -= OnDisconnected;
 
             _listener = null;
-        }
-
-        if (_netManager != null)
-        {
-            if (IsConnected)
-                _netManager.FirstPeer.Disconnect();
-
-            _netManager?.Stop();
-            _netManager = null;
         }
     }
 }

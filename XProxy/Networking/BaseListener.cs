@@ -1,7 +1,4 @@
-﻿using XProxy.Core;
-using XProxy.Models;
-
-namespace XProxy.Networking;
+﻿namespace XProxy.Networking;
 
 public class BaseListener
 {
@@ -16,8 +13,8 @@ public class BaseListener
 
     public Version GameVersion { get; } = new Version(14, 1, 0);
 
-    public List<Client> NotConnectedClients = new List<Client>();
-    public Dictionary<int, Client> ClientById = new Dictionary<int, Client>();
+    public List<BaseClient> NotConnectedClients = new List<BaseClient>();
+    public Dictionary<int, BaseClient> ClientById = new Dictionary<int, BaseClient>();
 
     public BaseListener(string listenIp, int listenPort, CancellationToken cancellationToken)
     {
@@ -132,7 +129,7 @@ public class BaseListener
 
     public void OnNetworkReceive(NetPeer peer, NetPacketReader reader, byte channelNumber, DeliveryMethod deliveryMethod)
     {
-        if (!ClientById.TryGetValue(peer.Id, out Client client))
+        if (!ClientById.TryGetValue(peer.Id, out BaseClient client))
             return;
 
         byte[] bytes = reader.RawData;
@@ -146,18 +143,18 @@ public class BaseListener
 
     public void OnPeerDisconnected(NetPeer peer, DisconnectInfo disconnectInfo)
     {
-        if (!ClientById.TryGetValue(peer.Id, out Client client))
+        if (!ClientById.TryGetValue(peer.Id, out BaseClient client))
             return;
 
         OnClientDisconneted(client);
         client.Dispose();
     }
 
-    public virtual void OnClientConnected(Client client)
+    public virtual void OnClientConnected(BaseClient client)
     {
     }
 
-    public virtual void OnClientDisconneted(Client client)
+    public virtual void OnClientDisconneted(BaseClient client)
     {
 
     }

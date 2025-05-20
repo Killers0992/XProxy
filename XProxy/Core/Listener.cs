@@ -1,6 +1,4 @@
-﻿using XProxy.Networking;
-
-namespace XProxy.Core;
+﻿namespace XProxy.Core;
 
 public class Listener : BaseListener
 {
@@ -8,15 +6,15 @@ public class Listener : BaseListener
     {
     }
 
-    public override void OnClientConnected(Client client)
+    public override void OnClientConnected(BaseClient client)
     {
-        Console.WriteLine($"[{ListenIpAddress}:{ListenPort}] [{client.PreAuth.UserId}] connected!");
+        Logger.Info($"{client.PlayerTag} Connected", "Listener");
 
         client.Connect(new Server("207.174.43.245", 7783));
     }
 
-    public override void OnClientDisconneted(Client client)
+    public override void OnClientDisconneted(BaseClient client)
     {
-        Console.WriteLine($"[{ListenIpAddress}:{ListenPort}] [{client.PreAuth.UserId}] disconnected!");
+        Logger.Info($"{client.PlayerTag} Disconnected", "Listener");
     }
 }
