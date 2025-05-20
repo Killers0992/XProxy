@@ -1,4 +1,5 @@
 ﻿using RoundRestarting;
+using System.Linq.Expressions;
 using XProxy.Models;
 using XProxy.Networking;
 using XProxy.Networking.Batchers;
@@ -207,6 +208,9 @@ public class Client : IDisposable
     // Returning true will cancel that message.
     public bool ProcessMirrorMessageFromListener(ushort id, NetworkReader reader)
     {
+        if (!Types.ContainsKey(id))
+            return true;
+
         string name = Types[id].FullName;
         switch (name)
         {
@@ -224,6 +228,9 @@ public class Client : IDisposable
 
     public bool ProcessMirrorMessageFromServer(ushort id, NetworkReader reader)
     {
+        if (!Types.ContainsKey(id))
+            return true;
+
         string name = Types[id].FullName;
         switch (name)
         {
