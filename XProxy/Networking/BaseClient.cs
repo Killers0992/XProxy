@@ -213,6 +213,9 @@ public class BaseClient : IDisposable
     // Returning true will cancel that message.
     public bool ProcessMirrorMessageFromListener(ushort id, NetworkReader reader)
     {
+        if (!Types.ContainsKey(id))
+            return true;
+
         string name = Types[id].FullName;
         switch (name)
         {
@@ -230,6 +233,9 @@ public class BaseClient : IDisposable
 
     public bool ProcessMirrorMessageFromServer(ushort id, NetworkReader reader)
     {
+        if (!Types.ContainsKey(id))
+            return true;
+
         string name = Types[id].FullName;
         switch (name)
         {
