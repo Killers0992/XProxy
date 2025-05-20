@@ -1,4 +1,5 @@
 ﻿using Hints;
+using Mirror;
 using PlayerRoles;
 using VoiceChat.Networking;
 
@@ -10,6 +11,7 @@ public class BaseClient : IDisposable
 
     public uint NetworkIdentityId { get; private set; }// = Database.GetNextNetworkId();
 
+    public uint NetworkId { get; set; }
     public bool IsReady { get; private set; }
 
     public Server Server { get; set; }
@@ -260,6 +262,27 @@ public class BaseClient : IDisposable
 
     public bool ProcessMirrorMessageFromServer(ushort id, NetworkReader reader)
     {
+        switch (id)
+        {
+            // Spawn message
+            case 16484:
+                uint netid = reader.ReadUInt();
+                bool isLocalPlayer = reader.ReadBool();
+                bool isOwner = reader.ReadBool();
+                ulong sceneId = reader.ReadULong();
+                uint assetId = reader.ReadUInt();
+
+                switch (assetId)
+                {
+                    // Player
+                    case 3816198336:
+                        if (isLocalPlayer && isOwner)
+                            NetworkId = netid;
+                        break;
+                }
+                break;
+        }
+
         var rolesyncid = NetworkMessageId<RoleSyncInfo>.Id;
 
         if (rolesyncid == id)
@@ -275,7 +298,7 @@ public class BaseClient : IDisposable
 
         if (vm == id)
         {
-            SendHint("Stop talking", 3f);
+            SendBroadcast($"Talking {PreAuth.UserId}", 1, Broadcast.BroadcastFlags.Normal);
             return true;
         }
 
@@ -322,6 +345,28 @@ public class BaseClient : IDisposable
         //TextHint
         writerPooled.WriteByte(1);
         writerPooled.Serialize(hint);
+
+        SendMirrorData(writerPooled);
+    }
+
+    public void SendBroadcast(string message, ushort time, Broadcast.BroadcastFlags flags)
+    {
+        NetworkWriter writerPooled = new NetworkWriter();
+
+        // RPC MESSAGE
+        writerPooled.WriteUShort(33978);
+        writerPooled.WriteUInt(NetworkId);
+        writerPooled.WriteByte(11);
+        // BROADCAST
+        writerPooled.WriteUShort(5862);
+
+        NetworkWriter wri2 = new NetworkWriter();
+
+        wri2.WriteString(message);
+        wri2.WriteUShort(time);
+        wri2.WriteByte((byte)flags);
+
+        writerPooled.WriteArraySegment(wri2.ToArraySegment());
 
         SendMirrorData(writerPooled);
     }
