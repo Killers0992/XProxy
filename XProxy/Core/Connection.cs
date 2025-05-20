@@ -171,7 +171,7 @@ public class Connection : IDisposable
                         break;
 
                     case RejectionReason.Challenge:
-                        Logger.Info($"{Client.PlayerTag} Processing challenge.", "Listener");
+                        Logger.Info($"{Client.PlayerTag} Processing challenge.", "Client");
                         Challenge.ProcessChallenge(disconnectInfo.AdditionalData);
                         break;
 

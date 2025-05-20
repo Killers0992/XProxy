@@ -1,4 +1,6 @@
-﻿namespace XProxy.Networking;
+﻿using PlayerRoles;
+
+namespace XProxy.Networking;
 
 public class BaseClient : IDisposable
 {
@@ -233,6 +235,18 @@ public class BaseClient : IDisposable
 
     public bool ProcessMirrorMessageFromServer(ushort id, NetworkReader reader)
     {
+        var rolesyncid = NetworkMessageId<RoleSyncInfo>.Id;
+
+        if (rolesyncid == id)
+        {
+            uint targetNetId = reader.ReadUInt();
+            RoleTypeId targetRole = reader.ReadRoleType();
+
+            Logger.Info($"{PlayerTag} Set role {targetRole} to target network id {targetNetId}", "Client");
+            return true;
+        }
+
+
         if (!Types.ContainsKey(id))
             return true;
 
