@@ -1,4 +1,6 @@
-﻿using PlayerRoles;
+﻿using Hints;
+using PlayerRoles;
+using VoiceChat.Networking;
 
 namespace XProxy.Networking;
 
@@ -48,6 +50,8 @@ public class BaseClient : IDisposable
 
     public CustomBatcher Batcher { get; private set; } = new CustomBatcher(65535 * (NetConstants.MaxPacketSize - 6));
 
+    public bool IsDisposing { get; set; }
+
     public DateTime ConnectedOn { get; } = DateTime.Now;
     public TimeSpan Connectiontime => DateTime.Now - ConnectedOn;
 
@@ -62,6 +66,27 @@ public class BaseClient : IDisposable
         PreAuth = preAuth;
 
         Listener.NotConnectedClients.Add(this);
+
+        Task.Run(() => RunBatcher());
+    }
+
+    async Task RunBatcher()
+    {
+        NetworkWriter writer = new NetworkWriter();
+
+        while (!IsDisposing)
+        {
+            while (Batcher.GetBatch(writer))
+            {
+                var segment = writer.ToArraySegment();
+                SendData(segment.Array, segment.Offset, segment.Count, DeliveryMethod.ReliableOrdered);
+                writer.Position = 0;
+            }
+
+            await Task.Delay(10);
+        }
+
+        writer = null;
     }
 
     public virtual void OnConnectedToServer(Server Server)
@@ -245,6 +270,16 @@ public class BaseClient : IDisposable
             Logger.Info($"{PlayerTag} Set role {targetRole} to target network id {targetNetId}", "Client");
             return true;
         }
+
+        var vm = NetworkMessageId<VoiceMessage>.Id;
+
+        if (vm == id)
+        {
+            SendHint("Stop talking", 3f);
+            return true;
+        }
+
+
         /*
 
         if (!Types.ContainsKey(id))
@@ -275,7 +310,21 @@ public class BaseClient : IDisposable
 
         return true;
     }
+    public void SendHint(string message, float duration = 3)
+    {
+        NetworkWriter writerPooled = new NetworkWriter();
 
+        writerPooled.WriteUShort(NetworkMessageId<HintMessage>.Id);
+
+        var hint = new TextHint(message, new HintParameter[] {
+                        new StringHintParameter(message) }, null, duration);
+
+        //TextHint
+        writerPooled.WriteByte(1);
+        writerPooled.Serialize(hint);
+
+        SendMirrorData(writerPooled);
+    }
 
     public void Connect(Server server)
     {
@@ -365,6 +414,7 @@ public class BaseClient : IDisposable
 
     public void Dispose()
     {
+        IsDisposing = true;
         Connection.Dispose();
         BackupConnection.Dispose();
 
