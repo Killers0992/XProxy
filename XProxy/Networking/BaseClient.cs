@@ -51,7 +51,7 @@ public class BaseClient : IDisposable
     public DateTime ConnectedOn { get; } = DateTime.Now;
     public TimeSpan Connectiontime => DateTime.Now - ConnectedOn;
 
-    public Dictionary<ushort, Type> Types = ProxyUtils.FindNetworkMessageTypes();
+   // public Dictionary<ushort, Type> Types = ProxyUtils.FindNetworkMessageTypes();
 
     public string PlayerTag => $"[(f=cyan){Listener.ListenIpAddress}:{Listener.ListenPort}(f=white)] [(f=green){PreAuth.UserId}(f=white)]{(Server == null ? string.Empty : $" [(f=yellow){Server.IpAddress}:{Server.Port}(f=white)]")}";
 
@@ -215,7 +215,7 @@ public class BaseClient : IDisposable
     // Returning true will cancel that message.
     public bool ProcessMirrorMessageFromListener(ushort id, NetworkReader reader)
     {
-        if (!Types.ContainsKey(id))
+       /* if (!Types.ContainsKey(id))
             return true;
 
         string name = Types[id].FullName;
@@ -229,7 +229,7 @@ public class BaseClient : IDisposable
                 Console.WriteLine($"FROM CLIENT -> " + name);
                 break;
         }
-
+       */
         return true;
     }
 
@@ -245,7 +245,7 @@ public class BaseClient : IDisposable
             Logger.Info($"{PlayerTag} Set role {targetRole} to target network id {targetNetId}", "Client");
             return true;
         }
-
+        /*
 
         if (!Types.ContainsKey(id))
             return true;
@@ -271,7 +271,7 @@ public class BaseClient : IDisposable
             default:
                 Console.WriteLine($"FROM SERVER -> " + name);
                 break;
-        }
+        }*/
 
         return true;
     }
