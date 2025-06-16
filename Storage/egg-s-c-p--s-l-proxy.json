@@ -17,7 +17,7 @@
     "startup": ".\/XProxy",
     "config": {
         "files": "{}",
-        "startup": "{\n    \"done\": \"Listening on server\"\n}",
+        "startup": "{\n    \"done\": \"Listening on\"\n}",
         "logs": "{}",
         "stop": "^C"
     },
