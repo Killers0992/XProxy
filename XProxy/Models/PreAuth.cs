@@ -69,19 +69,19 @@ public struct PreAuth
         return writer;
     }
 
-    public static bool TryRead(BaseListener listener, string connectionIp, NetDataReader reader, ref PreAuthResponse response, ref bool rejectForce, ref PreAuth preAuth)
+    public static bool TryRead(BaseListener listener, string connectionIp, NetDataReader reader, ref DisconnectType response, ref bool rejectForce, ref PreAuth preAuth)
     {
         if (!reader.TryGetByte(out byte rawClientType))
         {
             rejectForce = true;
-            response = PreAuthResponse.InvalidClientType;
+            response = DisconnectType.InvalidClientType;
             return false;
         }
 
         if (!Enum.IsDefined(typeof(ClientType), rawClientType))
         {
             rejectForce = true;
-            response = PreAuthResponse.ClientTypeOutOfRange;
+            response = DisconnectType.ClientTypeOutOfRange;
             return false;
         }
 
@@ -90,35 +90,35 @@ public struct PreAuth
         if (clientType == ClientType.VerificationService)
         {
             rejectForce = true;
-            response = PreAuthResponse.ForbiddenClientType;
+            response = DisconnectType.ForbiddenClientType;
             return false;
         }
 
         if (!reader.TryGetByte(out byte major))
         {
             rejectForce = true;
-            response = PreAuthResponse.InvalidMajorVersion;
+            response = DisconnectType.InvalidMajorVersion;
             return false;
         }
 
         if (!reader.TryGetByte(out byte minor))
         {
             rejectForce = true;
-            response = PreAuthResponse.InvalidMinorVersion;
+            response = DisconnectType.InvalidMinorVersion;
             return false;
         }
 
         if (!reader.TryGetByte(out byte revision))
         {
             rejectForce = true;
-            response = PreAuthResponse.InvalidRevisionVersion;
+            response = DisconnectType.InvalidRevisionVersion;
             return false;
         }
 
         if (!reader.TryGetBool(out bool backwardCompatibility))
         {
             rejectForce = true;
-            response = PreAuthResponse.InvalidBackwardCompatibility;
+            response = DisconnectType.InvalidBackwardCompatibility;
             return false;
         }
 
@@ -129,7 +129,7 @@ public struct PreAuth
             if (!reader.TryGetByte(out backwardRevision))
             {
                 rejectForce = true;
-                response = PreAuthResponse.InvalidBackwardRevision;
+                response = DisconnectType.InvalidBackwardRevision;
                 return false;
             }
         }
@@ -138,14 +138,14 @@ public struct PreAuth
 
         if (!listener.GameVersion.ValidateGameVersion(clientVersion, backwardCompatibility, backwardRevision))
         {
-            response = PreAuthResponse.VersionNotCompatible;
+            response = DisconnectType.VersionNotCompatible;
             return false;
         }
 
         if (!reader.TryGetInt(out int challengeId))
         {
             rejectForce = true;
-            response = PreAuthResponse.InvalidChallengeId;
+            response = DisconnectType.InvalidChallengeId;
             return false;
         }
 
@@ -155,7 +155,7 @@ public struct PreAuth
             if (!reader.TryGetBytesWithLength(out byte[] challengeResponse))
             {
                 rejectForce = true;
-                response = PreAuthResponse.InvalidChallengeResponse;
+                response = DisconnectType.InvalidChallengeResponse;
                 return false;
             }
         }
@@ -163,42 +163,42 @@ public struct PreAuth
         if (!reader.TryGetString(out string userId))
         {
             rejectForce = true;
-            response = PreAuthResponse.InvalidUserId;
+            response = DisconnectType.InvalidUserId;
             return false;
         }
 
         if (string.IsNullOrEmpty(userId))
         {
             rejectForce = true;
-            response = PreAuthResponse.UserIdIsEmpty;
+            response = DisconnectType.UserIdIsEmpty;
             return false;
         }
 
         if (!reader.TryGetLong(out long expiration))
         {
             rejectForce = true;
-            response = PreAuthResponse.InvalidExpiration;
+            response = DisconnectType.InvalidExpiration;
             return false;
         }
 
         if (DateTimeOffset.UtcNow.ToUnixTimeSeconds() > expiration)
         {
             rejectForce = true;
-            response = PreAuthResponse.PreAuthExpired;
+            response = DisconnectType.PreAuthExpired;
             return false;
         }
 
         if (!reader.TryGetByte(out byte rawCentralFlags))
         {
             rejectForce = true;
-            response = PreAuthResponse.InvalidCentralFlags;
+            response = DisconnectType.InvalidCentralFlags;
             return false;
         }
 
         if (!Enum.IsDefined(typeof(CentralAuthPreauthFlags), rawCentralFlags))
         {
             rejectForce = true;
-            response = PreAuthResponse.CentralFlagsOutOfRange;
+            response = DisconnectType.CentralFlagsOutOfRange;
             return false;
         }
 
@@ -207,26 +207,26 @@ public struct PreAuth
         if (!reader.TryGetString(out string region))
         {
             rejectForce = true;
-            response = PreAuthResponse.InvalidRegion;
+            response = DisconnectType.InvalidRegion;
             return false;
         }
 
         if (!reader.TryGetBytesWithLength(out byte[] signature))
         {
             rejectForce = true;
-            response = PreAuthResponse.InvalidSignature;
+            response = DisconnectType.InvalidSignature;
             return false;
         }
 
         if (!ECDSA.VerifyBytes($"{userId};{rawCentralFlags};{region};{expiration}", signature, PublicKeyService.Key))
         {
             rejectForce = true;
-            response = PreAuthResponse.BadSignature;
+            response = DisconnectType.BadSignature;
             return false;
         }
 
         preAuth = new PreAuth(clientVersion, backwardCompatibility, backwardRevision, userId, expiration, centralFlags, region, signature, connectionIp);
-        response = PreAuthResponse.Valid;
+        response = DisconnectType.Valid;
         return true;
     }
 }

@@ -11,7 +11,14 @@ public class Client : BaseClient
         Logger.Info($"{PlayerTag} Connected.", "Client");
     }
 
-    public override void OnDisconnectedFromServer(Server Server)
+    public override bool OnDisconnectedFromServer(Server Server, ConnectionFailedInfo info)
     {
+        switch (info.Response)
+        {
+            case DisconnectType.ServerIsFull:
+                break;
+        }
+
+        return true;
     }
 }

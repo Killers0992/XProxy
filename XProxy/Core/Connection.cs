@@ -11,8 +11,8 @@ public class Connection : IDisposable
     public bool IsValid => _netManager != null;
 
     public bool IsMain = true;
-
-    public bool IsConnected => IsValid && _netManager.FirstPeer != null;
+    public bool IsConnectedToSimulated { get; set; }
+    public bool IsConnected => IsValid && _netManager.FirstPeer != null || IsConnectedToSimulated;
 
     public bool IsConnecting;
 
@@ -75,9 +75,26 @@ public class Connection : IDisposable
         if (IsConnecting)
             return;
 
+        IsConnectedToSimulated = false;
+
         Server = server;
 
-        Logger.Info($"{Client.PlayerTag} {(reconnect ? "Reconnecting" : "Connecting")} to (f=yellow){server.IpAddress}:{server.Port}(f=white)", "Client");
+        Logger.Info($"{Client.PlayerTag} {(reconnect ? "Reconnecting" : "Connecting")} to (f=yellow){server.Name}(f=white)", "Client");
+
+        if (server.IsSimulated)
+        {
+            bool canJoin = server.InternalClientConnecting(Client);
+            
+            if (canJoin)
+            {
+                AcceptConnection();
+                IsConnectedToSimulated = true;
+                server.InternalClientConnected(Client);
+                return;
+            }
+
+            return;
+        }
 
         _netManager.Connect(Server.IpAddress, Server.Port, connectionData);
         IsConnecting = true;
@@ -94,6 +111,9 @@ public class Connection : IDisposable
     public void Send(byte[] bytes, int position, int length, DeliveryMethod method)
     {
         if (!IsConnected)
+            return;
+
+        if (IsConnectedToSimulated)
             return;
 
         _netManager.FirstPeer.Send(bytes, position, length, method);
@@ -152,7 +172,7 @@ public class Connection : IDisposable
                         }
 
                         Logger.Info($"{Client.PlayerTag} Server (f=yellow){Server.IpAddress}:{Server.Port}(f=white) is full!", "Client");
-                        Client.Disconnect($"Server {Server.IpAddress}:{Server.Port} is full!");
+                        Client.OnDisconnectedFromServerInternal(Server, new ConnectionFailedInfo($"Server {Server.IpAddress}:{Server.Port} is full!", DisconnectType.ServerIsFull));
                         break;
 
                     case RejectionReason.Banned:
@@ -210,49 +230,43 @@ public class Connection : IDisposable
         reader.Recycle();
     }
 
+    void AcceptConnection()
+    {
+        IsConnecting = false;
+        Client.AcceptConnection();
+
+        if (!Client.Connection.IsConnected)
+        {
+            Client.Connection = this;
+            return;
+        }
+
+        if (!IsMain)
+        {
+            Client.FastRoundrestart();
+            Client.NotReady();
+            Client.Connection = this;
+            return;
+        }
+    }
+
     private void OnConnected(NetPeer peer)
     {
-        try
-        {
-            IsConnecting = false;
-
-            Client.AcceptConnection();
-
-            if (!Client.Connection.IsConnected)
-            {
-                Client.Server = Server;
-                Client.Connection = this;
-                Client.OnConnectedToServerInternal(Server);
-                return;
-            }
-
-            if (!IsMain)
-            {
-                Client.FastRoundrestart();
-                Client.NotReady();
-
-                Client.Connection = this;
-                Client.Server = Server;
-                Client.OnConnectedToServerInternal(Server);
-                return;
-            }
-        }
-        catch(Exception ex)
-        {
-            Console.WriteLine(ex);
-        }
-
+        AcceptConnection();
+        Server.InternalClientConnected(Client);
     }
 
     public void Dispose()
     {
         if (_netManager != null)
         {
-            if (IsMain)
-                Client.OnDisconnectedFromServerInternal(Server);
-
             if (IsConnected)
-                _netManager.FirstPeer.Disconnect();
+            {
+                Server?.InternalClientDisconnected(Client);
+
+                if (!IsConnectedToSimulated)
+                    _netManager.FirstPeer.Disconnect();
+            }
 
             _netManager?.Stop();
             _netManager = null;

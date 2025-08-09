@@ -61,7 +61,7 @@ public class BaseListener
 
             foreach (Client client in NotConnectedClients)
             {
-                if (client.Connection.IsConnected)
+                if (client.Connection.IsConnected || client.IsDisposing)
                 {
                     _clientsToRemove.Enqueue(client);
                     continue;
@@ -103,7 +103,7 @@ public class BaseListener
     {
         string connectionIpAddress = $"{request.RemoteEndPoint.Address}";
 
-        PreAuthResponse response = PreAuthResponse.Valid;
+        DisconnectType response = DisconnectType.Valid;
         bool rejectForce = false;
         PreAuth preAuth = default;
 
@@ -111,7 +111,7 @@ public class BaseListener
         {
             switch (response)
             {
-                case PreAuthResponse.VersionNotCompatible:
+                case DisconnectType.VersionNotCompatible:
                     NetDataWriter writer = new NetDataWriter();
                     writer.Put((byte)RejectionReason.VersionMismatch);
                     request.RejectForce(writer);
@@ -146,7 +146,7 @@ public class BaseListener
         if (!ClientById.TryGetValue(peer.Id, out BaseClient client))
             return;
 
-        OnClientDisconneted(client);
+        OnClientDisconneted(client, disconnectInfo.Reason);
         client.Dispose();
     }
 
@@ -154,7 +154,7 @@ public class BaseListener
     {
     }
 
-    public virtual void OnClientDisconneted(BaseClient client)
+    public virtual void OnClientDisconneted(BaseClient client, DisconnectReason reason)
     {
 
     }

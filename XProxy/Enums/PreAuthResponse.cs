@@ -1,6 +1,6 @@
 ﻿namespace XProxy.Enums;
 
-public enum PreAuthResponse : byte
+public enum DisconnectType : byte
 {
     Valid,
     InvalidClientType,
@@ -22,5 +22,6 @@ public enum PreAuthResponse : byte
     CentralFlagsOutOfRange,
     InvalidRegion,
     InvalidSignature,
-    BadSignature
+    BadSignature,
+    ServerIsFull,
 }

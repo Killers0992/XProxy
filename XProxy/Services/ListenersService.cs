@@ -1,7 +1,4 @@
-﻿using XProxy.Core;
-using XProxy.Misc;
-
-namespace XProxy.Services;
+﻿namespace XProxy.Services;
 
 public class ListenersService : BackgroundService
 {
@@ -9,9 +6,7 @@ public class ListenersService : BackgroundService
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        NetDebug.Logger = new CustomNetLogger();
-
-        Listeners.Add(new Listener("0.0.0.0", 7785, stoppingToken));
+        Listeners.Add(new Listener("127.0.0.1", 7777, stoppingToken));
 
         await RunServerUpdater(stoppingToken);
     }
@@ -20,7 +15,19 @@ public class ListenersService : BackgroundService
     {
         while (!token.IsCancellationRequested)
         {
-            await Task.Delay(1000, token);
+            foreach (Server server in Server.RegisteredServers.Values)
+            {
+                try
+                {
+                    server.OnUpdate();
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine(ex);
+                }
+            }
+            
+            await Task.Delay(10, token);
         }
 
     }

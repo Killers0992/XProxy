@@ -1,20 +1,28 @@
 ﻿using Hints;
 using Mirror;
 using PlayerRoles;
-using VoiceChat.Networking;
+using PlayerRoles.FirstPersonControl;
+using PlayerRoles.FirstPersonControl.NetworkMessages;
+using RelativePositioning;
+using UnityEngine.SceneManagement;
+using XProxy.Objects;
+using static MapGeneration.SeedSynchronizer;
+using static PlayerStatsSystem.SyncedStatMessages;
 
 namespace XProxy.Networking;
 
 public class BaseClient : IDisposable
 {
     private Connection _connection = new Connection();
+    private uint _nextId = 0;
 
-    public uint NetworkIdentityId { get; private set; }// = Database.GetNextNetworkId();
+    public uint NetworkIdentityId { get; private set; }
 
-    public uint NetworkId { get; set; }
+    public uint NextId => _nextId++;
+
     public bool IsReady { get; private set; }
 
-    public Server Server { get; set; }
+    public Server Server => Connection.Server;
 
     public ConnectionRequest Request { get; set; }
 
@@ -22,6 +30,9 @@ public class BaseClient : IDisposable
     public NetPeer Peer { get; set; } = null;
     public PreAuth PreAuth { get; }
     public double ListenerRemoteTimestamp { get; private set; }
+    public bool IsDisposing { get; private set; }
+
+    public RelativePosition Position;
 
     public Connection Connection
     {
@@ -42,6 +53,7 @@ public class BaseClient : IDisposable
             }
 
             _connection = value;
+            OnConnectedToServerInternal(Server);
         }
     }
 
@@ -52,14 +64,12 @@ public class BaseClient : IDisposable
 
     public CustomBatcher Batcher { get; private set; } = new CustomBatcher(65535 * (NetConstants.MaxPacketSize - 6));
 
-    public bool IsDisposing { get; set; }
-
     public DateTime ConnectedOn { get; } = DateTime.Now;
     public TimeSpan Connectiontime => DateTime.Now - ConnectedOn;
 
-   // public Dictionary<ushort, Type> Types = ProxyUtils.FindNetworkMessageTypes();
+    public Dictionary<ushort, Type> Types = ProxyUtils.FindNetworkMessageTypes();
 
-    public string PlayerTag => $"[(f=cyan){Listener.ListenIpAddress}:{Listener.ListenPort}(f=white)] [(f=green){PreAuth.UserId}(f=white)]{(Server == null ? string.Empty : $" [(f=yellow){Server.IpAddress}:{Server.Port}(f=white)]")}";
+    public string PlayerTag => $"[(f=cyan){Listener.ListenIpAddress}:{Listener.ListenPort}(f=white)] [(f=green){PreAuth.UserId}(f=white)]{(Server == null ? string.Empty : $" [(f=yellow){Server.Name}(f=white)]")}";
 
     public BaseClient(BaseListener listener, ConnectionRequest request, PreAuth preAuth)
     {
@@ -68,27 +78,6 @@ public class BaseClient : IDisposable
         PreAuth = preAuth;
 
         Listener.NotConnectedClients.Add(this);
-
-        Task.Run(() => RunBatcher());
-    }
-
-    async Task RunBatcher()
-    {
-        NetworkWriter writer = new NetworkWriter();
-
-        while (!IsDisposing)
-        {
-            while (Batcher.GetBatch(writer))
-            {
-                var segment = writer.ToArraySegment();
-                SendData(segment.Array, segment.Offset, segment.Count, DeliveryMethod.ReliableOrdered);
-                writer.Position = 0;
-            }
-
-            await Task.Delay(10);
-        }
-
-        writer = null;
     }
 
     public virtual void OnConnectedToServer(Server Server)
@@ -96,19 +85,19 @@ public class BaseClient : IDisposable
 
     }
 
-    public virtual void OnDisconnectedFromServer(Server Server)
-    {
-
-    }
+    public virtual bool OnDisconnectedFromServer(Server Server, ConnectionFailedInfo info) => true;
 
     public void OnConnectedToServerInternal(Server server)
     {
         OnConnectedToServer(server);
     }
 
-    public void OnDisconnectedFromServerInternal(Server server)
+    public void OnDisconnectedFromServerInternal(Server server, ConnectionFailedInfo info)
     {
-        OnDisconnectedFromServer(server);
+        bool canRun = OnDisconnectedFromServer(server, info);
+
+        if (canRun)
+            Disconnect(info.Message);
     }
 
     public void AcceptConnection()
@@ -122,12 +111,19 @@ public class BaseClient : IDisposable
         Request = null;
     }
 
-
+    NetworkWriter batchWriter = new NetworkWriter();
 
     public void PollEvents()
     {
         Connection.Update();
         BackupConnection.Update();
+
+        while (Batcher.GetBatch(batchWriter))
+        {
+            ArraySegment<byte> segment = batchWriter.ToArraySegment();
+            SendData(segment.Array, segment.Offset, segment.Count, DeliveryMethod.ReliableOrdered);
+            batchWriter.Position = 0;
+        }
     }
 
     public bool ProcessMirrorDataFromServer(ref byte[] bytes, ref int position, ref int length)
@@ -242,72 +238,78 @@ public class BaseClient : IDisposable
     // Returning true will cancel that message.
     public bool ProcessMirrorMessageFromListener(ushort id, NetworkReader reader)
     {
-       /* if (!Types.ContainsKey(id))
-            return true;
-
         string name = Types[id].FullName;
         switch (name)
         {
             // Ignore these messages.
             case "PlayerRoles.FirstPersonControl.NetworkMessages.FpcFromClientMessage":
+                byte code = reader.ReadByte();
+
+                bool _bitMouseLook = false;
+                bool _bitPosition = false;
+                bool _bitCustom = false;
+
+                ushort _rotH, _rotV;
+
+                global::Misc.ByteToBools(code, out bool b1, out bool b2, out bool b3, out bool b4, out bool b5, out _bitMouseLook, out _bitPosition, out _bitCustom);
+
+                PlayerMovementState _state = (PlayerMovementState)global::Misc.BoolsToByte(b1, b2, b3, b4, b5);
+
+                if (_bitPosition)
+                {
+                    byte WaypointId = reader.ReadByte();
+                    short PositionX, PositionY, PositionZ;
+                    if (WaypointId > 0)
+                    {
+                        PositionX = reader.ReadShort();
+                        PositionY = reader.ReadShort();
+                        PositionZ = reader.ReadShort();
+
+                        Logger.Info(PositionX + " " + PositionY + " " + PositionZ);
+                    }
+                    else
+                    {
+                        PositionX = 0;
+                        PositionY = 0;
+                        PositionZ = 0;
+                    }
+
+
+                }
+                
+                if (_bitMouseLook)
+                {
+                    _rotH = reader.ReadUShort();
+                    _rotV = reader.ReadUShort();
+                }
+                else
+                {
+                    _rotH = 0;
+                    _rotV = 0;
+                }
+                //Logger.Info($"Code {code}, State {_state}, BitPos {_bitPosition}, RotH {_rotH}, RotV {_rotV}");
+                break;
+            case "Mirror.NetworkPingMessage":
             case "Mirror.TimeSnapshotMessage":
                 break;
+            case "Mirror.ReadyMessage":
+                Server?.OnClientReady(this);
+                break;
+
+            case "Mirror.AddPlayerMessage":
+                Server?.OnClientSpawnPlayer(this);
+                break;
+
             default:
                 Console.WriteLine($"FROM CLIENT -> " + name);
                 break;
         }
-       */
+
         return true;
     }
 
     public bool ProcessMirrorMessageFromServer(ushort id, NetworkReader reader)
     {
-        switch (id)
-        {
-            // Spawn message
-            case 16484:
-                uint netid = reader.ReadUInt();
-                bool isLocalPlayer = reader.ReadBool();
-                bool isOwner = reader.ReadBool();
-                ulong sceneId = reader.ReadULong();
-                uint assetId = reader.ReadUInt();
-
-                switch (assetId)
-                {
-                    // Player
-                    case 3816198336:
-                        if (isLocalPlayer && isOwner)
-                            NetworkId = netid;
-                        break;
-                }
-                break;
-        }
-
-        var rolesyncid = NetworkMessageId<RoleSyncInfo>.Id;
-
-        if (rolesyncid == id)
-        {
-            uint targetNetId = reader.ReadUInt();
-            RoleTypeId targetRole = reader.ReadRoleType();
-
-            Logger.Info($"{PlayerTag} Set role {targetRole} to target network id {targetNetId}", "Client");
-            return true;
-        }
-
-        var vm = NetworkMessageId<VoiceMessage>.Id;
-
-        if (vm == id)
-        {
-            SendBroadcast($"Talking {PreAuth.UserId}", 1, Broadcast.BroadcastFlags.Normal);
-            return true;
-        }
-
-
-        /*
-
-        if (!Types.ContainsKey(id))
-            return true;
-
         string name = Types[id].FullName;
         switch (name)
         {
@@ -326,52 +328,46 @@ public class BaseClient : IDisposable
 
             case "PlayerStatsSystem.SyncedStatMessages+StatMessage":
                 break;
+
+            case "Mirror.SpawnMessage":
+                uint netid = reader.ReadUInt();
+                bool isLocalPlayer = reader.ReadBool();
+                bool isOwner = reader.ReadBool();
+                ulong sceneId = reader.ReadULong();
+                uint assetId = reader.ReadUInt();
+
+                switch (assetId)
+                {
+                    // Player
+                    case 3816198336:
+                        if (isLocalPlayer && isOwner)
+                            NetworkIdentityId = netid;
+                        break;
+                }
+                break;
+
             default:
                 Console.WriteLine($"FROM SERVER -> " + name);
                 break;
-        }*/
+        }
 
         return true;
     }
-    public void SendHint(string message, float duration = 3)
+
+    public void Connect<TServer>() where TServer : Server
     {
-        NetworkWriter writerPooled = new NetworkWriter();
+        Server server = Server.Get<TServer>();
 
-        writerPooled.WriteUShort(NetworkMessageId<HintMessage>.Id);
+        if (server == null)
+        {
+            Disconnect("Server not found.");
+            return;
+        }
 
-        var hint = new TextHint(message, new HintParameter[] {
-                        new StringHintParameter(message) }, null, duration);
-
-        //TextHint
-        writerPooled.WriteByte(1);
-        writerPooled.Serialize(hint);
-
-        SendMirrorData(writerPooled);
+        Connect(server);
     }
 
-    public void SendBroadcast(string message, ushort time, Broadcast.BroadcastFlags flags)
-    {
-        NetworkWriter writerPooled = new NetworkWriter();
-
-        // RPC MESSAGE
-        writerPooled.WriteUShort(33978);
-        writerPooled.WriteUInt(NetworkId);
-        writerPooled.WriteByte(11);
-        // BROADCAST
-        writerPooled.WriteUShort(5862);
-
-        NetworkWriter wri2 = new NetworkWriter();
-
-        wri2.WriteString(message);
-        wri2.WriteUShort(time);
-        wri2.WriteByte((byte)flags);
-
-        writerPooled.WriteArraySegment(wri2.ToArraySegment());
-
-        SendMirrorData(writerPooled);
-    }
-
-    public void Connect(Server server)
+    public void Connect<TServer>(TServer server) where TServer : Server
     {
         if (Connection.IsConnected && server == Server)
             return;
@@ -398,6 +394,79 @@ public class BaseClient : IDisposable
         writer = null;
     }
 
+    public void SendMirrorData<TMessage>() where TMessage : struct, NetworkMessage
+    {
+        NetworkWriter writer = new NetworkWriter();
+        writer.WriteUShort(NetworkMessageId<TMessage>.Id);
+        SendMirrorData(writer);
+    }
+
+    public void SendHint(string message, float duration = 3)
+    {
+        //message = PlaceHolders.ReplacePlaceholders(message);
+
+        NetworkWriter wr = new NetworkWriter();
+
+        wr.WriteUShort(NetworkMessageId<HintMessage>.Id);
+
+        var hint = new TextHint(message, new HintParameter[] {
+                        new StringHintParameter(message) }, null, duration);
+
+        //TextHint
+        wr.WriteByte(1);
+        wr.Serialize(hint);
+
+        SendMirrorData(wr);
+    }
+
+    public void SpawnObjects()
+    {
+        SendMirrorData<ObjectSpawnStartedMessage>();
+        SendMirrorData<ObjectSpawnFinishedMessage>();
+    }
+
+    public void SetRole(RoleTypeId role)
+    {
+        NetworkWriter wr = new NetworkWriter();
+        wr.WriteUShort(NetworkMessageId<RoleSyncInfo>.Id);
+
+        wr.WriteUInt(NetworkIdentityId);
+        wr.WriteSByte((sbyte)role);
+        wr.WriteRelativePosition(new RelativePosition(new UnityEngine.Vector3(0f, 0f, 0f)));
+        wr.WriteUShort(0);
+
+        SendMirrorData(wr);
+    }
+
+    public void Spawn()
+    {
+        // Spawns game manager.
+        /*Spawn(
+            30,
+            false,
+            false,
+
+            3656837586448471562,
+            180257209,
+
+            UnityEngine.Vector3.zero,
+            UnityEngine.Quaternion.identity,
+            UnityEngine.Vector3.one);*/
+
+        SpawnPlayer();
+    }
+
+    public PlayerObject Object;
+
+    public void SpawnPlayer()
+    {
+        Object = new PlayerObject(true, true, NextId);
+        Object.Spawn(this, default);
+        Object.SendUpdate(this);
+
+        this.NetworkIdentityId = Object.NetworkId;
+    }
+
     public void DestroyObject(uint networkIdentityId)
     {
         NetworkWriter wr = new NetworkWriter();
@@ -422,11 +491,57 @@ public class BaseClient : IDisposable
         DestroyObject(NetworkIdentityId);
     }
 
-    public void NotReady()
+    public void SendToScene(string sceneName)
     {
         NetworkWriter wr = new NetworkWriter();
 
-        wr.WriteUShort(NetworkMessageId<NotReadyMessage>.Id);
+        wr.WriteUShort(NetworkMessageId<SceneMessage>.Id);
+
+        //Scene name
+        wr.WriteString(sceneName);
+        //Scene operation ( Normal, LoadAdditive, UnloadAdditive )
+        wr.WriteByte(0);
+        //Custom handling
+        wr.WriteBool(false);
+
+        SendMirrorData(wr);
+    }
+
+    public void NotReady()
+    {
+        SendMirrorData<NotReadyMessage>();
+    }
+
+    public void SetSeed(int seed)
+    {
+        NetworkWriter wr = new NetworkWriter();
+
+        wr.WriteUShort(NetworkMessageId<SeedMessage>.Id);
+
+        wr.WriteInt(seed);
+
+        SendMirrorData(wr);
+    }
+
+    public void SetHealth(float value)
+    {
+        NetworkWriter wr = new NetworkWriter();
+        wr.WriteUShort(NetworkMessageId<StatMessage>.Id);
+
+        wr.WriteUInt(NetworkIdentityId);
+
+        // 0 HealthStat
+        // 1 AhpStat
+        // 2 StaminaStat
+        // 3 AdminFlagsStat
+        // 4 HumeShieldStat
+        // 5 Vigor Stat
+        wr.WriteByte(0);
+
+        wr.WriteByte((byte)StatMessageType.CurrentValue);
+
+        int clampedValue = UnityEngine.Mathf.Clamp(UnityEngine.Mathf.CeilToInt(value), 0, 65535);
+        wr.WriteUShort((ushort)clampedValue);
 
         SendMirrorData(wr);
     }
@@ -449,25 +564,25 @@ public class BaseClient : IDisposable
     public void Disconnect(string message = null)
     {
         if (Request == null)
+        {
             Peer.Disconnect();
+        }
         else
         {
             Request.RejectWithMessage(message);
+            Listener?.OnClientDisconneted(this, DisconnectReason.DisconnectPeerCalled);
             Dispose();
         }
     }
 
     public void Dispose()
     {
-        IsDisposing = true;
         Connection.Dispose();
         BackupConnection.Dispose();
 
         if (Peer != null)
-        {
             Listener.ClientById.Remove(Peer.Id);
-        }
-        else
-            Listener.NotConnectedClients.Remove(this);
+
+        IsDisposing = true;
     }
 }
