@@ -43,7 +43,7 @@ public class BaseListener
             return _httpClient;
         }
     }
-    public BaseListener(string name, string listenIp, int listenPort, string gameVersion, string[] priorities, CancellationToken cancellationToken)
+    public BaseListener(string name, string listenIp, int listenPort, string gameVersion, string[] priorities, string ip, CancellationToken cancellationToken)
     {
         _token = cancellationToken;
 
@@ -51,6 +51,8 @@ public class BaseListener
 
         ListenIpAddress = listenIp;
         ListenPort = listenPort;
+
+        PublicIp = ip;
 
         GameVersion = Version.Parse(gameVersion);
 
@@ -82,7 +84,8 @@ public class BaseListener
 
     public async Task Initialize()
     {
-        PublicIp = await GetPublicIp();
+        if (PublicIp == "auto")
+            PublicIp = await GetPublicIp();
     }
 
     async Task<string> GetPublicIp()

@@ -11,7 +11,7 @@ public class Listener : BaseListener
     public bool ServerListUpdate;
     public int ServerListCycle;
 
-    public Listener(ListenerSettings settings, CancellationToken token) : base(settings.ShortName, settings.Address, settings.Port, settings.GameVersion, settings.Priorities, token) 
+    public Listener(ListenerSettings settings, CancellationToken token) : base(settings.ShortName, settings.ListenAddress, settings.ListenPort, settings.GameVersion, settings.Priorities, settings.Address, token) 
     {
         Server.Register(new LobbyServer());
 

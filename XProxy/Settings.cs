@@ -35,8 +35,10 @@ public class Settings
 
 public class ListenerSettings
 {
-    public string Address { get; set; } = "0.0.0.0";
-    public int Port { get; set; } = 7777;
+    public string ListenAddress { get; set; } = "0.0.0.0";
+    public int ListenPort { get; set; } = 7777;
+
+    public string Address { get; set; } = "auto";
 
     public string ShortName { get; set; } = "Main";
     public string Name { get; set; } = "XProxy";
