@@ -1,4 +1,6 @@
-﻿namespace XProxy;
+﻿using XProxy.Core;
+
+namespace XProxy;
 
 public static class Extensions
 {
@@ -7,7 +9,7 @@ public static class Extensions
         if (gameVersion.Major != clientVersion.Major || gameVersion.Minor != clientVersion.Minor)
             return false;
 
-        if (!backwardsCompatible)
+        if (backwardsCompatible)
             return gameVersion.Build == backwardsRevision;
 
         return gameVersion.Build >= backwardsRevision && gameVersion.Build <= clientVersion.Build;

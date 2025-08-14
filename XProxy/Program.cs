@@ -1,10 +1,15 @@
-﻿using XProxy.Services;
+﻿using XProxy;
+
+Settings.Load();
+
+NetDebug.Logger = new CustomNetLogger();
 
 HostApplicationBuilder builder = Host.CreateApplicationBuilder(args);
 
 builder.Services.AddHostedService<LoggingService>();
 builder.Services.AddHostedService<ListenersService>();
 builder.Services.AddHostedService<PublicKeyService>();
+builder.Services.AddHostedService<ListService>();
 
 IHost host = builder.Build();
 host.Run();

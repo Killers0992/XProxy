@@ -37,31 +37,10 @@ public class BehaviourInfo
 
     public void Serialize(NetworkWriter writer, bool initialState)
     {
-        // reserve length header to ensure the correct amount will be read.
-        // originally we used a 4 byte header (too bandwidth heavy).
-        // instead, let's "& 0xFF" the size.
-        //
-        // this is cleaner than barriers at the end of payload, because:
-        // - ensures the correct safety is read _before_ payload.
-        // - it's quite hard to break the check.
-        //   a component would need to read/write the intented amount
-        //   multiplied by 255 in order to miss the check.
-        //   with barriers, reading 1 byte too much may still succeed if the
-        //   next component's first byte matches the expected barrier.
-        // - we can still attempt to correct the invalid position via the
-        //   safety length byte (we know that one is correct).
-        //
-        // it's just overall cleaner, and still low on bandwidth.
-
-        // write placeholder length byte
-        // (jumping back later is WAY faster than allocating a temporary
-        //  writer for the payload, then writing payload.size, payload)
-
         int headerPosition = writer.Position;
         writer.WriteByte(0);
-        int contentPosition = writer.Position;
 
-        // write payload
+        int contentPosition = writer.Position;
         try
         {
             OnSerialize(writer, initialState);
@@ -72,10 +51,11 @@ public class BehaviourInfo
         }
 
         int endPosition = writer.Position;
-
         writer.Position = headerPosition;
+
         int size = endPosition - contentPosition;
         byte safety = (byte)(size & 0xFF);
+
         writer.WriteByte(safety);
         writer.Position = endPosition;
     }
@@ -120,10 +100,9 @@ public class BehaviourInfo
         for (int i = 0; i < SyncObjects.Length; i++)
         {
             SyncObjectInfo syncObject = this.SyncObjects[i];
-            if ((this.SyncObjectsDirtyBits & 1UL << i) != 0UL)
-            {
+
+            if ((SyncObjectsDirtyBits & 1UL << i) != 0UL)
                 syncObject.OnSerializeDelta(writer);
-            }
         }
     }
 }

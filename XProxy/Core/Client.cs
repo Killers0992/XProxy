@@ -8,7 +8,7 @@ public class Client : BaseClient
 
     public override void OnConnectedToServer(Server Server)
     {
-        Logger.Info($"{PlayerTag} Connected.", "Client");
+        Logger.Info($"{Tag} Connected.", "Client");
     }
 
     public override bool OnDisconnectedFromServer(Server Server, ConnectionFailedInfo info)
@@ -16,7 +16,8 @@ public class Client : BaseClient
         switch (info.Response)
         {
             case DisconnectType.ServerIsFull:
-                break;
+                TakeServerAndTryConnect();
+                return false;
         }
 
         return true;

@@ -1,24 +1,35 @@
-﻿using XProxy.Objects.Components;
+﻿using UnityEngine;
+using XProxy.Objects.Components;
 
-namespace XProxy.Objects
+namespace XProxy.Objects;
+
+public class TextToyObject : SpawnableObject
 {
-    public class TextToyObject : SpawnableObject
+    public string Text
     {
-        public string Text
-        {
-            get => TextToy.Text;
-            set => TextToy.Text = value;
-        }
+        get => TextToy.Text;
+        set => TextToy.Text = value;
+    }
 
-        public TextToyComponent TextToy { get; private set; }
+    public Vector2 DisplaySize
+    {
+        get => TextToy.DisplaySize;
+        set => TextToy.DisplaySize = value;
+    }
 
-        public TextToyObject(string text, uint networkId) : base(false, false, networkId, 162530276, 0)
+    public TextToyComponent TextToy { get; private set; }
+
+    public TextToyObject(World world, string text) : base(world, null, 162530276)
+    {
+        WithPayload = true;
+
+        TextToy = new TextToyComponent(this);
+
+        Behaviours = new[]
         {
-            TextToy = new TextToyComponent(this);
-            Behaviours = new[]
-            {
-                TextToy,
-            };
-        }
+            TextToy,
+        };
+
+        Text = text;
     }
 }

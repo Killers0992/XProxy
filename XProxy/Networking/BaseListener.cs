@@ -1,27 +1,60 @@
-﻿namespace XProxy.Networking;
+﻿using System.Net.Http;
+using System.Net.Sockets;
+
+namespace XProxy.Networking;
 
 public class BaseListener
 {
     public const int PoolingDelayMs = 10;
 
+    private HttpClient _httpClient;
     private NetManager _manager;
     private EventBasedNetListener _listener;
     private CancellationToken _token;
+    private Queue<Client> _clientsToRemove = new Queue<Client>();
+
+    public string Name { get; }
 
     public string ListenIpAddress { get; }
     public int ListenPort { get; }
 
-    public Version GameVersion { get; } = new Version(14, 1, 0);
+    public string PublicIp { get; private set; }
+
+    public string[] Priorities { get; }
+
+    public Version GameVersion { get; }
 
     public List<BaseClient> NotConnectedClients = new List<BaseClient>();
     public Dictionary<int, BaseClient> ClientById = new Dictionary<int, BaseClient>();
 
-    public BaseListener(string listenIp, int listenPort, CancellationToken cancellationToken)
+    public string Tag => $"[(f=cyan){ListenIpAddress}:{ListenPort}(f=white)]";
+
+    public HttpClient Http
+    {
+        get
+        {
+            if (_httpClient == null)
+            {
+                _httpClient = new HttpClient();
+                _httpClient.DefaultRequestHeaders.Add("User-Agent", "SCP SL");
+                _httpClient.DefaultRequestHeaders.Add("Game-Version", GameVersion.ToString(3));
+            }
+
+            return _httpClient;
+        }
+    }
+    public BaseListener(string name, string listenIp, int listenPort, string gameVersion, string[] priorities, CancellationToken cancellationToken)
     {
         _token = cancellationToken;
 
+        Name = name;
+
         ListenIpAddress = listenIp;
         ListenPort = listenPort;
+
+        GameVersion = Version.Parse(gameVersion);
+
+        Priorities = priorities;
 
         _listener = new EventBasedNetListener();
         _listener.ConnectionRequestEvent += OnConnectionRequest;
@@ -38,14 +71,42 @@ public class BaseListener
             MaxConnectAttempts = 2,
         };
 
-        _manager.StartInManualMode(IPAddress.Parse(listenIp), IPAddress.IPv6Any, listenPort);
+        if (!_manager.StartInManualMode(IPAddress.Parse(listenIp), IPAddress.IPv6Any, listenPort))
+        {
+            Logger.Info($"{Tag} Failed to start listener!", "Listener");
+            return;
+        }
 
-        Task.Run(() => RunEventPolling(_token), _token);    
+        Task.Run(() => RunEventPolling(_token), _token);
     }
 
-    Queue<Client> _clientsToRemove = new Queue<Client>();
+    public async Task Initialize()
+    {
+        PublicIp = await GetPublicIp();
+    }
 
-    private async Task RunEventPolling(CancellationToken token)
+    async Task<string> GetPublicIp()
+    {
+        try
+        {
+            using (var response = await Http.GetAsync("https://api.scpslgame.com/ip.php"))
+            {
+                string str = await response.Content.ReadAsStringAsync();
+
+                str = (str.EndsWith(".") ? str.Remove(str.Length - 1) : str);
+
+                return str;
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.Error(ex, "ListService");
+            return null;
+        }
+    }
+
+
+    async Task RunEventPolling(CancellationToken token)
     {
         while (!token.IsCancellationRequested)
         {
@@ -99,7 +160,7 @@ public class BaseListener
 
     }
 
-    private void OnConnectionRequest(ConnectionRequest request)
+    void OnConnectionRequest(ConnectionRequest request)
     {
         string connectionIpAddress = $"{request.RemoteEndPoint.Address}";
 
@@ -127,7 +188,7 @@ public class BaseListener
         OnClientConnected(new Client(this, request, preAuth));
     }
 
-    public void OnNetworkReceive(NetPeer peer, NetPacketReader reader, byte channelNumber, DeliveryMethod deliveryMethod)
+    void OnNetworkReceive(NetPeer peer, NetPacketReader reader, byte channelNumber, DeliveryMethod deliveryMethod)
     {
         if (!ClientById.TryGetValue(peer.Id, out BaseClient client))
             return;
@@ -136,12 +197,13 @@ public class BaseListener
         int pos = reader.Position;
         int length = reader.AvailableBytes;
 
-        client.ProcessMirrorDataFromListener(ref bytes, ref pos, ref length);
+        if (!client.ProcessMirrorDataFromListener(ref bytes, ref pos, ref length))
+            return;
 
         client.Connection.Send(bytes, pos, length, deliveryMethod);
     }
 
-    public void OnPeerDisconnected(NetPeer peer, DisconnectInfo disconnectInfo)
+    void OnPeerDisconnected(NetPeer peer, DisconnectInfo disconnectInfo)
     {
         if (!ClientById.TryGetValue(peer.Id, out BaseClient client))
             return;

@@ -79,7 +79,7 @@ public class Connection : IDisposable
 
         Server = server;
 
-        Logger.Info($"{Client.PlayerTag} {(reconnect ? "Reconnecting" : "Connecting")} to (f=yellow){server.Name}(f=white)", "Client");
+        Logger.Info($"{Client.Tag} {(reconnect ? "Reconnecting" : "Connecting")} to (f=yellow){server.Name}(f=white)", "Client");
 
         if (server.IsSimulated)
         {
@@ -126,7 +126,7 @@ public class Connection : IDisposable
         switch (disconnectInfo.Reason)
         {
             default:
-                Logger.Info($"{Client.PlayerTag} {disconnectInfo.Reason}", "Client");
+                Logger.Info($"{Client.Tag} {disconnectInfo.Reason}", "Client");
                 break;
             case DisconnectReason.ConnectionFailed when disconnectInfo.AdditionalData.RawData == null:
                 if (!IsMain)
@@ -137,8 +137,9 @@ public class Connection : IDisposable
 
                 //Logger.Info(ConfigService.Singleton.Messages.PlayerServerIsOfflineMessage.Replace("%tag%", Owner.Tag).Replace("%address%", $"{Owner.ClientEndPoint}").Replace("%userid%", Owner.UserId), $"Player");
                 //Owner.DisconnectFromProxy(ConfigService.Singleton.Messages.ServerIsOfflineKickMessage.Replace("%server%", Owner.CurrentServer.Name));
-                Logger.Info($"{Client.PlayerTag} Server (f=yellow){Server.IpAddress}:{Server.Port}(f=white) is offline!", "Client");
-                Client.Disconnect();
+                Logger.Info($"{Client.Tag} Server (f=yellow){Server.IpAddress}:{Server.Port}(f=white) is offline!", "Client");
+
+                Client.TakeServerAndTryConnect();
                 return;
 
             case DisconnectReason.ConnectionRejected when disconnectInfo.AdditionalData.RawData != null:
@@ -161,7 +162,7 @@ public class Connection : IDisposable
                             //Logger.Info(ConfigService.Singleton.Messages.PlayerDelayedConnectionMessage.Replace("%tag%", Owner.Tag).Replace("%address%", $"{Owner.ClientEndPoint}").Replace("%userid%", Owner.UserId).Replace("%time%", $"{offset}"), $"Player");
                         }
 
-                        Logger.Info($"{Client.PlayerTag} Delay connecting to (f=yellow){Server.IpAddress}:{Server.Port}(f=white) by {offset} seconds!", "Client");
+                        Logger.Info($"{Client.Tag} Delay connecting to (f=yellow){Server.IpAddress}:{Server.Port}(f=white) by {offset} seconds!", "Client");
                         break;
 
                     case RejectionReason.ServerFull:
@@ -171,7 +172,7 @@ public class Connection : IDisposable
                             return;
                         }
 
-                        Logger.Info($"{Client.PlayerTag} Server (f=yellow){Server.IpAddress}:{Server.Port}(f=white) is full!", "Client");
+                        Logger.Info($"{Client.Tag} Server (f=yellow){Server.IpAddress}:{Server.Port}(f=white) is full!", "Client");
                         Client.OnDisconnectedFromServerInternal(Server, new ConnectionFailedInfo($"Server {Server.IpAddress}:{Server.Port} is full!", DisconnectType.ServerIsFull));
                         break;
 
@@ -187,11 +188,11 @@ public class Connection : IDisposable
                             return;
                         }
 
-                        Logger.Info($"{Client.PlayerTag} Banned from (f=yellow){Server.IpAddress}:{Server.Port}(f=white) with reason (f=yellow){banReason}(f=white)!", "Client");
+                        Logger.Info($"{Client.Tag} Banned from (f=yellow){Server.IpAddress}:{Server.Port}(f=white) with reason (f=yellow){banReason}(f=white)!", "Client");
                         break;
 
                     case RejectionReason.Challenge:
-                        Logger.Info($"{Client.PlayerTag} Processing challenge.", "Client");
+                        Logger.Info($"{Client.Tag} Processing challenge.", "Client");
                         Challenge.ProcessChallenge(disconnectInfo.AdditionalData);
                         break;
 
@@ -265,7 +266,9 @@ public class Connection : IDisposable
                 Server?.InternalClientDisconnected(Client);
 
                 if (!IsConnectedToSimulated)
+                {
                     _netManager.FirstPeer.Disconnect();
+                }
             }
 
             _netManager?.Stop();

@@ -4,23 +4,40 @@ namespace XProxy.Core;
 
 public class SpawnableObject : IDisposable
 {
-    public uint NetworkId { get; }
+    public uint NetworkId { get; private set; }
     public uint AssetId { get; }
     public ulong SceneId { get; }
 
-    public bool IsOwner { get; }
-    public bool IsLocalPlayer { get; }
+    public bool WithPayload { get; set; }
+
+    public Vector3 Position { get; set; } = Vector3.zero;
+    public Quaternion Rotation { get; set; } = Quaternion.identity;
+    public Vector3 Scale { get; set; } = Vector3.one;
 
     public BaseClient Owner { get; private set; }
 
-    public SpawnableObject(bool isLocalPlayer, bool isOwner, uint networkId, uint assetId, ulong sceneId)
+    public World World { get; }
+
+    public SpawnableObject(World world, BaseClient owner, uint assetId, ulong sceneId = 0, uint networkId = 0)
     {
-        NetworkId = networkId;
+        Owner = owner;
+        World = world;
+
+        if (networkId == 0)
+        {
+            NetworkId = world.GetFreeId();
+            world.Objects.Add(NetworkId, this);
+        }
+        else
+        {
+            NetworkId = networkId;
+
+            if (!world.Objects.ContainsKey(networkId))
+                world.Objects.Add(networkId, this);
+        }
+
         AssetId = assetId;
         SceneId = sceneId;
-
-        IsOwner = isOwner;
-        IsLocalPlayer = isLocalPlayer;
     }
 
     public BehaviourInfo[] Behaviours { get; set; }
@@ -119,29 +136,36 @@ public class SpawnableObject : IDisposable
     public void Destroy()
     {
         if (Owner != null)
-        {
             Owner.DestroyObject(NetworkId);
-        }
         
         Dispose();
     }
 
-    public void Spawn(BaseClient client, ArraySegment<byte> payload)
+    public void SpawnWithPayload(BaseClient client)
+    {
+        NetworkWriter wr2 = Serialize(true);
+        Spawn(client, wr2.ToArraySegment());
+    }
+
+    public void Spawn(BaseClient client, ArraySegment<byte> payload = default)
     {
         NetworkWriter wr = new NetworkWriter();
 
         wr.WriteUShort(NetworkMessageId<SpawnMessage>.Id);
 
         wr.WriteUInt(NetworkId);
-        wr.WriteBool(IsLocalPlayer);
-        wr.WriteBool(IsOwner);
+
+        // IsLocalPlayer
+        wr.WriteBool(Owner == client);
+        // IsOwner
+        wr.WriteBool(Owner == client);
 
         wr.WriteULong(SceneId);
         wr.WriteUInt(AssetId);
 
-        wr.WriteVector3(Vector3.zero);
-        wr.WriteQuaternion(Quaternion.identity);
-        wr.WriteVector3(Vector3.one);
+        wr.WriteVector3(Position);
+        wr.WriteQuaternion(Rotation);
+        wr.WriteVector3(Scale);
 
         wr.WriteArraySegmentAndSize(payload);
 
@@ -150,6 +174,7 @@ public class SpawnableObject : IDisposable
 
     public void Dispose()
     {
+        World.Objects.Remove(NetworkId);
         Owner = null;
     }
 }

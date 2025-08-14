@@ -2,11 +2,19 @@
 
 public class ListenersService : BackgroundService
 {
-    public List<Listener> Listeners = new List<Listener>();
+    public static List<Listener> Listeners = new List<Listener>();
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        Listeners.Add(new Listener("127.0.0.1", 7777, stoppingToken));
+        foreach(ServerSettings server in Settings.Singleton.Servers)
+        {
+            Server.Register(new Server(server.Name, server.Address, server.Port, false, server.ForwardIpAddress));
+        }
+
+        foreach(ListenerSettings listener in Settings.Singleton.Listeners)
+        {
+            Listeners.Add(new Listener(listener, stoppingToken));
+        }
 
         await RunServerUpdater(stoppingToken);
     }
@@ -15,20 +23,23 @@ public class ListenersService : BackgroundService
     {
         while (!token.IsCancellationRequested)
         {
-            foreach (Server server in Server.RegisteredServers.Values)
+            foreach (var instances in Server.RegisteredServers.Values)
             {
-                try
+                foreach(var server in instances.Values)
                 {
-                    server.OnUpdate();
+                    try
+                    {
+                        server.OnUpdate();
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine(ex);
+                    }
                 }
-                catch (Exception ex)
-                {
-                    Console.WriteLine(ex);
-                }
+
             }
             
             await Task.Delay(10, token);
         }
-
     }
 }

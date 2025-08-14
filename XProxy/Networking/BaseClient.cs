@@ -1,38 +1,55 @@
 ﻿using Hints;
-using Mirror;
 using PlayerRoles;
 using PlayerRoles.FirstPersonControl;
 using PlayerRoles.FirstPersonControl.NetworkMessages;
 using RelativePositioning;
-using UnityEngine.SceneManagement;
+using UnityEngine;
 using XProxy.Objects;
 using static MapGeneration.SeedSynchronizer;
 using static PlayerStatsSystem.SyncedStatMessages;
+using Logger = XProxy.Misc.Logger;
 
 namespace XProxy.Networking;
 
 public class BaseClient : IDisposable
 {
+    public const float InverseAccuracy = 0.00390625f;
+
+    private World _world;
     private Connection _connection = new Connection();
-    private uint _nextId = 0;
 
     public uint NetworkIdentityId { get; private set; }
-
-    public uint NextId => _nextId++;
 
     public bool IsReady { get; private set; }
 
     public Server Server => Connection.Server;
 
-    public ConnectionRequest Request { get; set; }
+    public World World
+    {
+        get => _world;
+        set
+        {
+            if (value == null && _world != null)
+            {
+                _world.Unload(this);
+            }
 
+            _world = value;
+
+            if (value != null)
+                value.Load(this);
+        }
+    }
+
+    public ConnectionRequest Request { get; set; }
     public BaseListener Listener { get; }
     public NetPeer Peer { get; set; } = null;
     public PreAuth PreAuth { get; }
     public double ListenerRemoteTimestamp { get; private set; }
     public bool IsDisposing { get; private set; }
 
-    public RelativePosition Position;
+    public byte WaypointId { get; private set; }
+    public Vector3 Position { get; private set; }
 
     public Connection Connection
     {
@@ -53,6 +70,7 @@ public class BaseClient : IDisposable
             }
 
             _connection = value;
+
             OnConnectedToServerInternal(Server);
         }
     }
@@ -69,7 +87,7 @@ public class BaseClient : IDisposable
 
     public Dictionary<ushort, Type> Types = ProxyUtils.FindNetworkMessageTypes();
 
-    public string PlayerTag => $"[(f=cyan){Listener.ListenIpAddress}:{Listener.ListenPort}(f=white)] [(f=green){PreAuth.UserId}(f=white)]{(Server == null ? string.Empty : $" [(f=yellow){Server.Name}(f=white)]")}";
+    public string Tag => $"{Listener.Tag} [(f=green){PreAuth.UserId}(f=white)]{(Server == null ? string.Empty : $" {Server.Tag}")}";
 
     public BaseClient(BaseListener listener, ConnectionRequest request, PreAuth preAuth)
     {
@@ -227,6 +245,9 @@ public class BaseClient : IDisposable
                 if (ProcessMirrorMessageFromListener(messageId, reader2))
                 {
                 }
+                else
+                    return false;
+
             }
             totalReads++;
         }
@@ -243,6 +264,12 @@ public class BaseClient : IDisposable
         {
             // Ignore these messages.
             case "PlayerRoles.FirstPersonControl.NetworkMessages.FpcFromClientMessage":
+                if (!IsReady)
+                {
+                    return false;
+                }
+
+
                 byte code = reader.ReadByte();
 
                 bool _bitMouseLook = false;
@@ -257,15 +284,16 @@ public class BaseClient : IDisposable
 
                 if (_bitPosition)
                 {
-                    byte WaypointId = reader.ReadByte();
+                    byte waypointId = reader.ReadByte();
                     short PositionX, PositionY, PositionZ;
-                    if (WaypointId > 0)
+                    if (waypointId > 0)
                     {
                         PositionX = reader.ReadShort();
                         PositionY = reader.ReadShort();
                         PositionZ = reader.ReadShort();
 
-                        Logger.Info(PositionX + " " + PositionY + " " + PositionZ);
+                        WaypointId = waypointId;
+                        Position = new Vector3(PositionX * InverseAccuracy, PositionY * InverseAccuracy, PositionZ * InverseAccuracy);
                     }
                     else
                     {
@@ -287,13 +315,13 @@ public class BaseClient : IDisposable
                     _rotH = 0;
                     _rotV = 0;
                 }
-                //Logger.Info($"Code {code}, State {_state}, BitPos {_bitPosition}, RotH {_rotH}, RotV {_rotV}");
                 break;
             case "Mirror.NetworkPingMessage":
             case "Mirror.TimeSnapshotMessage":
                 break;
             case "Mirror.ReadyMessage":
                 Server?.OnClientReady(this);
+                IsReady = true;
                 break;
 
             case "Mirror.AddPlayerMessage":
@@ -301,7 +329,7 @@ public class BaseClient : IDisposable
                 break;
 
             default:
-                Console.WriteLine($"FROM CLIENT -> " + name);
+                //Console.WriteLine($"FROM CLIENT -> " + name);
                 break;
         }
 
@@ -347,11 +375,34 @@ public class BaseClient : IDisposable
                 break;
 
             default:
-                Console.WriteLine($"FROM SERVER -> " + name);
+                //Console.WriteLine($"FROM SERVER -> " + name);
                 break;
         }
 
         return true;
+    }
+
+    public Queue<string> ServersToConnect = new Queue<string>();
+
+    public void TakeServerAndTryConnect()
+    {
+        if (!ServersToConnect.TryDequeue(out string serverName))
+        {
+            Disconnect("Failed to connect to any priority servers");
+            return;
+        }
+
+        Server target = Server.Get<Server>(name: serverName);
+        Connect(target);
+    }
+
+    public void Connect(string[] servers)
+    {
+        ServersToConnect = new Queue<string>(servers);
+
+        Logger.Info($"{Tag} Connect to (f=yellow){string.Join("(f=white) -> (f=yellow)", servers)}(f=white)", "Client");
+
+        TakeServerAndTryConnect();
     }
 
     public void Connect<TServer>() where TServer : Server
@@ -373,7 +424,7 @@ public class BaseClient : IDisposable
             return;
 
         BackupConnection.Setup(this);
-        BackupConnection.TryMakeConnection(server, PreAuth.Create(server.IncludeIpInPreauth));
+        BackupConnection.TryMakeConnection(server, PreAuth.Create(server.ForwardIpAddress));
     }
 
     public void SendData(byte[] bytes, int position, int length, DeliveryMethod method)
@@ -389,7 +440,14 @@ public class BaseClient : IDisposable
         if (Batcher == null)
             return;
 
-        Batcher.AddMessage(writer.ToArraySegment(), Connectiontime.TotalSeconds);
+        try
+        {
+            Batcher.AddMessage(writer.ToArraySegment(), Connectiontime.TotalSeconds);
+        }
+        catch (Exception ex)
+        {
+            Logger.Error(ex);
+        }
 
         writer = null;
     }
@@ -438,31 +496,12 @@ public class BaseClient : IDisposable
         SendMirrorData(wr);
     }
 
-    public void Spawn()
-    {
-        // Spawns game manager.
-        /*Spawn(
-            30,
-            false,
-            false,
-
-            3656837586448471562,
-            180257209,
-
-            UnityEngine.Vector3.zero,
-            UnityEngine.Quaternion.identity,
-            UnityEngine.Vector3.one);*/
-
-        SpawnPlayer();
-    }
-
     public PlayerObject Object;
 
     public void SpawnPlayer()
     {
-        Object = new PlayerObject(true, true, NextId);
-        Object.Spawn(this, default);
-        Object.SendUpdate(this);
+        Object = new PlayerObject(this);
+        Object.Position = new Vector3(0f, -299f, 0f);
 
         this.NetworkIdentityId = Object.NetworkId;
     }
@@ -546,13 +585,20 @@ public class BaseClient : IDisposable
         SendMirrorData(wr);
     }
 
+    public Action<BaseClient, Server> ServerIsFull;
+    public Action<BaseClient, Server> ServerIsOffline;
+
     public void OnConnectionResponse(Server server, BaseResponse response)
     {
         switch (response)
         {
             case ServerIsFullResponse _:
+                Logger.Info($"{Tag} Server (f=green){server.Name}(f=white) is full!", "Client");
+                ServerIsFull?.Invoke(this, server);
                 break;
             case ServerIsOfflineResponse _:
+                Logger.Info($"{Tag} Server (f=green){server.Name}(f=white) is offline!", "Client");
+                ServerIsOffline?.Invoke(this, server);
                 break;
             default:
                 break;
@@ -577,6 +623,8 @@ public class BaseClient : IDisposable
 
     public void Dispose()
     {
+        World = null;
+
         Connection.Dispose();
         BackupConnection.Dispose();
 
