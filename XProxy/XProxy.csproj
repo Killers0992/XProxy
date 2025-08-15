@@ -14,16 +14,16 @@
 
   <ItemGroup>
     <Reference Include="Assembly-CSharp">
-      <HintPath>..\References\Assembly-CSharp.dll</HintPath>
+      <HintPath>$(SL_REFERENCES)\Assembly-CSharp.dll</HintPath>
     </Reference>
     <Reference Include="BouncyCastle.Cryptography">
-      <HintPath>..\References\BouncyCastle.Cryptography.dll</HintPath>
+      <HintPath>$(SL_REFERENCES)\BouncyCastle.Cryptography.dll</HintPath>
     </Reference>
     <Reference Include="Mirror">
-      <HintPath>..\References\Mirror.dll</HintPath>
+      <HintPath>$(SL_REFERENCES)\Mirror.dll</HintPath>
     </Reference>
     <Reference Include="UnityEngine.CoreModule">
-      <HintPath>..\References\UnityEngine.CoreModule.dll</HintPath>
+      <HintPath>$(UNITY_REFERENCES)\UnityEngine.CoreModule.dll</HintPath>
     </Reference>
   </ItemGroup>
 
