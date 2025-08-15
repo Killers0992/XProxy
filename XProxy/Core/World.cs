@@ -131,10 +131,11 @@ public class World : IDisposable
         _lock.EnterReadLock();
         try
         {
-            for (byte x = 0; x < byte.MaxValue; x++)
+            for (byte x = 1; x < byte.MaxValue; x++)
             {
                 if (Waypoints.ContainsKey(x))
                     continue;
+
                 return x;
             }
         }

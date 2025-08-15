@@ -260,15 +260,13 @@ public class BaseClient : IDisposable
     public bool ProcessMirrorMessageFromListener(ushort id, NetworkReader reader)
     {
         string name = Types[id].FullName;
+
         switch (name)
         {
             // Ignore these messages.
             case "PlayerRoles.FirstPersonControl.NetworkMessages.FpcFromClientMessage":
                 if (!IsReady)
-                {
                     return false;
-                }
-
 
                 byte code = reader.ReadByte();
 
@@ -420,6 +418,12 @@ public class BaseClient : IDisposable
 
     public void Connect<TServer>(TServer server) where TServer : Server
     {
+        if (server == null)
+        {
+            Disconnect("Server not found.");
+            return;
+        }
+
         if (Connection.IsConnected && server == Server)
             return;
 
