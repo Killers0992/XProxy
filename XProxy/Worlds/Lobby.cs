@@ -21,7 +21,7 @@ public class Lobby : World
 
         ConfigSync = new ConfigSyncObject(this);
 
-        TextToy = new TextToyObject(this, "Lobby");
+        TextToy = new TextToyObject(this, $"<size=3><color=red><b>Kings Playground");
         TextToy.Position = new Vector3(0f, -298f, 3.3f);
         TextToy.DisplaySize = new Vector2(150f, 25f);
 
@@ -30,6 +30,8 @@ public class Lobby : World
         TextToy2.Rotation = new Quaternion(0f, 180f, 0f, 0f);
         TextToy2.DisplaySize = new Vector2(150f, 50f);
     }
+
+    Vector3 Portal1 = new Vector3(0f, -298f, -4f);
 
     public override void Update()
     {
@@ -40,10 +42,15 @@ public class Lobby : World
         {
             _next = DateTime.Now.AddSeconds(0.1);
 
-            TextToy2.Text = $"<size=5>{DateTime.Now.TimeOfDay.Ticks}</size>";
-
             foreach(BaseClient client in GetClientsSnapshot())
             {
+                float distance = Vector3.Distance(GetPosition(client), Portal1);
+
+                if (distance < 1.5f)
+                {
+                    client.Connect<Server>(Server.Get<Server>("official1"));
+                }
+
                 TextToy2.SendUpdate(client);
             }
         }

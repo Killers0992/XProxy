@@ -181,6 +181,14 @@ public class World : IDisposable
         return 0;
     }
 
+    public Vector3 GetPosition(BaseClient client)
+    {
+        if (Waypoints.TryGetValue(client.WaypointId, out WaypointObject obj))
+            return obj.Position + client.Position;
+
+        return Vector3.zero;
+    }
+
     /// <summary>
     /// Loads a client into the world.
     /// </summary>
