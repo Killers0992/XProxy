@@ -85,8 +85,6 @@ public class BaseClient : IDisposable
     public DateTime ConnectedOn { get; } = DateTime.Now;
     public TimeSpan Connectiontime => DateTime.Now - ConnectedOn;
 
-    public Dictionary<ushort, Type> Types = ProxyUtils.FindNetworkMessageTypes();
-
     public string Tag => $"{Listener.Tag} [(f=green){PreAuth.UserId}(f=white)]{(Server == null ? string.Empty : $" {Server.Tag}")}";
 
     public BaseClient(BaseListener listener, ConnectionRequest request, PreAuth preAuth)
@@ -259,12 +257,9 @@ public class BaseClient : IDisposable
     // Returning true will cancel that message.
     public bool ProcessMirrorMessageFromListener(ushort id, NetworkReader reader)
     {
-        string name = Types[id].FullName;
-
-        switch (name)
+        switch (id)
         {
-            // Ignore these messages.
-            case "PlayerRoles.FirstPersonControl.NetworkMessages.FpcFromClientMessage":
+            case NetworkingMessages.FpcFromClientMessage:
                 if (!IsReady)
                     return false;
 
@@ -314,20 +309,16 @@ public class BaseClient : IDisposable
                     _rotV = 0;
                 }
                 break;
-            case "Mirror.NetworkPingMessage":
-            case "Mirror.TimeSnapshotMessage":
+            case NetworkingMessages.NetworkPingMessage:
+            case NetworkingMessages.TimeSnapshotMessage:
                 break;
-            case "Mirror.ReadyMessage":
+            case NetworkingMessages.ReadyMessage:
                 Server?.OnClientReady(this);
                 IsReady = true;
                 break;
 
-            case "Mirror.AddPlayerMessage":
+            case NetworkingMessages.AddPlayerMessage:
                 Server?.OnClientSpawnPlayer(this);
-                break;
-
-            default:
-                //Console.WriteLine($"FROM CLIENT -> " + name);
                 break;
         }
 
@@ -336,26 +327,9 @@ public class BaseClient : IDisposable
 
     public bool ProcessMirrorMessageFromServer(ushort id, NetworkReader reader)
     {
-        string name = Types[id].FullName;
-        switch (name)
+        switch (id)
         {
-            // Ignore these messages.
-            case "Mirror.RpcMessage":
-            case "Mirror.EntityStateMessage":
-            case "Mirror.TimeSnapshotMessage":
-
-            case "PlayerRoles.Subroutines.SubroutineMessage":
-            case "PlayerRoles.FirstPersonControl.NetworkMessages.FpcPositionMessage":
-
-            case "InventorySystem.Items.Autosync.AutosyncMessage":
-            case "InventorySystem.Items.Firearms.Ammo.ReserveAmmoSync+ReserveAmmoMessage":
-
-            case "VoiceChat.Networking.VoiceMessage":
-
-            case "PlayerStatsSystem.SyncedStatMessages+StatMessage":
-                break;
-
-            case "Mirror.SpawnMessage":
+            case NetworkingMessages.SpawnMessage:
                 uint netid = reader.ReadUInt();
                 bool isLocalPlayer = reader.ReadBool();
                 bool isOwner = reader.ReadBool();
@@ -370,10 +344,6 @@ public class BaseClient : IDisposable
                             NetworkIdentityId = netid;
                         break;
                 }
-                break;
-
-            default:
-                //Console.WriteLine($"FROM SERVER -> " + name);
                 break;
         }
 

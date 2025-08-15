@@ -1,5 +1,7 @@
 ﻿using XProxy;
 
+//NetworkingMessagesGenerator.Generate();
+
 Settings.Load();
 
 NetDebug.Logger = new CustomNetLogger();
