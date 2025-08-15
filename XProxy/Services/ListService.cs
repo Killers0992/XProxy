@@ -133,7 +133,7 @@ public class ListService : BackgroundService
         }
         catch (Exception ex)
         {
-            Logger.Error("Token failed to save");
+            Logger.Error("Token failed to save " + ex);
         }
     }
 

@@ -18,12 +18,11 @@ namespace XProxy.Services
                 {
                     var ev = method.GetCustomAttribute<ConsoleCommand>();
 
-                    if (ev == null) continue;
+                    if (ev == null) 
+                        continue;
 
                     if (Commands.ContainsKey(ev.Name.ToLower()))
-                    {
                         continue;
-                    }
 
                     Delegate del = Delegate.CreateDelegate(typeof(CommandDelegate), method);
                     Commands.Add(ev.Name.ToLower(), del);
@@ -51,6 +50,7 @@ namespace XProxy.Services
                         }
                         catch (Exception ex)
                         {
+                            Logger.Error($"Failed executing command {args[0]} {ex}");
                         }
                     }
                 }

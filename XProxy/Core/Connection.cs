@@ -2,7 +2,6 @@
 
 public class Connection : IDisposable
 {
-    private ChallengeHandler _validator;
     private NetManager _netManager;
     private EventBasedNetListener _listener;
 

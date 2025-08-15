@@ -228,8 +228,6 @@ public class World : IDisposable
             _clientsVersion--;
 
             Logger.Info($"{client.Tag} Unloaded world (f=green){this}(f=white)", "Client");
-
-            return true;
         }
         finally
         {
@@ -238,7 +236,9 @@ public class World : IDisposable
 
         if (GetClientsSnapshot().Count == 0 && DestroyOnEmpty)
             Dispose();
-     }
+
+        return true;
+    }
 
     /// <summary>
     /// Spawns all objects for a client.
