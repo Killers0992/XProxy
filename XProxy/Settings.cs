@@ -31,6 +31,8 @@ public class Settings
     {
         new ServerSettings()
     };
+
+    public string[] ServersInSelector { get; set; } = new string[] { "default" };
 }
 
 public class ListenerSettings

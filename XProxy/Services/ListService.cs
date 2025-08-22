@@ -48,7 +48,7 @@ public class ListService : BackgroundService
 
         if (Password != VerKey)
         {
-            Logger.Info("Token reloaded");
+            //Logger.Info("Token reloaded");
 
             foreach (Listener listener in ListenersService.Listeners)
                 listener.ForceServerListUpdate = true;
@@ -386,7 +386,7 @@ public class ListService : BackgroundService
 
                 if (result && !_verifyNotice)
                 {
-                    Logger.Info($"Server {listener.PublicIp}:{listener.ListenPort} is visible on list!");
+                    //Logger.Info($"Server {listener.PublicIp}:{listener.ListenPort} is visible on list!");
                     _verifyNotice = true;
                 }
 

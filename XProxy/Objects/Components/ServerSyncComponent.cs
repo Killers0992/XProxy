@@ -14,9 +14,13 @@ public class ServerSyncComponent : BehaviourInfo
         }
     }
 
-    public ServerSyncComponent(SpawnableObject owner) : base(owner, new SyncObjectInfo())
+    public ServerSyncComponent(SpawnableObject owner) : base(owner, 
+        new SyncObjectInfo() { Type = (sbyte)0 }, 
+        new SyncObjectInfo() { Type = new ServerConfigSynchronizer.AmmoLimit() }, 
+        new SyncObjectInfo() { Type = new ServerConfigSynchronizer.PredefinedBanTemplate() })
     {
         this.OnSerializeSyncVars += SerializeSyncVars;
+        this.OnDeserializeSyncVars += DeserializeSyncVars;
     }
 
     void SerializeSyncVars(NetworkWriter writer, bool intial)
@@ -24,6 +28,24 @@ public class ServerSyncComponent : BehaviourInfo
         if ((SyncVarDirtyBits & 2) != 0)
         {
             writer.WriteString(_serverName);
+        }
+    }
+
+    void DeserializeSyncVars(NetworkReader reader, long mask, bool intial)
+    {
+        if (intial)
+        {
+            reader.ReadByte();
+            _serverName = reader.ReadString();
+            reader.ReadBool();
+            reader.ReadString();
+            reader.ReadString();
+            return;
+        }
+
+        if ((mask & 2) != 0)
+        {
+            _serverName = reader.ReadString();
         }
     }
 }

@@ -1,4 +1,7 @@
-﻿using UnityEngine;
+﻿using Mirror;
+using System.Collections.Generic;
+using System.Xml.Linq;
+using UnityEngine;
 
 namespace XProxy.Core;
 
@@ -32,7 +35,7 @@ public class SpawnableObject : IDisposable
         {
             NetworkId = networkId;
 
-            if (!world.Objects.ContainsKey(networkId))
+            if (world != null && !world.Objects.ContainsKey(networkId))
                 world.Objects.Add(networkId, this);
         }
 
@@ -55,6 +58,21 @@ public class SpawnableObject : IDisposable
         wr.WriteArraySegmentAndSize(wr2.ToArraySegment());
 
         client.SendMirrorData(wr);
+    }
+
+    public void Deserialize(NetworkReader reader, bool intialState)
+    {
+        ulong mask = Compression.DecompressVarUInt(reader);
+
+        for (int i = 0; i < Behaviours.Length; ++i)
+        {
+            if (IsDirty(mask, i))
+            {
+                BehaviourInfo comp = Behaviours[i];
+
+                comp.Deserialize(reader, intialState);
+            }
+        }
     }
 
     public NetworkWriter Serialize(bool intialState)
@@ -170,6 +188,12 @@ public class SpawnableObject : IDisposable
         wr.WriteArraySegmentAndSize(payload);
 
         client.SendMirrorData(wr);
+    }
+
+    public virtual void OnReceiveCommand(byte componentIndex, ushort functionHash, ArraySegment<byte> payload = default)
+    {
+        if (Behaviours.Length > componentIndex && Behaviours[componentIndex] != null)
+            Behaviours[componentIndex].OnReceiveCommand(functionHash, payload);
     }
 
     public void Dispose()

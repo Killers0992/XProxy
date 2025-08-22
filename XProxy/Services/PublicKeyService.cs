@@ -1,6 +1,4 @@
 ﻿using Newtonsoft.Json;
-using XProxy.Misc;
-using XProxy.Models;
 
 namespace XProxy.Services;
 

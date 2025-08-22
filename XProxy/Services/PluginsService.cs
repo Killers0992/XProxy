@@ -1,4 +1,6 @@
 ﻿using System.Reflection;
+using System.Reflection.Metadata;
+using XProxy.Core;
 
 namespace XProxy.Services;
 
@@ -6,6 +8,8 @@ public class PluginsService
 {
     public List<Assembly> Dependencies = new List<Assembly>();
     public Dictionary<Assembly, Plugin> AssemblyToPlugin = new Dictionary<Assembly, Plugin>();
+
+    public Dictionary<string, Assembly> NameToAssembly = new Dictionary<string, Assembly>();
 
     string _pluginsPath => Path.Combine("Plugins");
     string _dependenciesPath => Path.Combine("Dependencies");
@@ -24,6 +28,19 @@ public class PluginsService
 
         LoadDependencies();
         LoadPlugins();
+
+        AppDomain.CurrentDomain.AssemblyResolve += OnResolveAssembly;
+    }
+
+    private Assembly OnResolveAssembly(object sender, ResolveEventArgs args)
+    {
+        if (NameToAssembly.TryGetValue(args.Name, out Assembly assembly))
+            return assembly;
+
+        AssemblyNameInfo nameInfo = new AssemblyNameInfo(args.Name);
+
+        Console.WriteLine(nameInfo.Version);
+        return null;
     }
 
     public void LoadDependencies()
@@ -42,6 +59,8 @@ public class PluginsService
     public void LoadPlugins()
     {
         string[] plugins = Directory.GetFiles(_pluginsPath, "*.dll");
+
+        Logger.Info($"Loading (f=yellow){plugins.Length}(f=white) plugins", "PluginsService");
 
         for (int x = 0; x < plugins.Length; x++)
         {
@@ -73,24 +92,29 @@ public class PluginsService
             }
 
             if (plugin == null)
-            {
                 continue;
-            }
 
-            name = plugin.Name;
+            NameToAssembly.Add(assembly.FullName, assembly);
 
-            plugin.PluginDirectory = Path.Combine(_pluginsPath, $"{name}");
+            Load(plugin);
+        }
+    }
 
-            try
-            {
-                plugin.LoadConfig();
+    public void Load(Plugin plugin)
+    {
+        plugin.PluginDirectory = Path.Combine(_pluginsPath, $"{plugin.Name}");
 
-                plugin.OnLoad(_serviceCollection);
-            }
-            catch (Exception ex)
-            {
-                Logger.Error($"Failed loading plugin {name}\n{ex}", "PluginsService");
-            }
+        try
+        {
+            plugin.LoadConfig();
+
+            plugin.OnLoad(_serviceCollection);
+
+            Logger.Info($"Plugin (f=yellow){plugin.Name}(f=white) loaded", "PluginsService");
+        }
+        catch (Exception ex)
+        {
+            Logger.Error($"Failed loading plugin {plugin.Name}\n{ex}", "PluginsService");
         }
     }
 }

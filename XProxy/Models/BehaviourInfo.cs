@@ -1,6 +1,4 @@
-﻿using System.Xml.Linq;
-
-namespace XProxy.Models;
+﻿namespace XProxy.Models;
 
 public class BehaviourInfo
 {
@@ -16,11 +14,15 @@ public class BehaviourInfo
 
     public Action<NetworkWriter, bool> OnSerializeSyncVars;
 
+    public Action<NetworkReader, long, bool> OnDeserializeSyncVars;
+
     public BehaviourInfo(SpawnableObject owner, params SyncObjectInfo[] objects)
     {
         Owner = owner;
         SyncObjects = objects;
     }
+
+    public virtual void OnReceiveCommand(ushort functionHash, ArraySegment<byte> payload = default) { }
 
     public void SetSyncVarDirtyBit(ulong dirtyBit)
     {
@@ -60,6 +62,35 @@ public class BehaviourInfo
         writer.Position = endPosition;
     }
 
+    public bool Deserialize(NetworkReader reader, bool initialState)
+    {
+        bool result = true;
+
+        byte safety = reader.ReadByte();
+        int chunkStart = reader.Position;
+
+        try
+        {
+            OnDeserialize(reader, initialState);
+        }
+        catch (Exception e)
+        {
+            Logger.Error(e);
+            result = false;
+        }
+
+        int size = reader.Position - chunkStart;
+        byte sizeHash = (byte)(size & 0xFF);
+        if (sizeHash != safety)
+        {
+            int correctedSize = ErrorCorrection(size, safety);
+            reader.Position = chunkStart + correctedSize;
+            result = false;
+        }
+
+        return result;
+    }
+
     void OnSerialize(NetworkWriter writer, bool initialState)
     {
         OnBeforeSerialize?.Invoke(writer, initialState);
@@ -68,6 +99,12 @@ public class BehaviourInfo
         SerializeSyncVars(writer, initialState);
 
         OnAfterSerialize?.Invoke(writer, initialState);
+    }
+
+    void OnDeserialize(NetworkReader reader, bool initialState)
+    {
+        DeserializeSyncObjects(reader, initialState);
+        DeserializeSyncVars(reader, initialState);
     }
 
     void SerializeSyncObjects(NetworkWriter writer, bool initialState)
@@ -104,5 +141,50 @@ public class BehaviourInfo
             if ((SyncObjectsDirtyBits & 1UL << i) != 0UL)
                 syncObject.OnSerializeDelta(writer);
         }
+    }
+
+    void DeserializeSyncObjects(NetworkReader reader, bool initialState)
+    {
+        if (initialState)
+            DeserializeObjectsAll(reader);
+        else
+            DeserializeObjectsDelta(reader);
+    }
+
+    void DeserializeSyncVars(NetworkReader reader, bool initialState)
+    {
+        long mask = 0;
+
+        if (!initialState)
+            mask = (long)reader.ReadULong();
+
+        OnDeserializeSyncVars?.Invoke(reader, mask, initialState);
+    }
+
+    void DeserializeObjectsAll(NetworkReader reader)
+    {
+        for (int i = 0; i < SyncObjects.Length; i++)
+        {
+            SyncObjectInfo syncObject = SyncObjects[i];
+            syncObject.OnDeserializeAll(reader);
+        }
+    }
+
+    void DeserializeObjectsDelta(NetworkReader reader)
+    {
+        ulong dirty = reader.ReadULong();
+        for (int i = 0; i < SyncObjects.Length; i++)
+        {
+            SyncObjectInfo syncObject = SyncObjects[i];
+            if ((dirty & (1UL << i)) != 0)
+                syncObject.OnDeserializeDelta(reader);
+        }
+    }
+
+    internal static int ErrorCorrection(int size, byte safety)
+    {
+        uint cleared = (uint)size & 0xFFFFFF00;
+
+        return (int)(cleared | safety);
     }
 }

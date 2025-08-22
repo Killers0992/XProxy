@@ -1,0 +1,19 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\XProxy\XProxy.csproj" />
+	<Reference Include="UnityEngine.CoreModule">
+		<HintPath>$(UNITY_REFERENCES)\UnityEngine.CoreModule.dll</HintPath>
+	</Reference>
+  </ItemGroup>
+
+	<Target Name="PostBuild" AfterTargets="PostBuildEvent">
+		<Copy SourceFiles="$(TargetDir)$(TargetName).dll" DestinationFolder="D:\VS Projects\XProxy\XProxy\bin\Debug\net9.0\Plugins" />
+	</Target>
+
+</Project>

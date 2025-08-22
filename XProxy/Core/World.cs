@@ -289,7 +289,7 @@ public class World : IDisposable
             if (cache.version == currentVersion && cache.snapshot != null)
                 return cache.snapshot;
 
-            snapshot = new List<BaseClient>(_clients);
+            snapshot = [.. _clients];
         }
         finally
         {
@@ -304,20 +304,26 @@ public class World : IDisposable
     /// Called when a client loads the world.
     /// </summary>
     public virtual void OnLoad(BaseClient client) { }
+
     /// <summary>
     /// Called after all objects are spawned for a client.
     /// </summary>
     public virtual void OnObjectsSpawned(BaseClient client) { }
+
     /// <summary>
     /// Called when a client unloads the world.
     /// </summary>
     public virtual void OnUnload(BaseClient client) { }
+
+    public virtual void OnDestroy() { }
 
     /// <summary>
     /// Disposes the world, stops the update thread, and removes it from the global list.
     /// </summary>
     public void Dispose()
     {
+        OnDestroy();
+
         _cts.Cancel();
         _updateThread.Join();
 

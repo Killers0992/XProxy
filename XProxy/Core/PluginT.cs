@@ -14,9 +14,7 @@ public abstract class Plugin<T> : Plugin where T : class, new()
             Directory.CreateDirectory(PluginDirectory);
 
         if (!File.Exists(_configPath))
-        {
             File.WriteAllText(_configPath, YamlParser.Serializer.Serialize(Activator.CreateInstance(typeof(T))));
-        }
 
         string text = File.ReadAllText(_configPath);
         Config = YamlParser.Deserializer.Deserialize<T>(text);

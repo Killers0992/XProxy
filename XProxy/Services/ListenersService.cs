@@ -1,4 +1,6 @@
-﻿namespace XProxy.Services;
+﻿using XProxy.Servers;
+
+namespace XProxy.Services;
 
 public class ListenersService : BackgroundService
 {
@@ -8,7 +10,7 @@ public class ListenersService : BackgroundService
     {
         foreach(ServerSettings server in Settings.Singleton.Servers)
         {
-            Server.Register(new Server(server.Name, server.Address, server.Port, false, server.ForwardIpAddress));
+            Server.Register(new RemoteServer(server.Name, server.Address, server.Port, false, server.ForwardIpAddress));
         }
 
         foreach(ListenerSettings listener in Settings.Singleton.Listeners)
@@ -23,20 +25,16 @@ public class ListenersService : BackgroundService
     {
         while (!token.IsCancellationRequested)
         {
-            foreach (var instances in Server.RegisteredServers.Values)
+            foreach (var server in Server.RegisteredServers.Values)
             {
-                foreach(var server in instances.Values)
+                try
                 {
-                    try
-                    {
-                        server.OnUpdate();
-                    }
-                    catch (Exception ex)
-                    {
-                        Console.WriteLine(ex);
-                    }
+                    server.OnUpdate();
                 }
-
+                catch (Exception ex)
+                {
+                    Console.WriteLine(ex);
+                }
             }
             
             await Task.Delay(10, token);

@@ -665,4 +665,190 @@ public static class NetworkingMessages
     /// </summary>
     public const ushort ByteHintParameter = 65505;
 
+
+    /// <summary>
+    /// Class AspectRatioSync
+    /// </summary>
+    public class AspectRatioSync
+    {
+
+        /// <summary>
+        /// Commands.
+        /// </summary>
+        public class Commands
+        {
+            /// <summary>
+            /// Command SetAspectRatio
+            /// System.Void AspectRatioSync::CmdSetAspectRatio(System.Single)
+            /// </summary>
+            public const ushort SetAspectRatio = 43049;
+
+        }
+    }
+
+
+    /// <summary>
+    /// Class CharacterClassManager
+    /// </summary>
+    public class CharacterClassManager
+    {
+
+        /// <summary>
+        /// Commands.
+        /// </summary>
+        public class Commands
+        {
+            /// <summary>
+            /// Command ConfirmDisconnect
+            /// System.Void CharacterClassManager::CmdConfirmDisconnect()
+            /// </summary>
+            public const ushort ConfirmDisconnect = 17501;
+
+        }
+    }
+
+
+    /// <summary>
+    /// Class CheaterReport
+    /// </summary>
+    public class CheaterReport
+    {
+
+        /// <summary>
+        /// Commands.
+        /// </summary>
+        public class Commands
+        {
+            /// <summary>
+            /// Command Report
+            /// System.Void CheaterReport::CmdReport(System.UInt32, System.String, System.Byte[], System.Boolean)
+            /// </summary>
+            public const ushort Report = 2821;
+
+        }
+    }
+
+
+    /// <summary>
+    /// Class InteractionCoordinator
+    /// </summary>
+    public class InteractionCoordinator
+    {
+
+        /// <summary>
+        /// Commands.
+        /// </summary>
+        public class Commands
+        {
+            /// <summary>
+            /// Command ServerInteract
+            /// System.Void Interactables.InteractionCoordinator::CmdServerInteract(System.NetworkIdentity, System.Byte)
+            /// </summary>
+            public const ushort ServerInteract = 18469;
+
+        }
+    }
+
+
+    /// <summary>
+    /// Class Inventory
+    /// </summary>
+    public class Inventory
+    {
+
+        /// <summary>
+        /// Commands.
+        /// </summary>
+        public class Commands
+        {
+            /// <summary>
+            /// Command SelectItem
+            /// System.Void InventorySystem.Inventory::CmdSelectItem(System.UInt16)
+            /// </summary>
+            public const ushort SelectItem = 9471;
+
+            /// <summary>
+            /// Command ConfirmAcquisition
+            /// System.Void InventorySystem.Inventory::CmdConfirmAcquisition(System.UInt16[])
+            /// </summary>
+            public const ushort ConfirmAcquisition = 63135;
+
+            /// <summary>
+            /// Command DropItem
+            /// System.Void InventorySystem.Inventory::CmdDropItem(System.UInt16, System.Boolean)
+            /// </summary>
+            public const ushort DropItem = 41647;
+
+            /// <summary>
+            /// Command DropAmmo
+            /// System.Void InventorySystem.Inventory::CmdDropAmmo(System.Byte, System.UInt16)
+            /// </summary>
+            public const ushort DropAmmo = 35488;
+
+        }
+    }
+
+
+    /// <summary>
+    /// Class NicknameSync
+    /// </summary>
+    public class NicknameSync
+    {
+
+        /// <summary>
+        /// Commands.
+        /// </summary>
+        public class Commands
+        {
+            /// <summary>
+            /// Command SetNick
+            /// System.Void NicknameSync::CmdSetNick(System.String)
+            /// </summary>
+            public const ushort SetNick = 38921;
+
+        }
+    }
+
+
+    /// <summary>
+    /// Class PlayerAuthenticationManager
+    /// </summary>
+    public class PlayerAuthenticationManager
+    {
+
+        /// <summary>
+        /// Commands.
+        /// </summary>
+        public class Commands
+        {
+            /// <summary>
+            /// Command HandlePasswordAuthentication
+            /// System.Void CentralAuth.PlayerAuthenticationManager::CmdHandlePasswordAuthentication(System.String, System.Byte[], System.String)
+            /// </summary>
+            public const ushort HandlePasswordAuthentication = 13636;
+
+        }
+    }
+
+
+    /// <summary>
+    /// Class ServerRoles
+    /// </summary>
+    public class ServerRoles
+    {
+
+        /// <summary>
+        /// Commands.
+        /// </summary>
+        public class Commands
+        {
+            /// <summary>
+            /// Command SetLocalTagPreferences
+            /// System.Void ServerRoles::CmdSetLocalTagPreferences(System.BadgePreferences, System.BadgeVisibilityPreferences, System.BadgeVisibilityPreferences, System.Boolean)
+            /// </summary>
+            public const ushort SetLocalTagPreferences = 33781;
+
+        }
+    }
+
 }

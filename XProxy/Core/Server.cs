@@ -4,53 +4,40 @@ namespace XProxy.Core;
 
 public class Server
 {
-    public static Dictionary<Type, Dictionary<string, Server>> RegisteredServers = new Dictionary<Type, Dictionary<string, Server>>();
+    public static Dictionary<string, Server> RegisteredServers = new Dictionary<string, Server>();
 
     public static void Register<TServer>(TServer server) where TServer : Server
     {
-        if (!RegisteredServers.ContainsKey(typeof(TServer)))
-            RegisteredServers.Add(typeof(TServer), new Dictionary<string, Server>());
-
-        if (!RegisteredServers.TryGetValue(typeof(TServer), out Dictionary<string, Server> servers))
-            return;
-
         string ipAddress = $"{server.IpAddress}:{server.Port}";
 
-        if (servers.ContainsKey(ipAddress))
+        if (RegisteredServers.ContainsKey(ipAddress))
             return;
 
-        servers.Add(ipAddress, server);
-        servers.Add(server.Name.ToLower(), server);
+        RegisteredServers.Add(ipAddress, server);
+        RegisteredServers.Add(server.Name.ToLower(), server);
     }
 
     public static Server Get<TServer>(string name = null, string ip = null, int port = -1) where TServer : Server
     {
-        if (!RegisteredServers.TryGetValue(typeof(TServer), out Dictionary<string, Server> servers))
-            return null;
-
-        if (servers.Count == 0)
-            return null;
-
         if (!string.IsNullOrEmpty(ip))
         {
-            if (servers.TryGetValue($"{ip}:{port}", out Server server))
+            if (RegisteredServers.TryGetValue($"{ip}:{port}", out Server server))
                 return server;
         }
         else if (!string.IsNullOrEmpty(name))
         {
-            if (servers.TryGetValue($"{name}", out Server server))
+            if (RegisteredServers.TryGetValue($"{name.ToLower()}", out Server server))
                 return server;
         }
         else
         {
-            var pair = servers.FirstOrDefault();
+            var pair = RegisteredServers.FirstOrDefault();
 
             if (pair.Value != null)
                 return pair.Value;
         }
 
         return null;
-
     }
 
     public string Name { get; }
@@ -103,6 +90,10 @@ public class Server
 
     public virtual void OnClientReady(BaseClient client) { }
     public virtual void OnClientSpawnPlayer(BaseClient client) { }
+
+    public virtual void OnClientSpawned(BaseClient client) { }
+
+    public virtual void OnClientSSSReponse(BaseClient client, int id) { }
 
     public virtual void OnUpdate() { }
 }

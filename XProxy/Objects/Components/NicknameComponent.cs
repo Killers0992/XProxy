@@ -1,4 +1,5 @@
-﻿namespace XProxy.Objects.Components;
+﻿
+namespace XProxy.Objects.Components;
 
 public class NicknameComponent : BehaviourInfo
 {
@@ -22,6 +23,20 @@ public class NicknameComponent : BehaviourInfo
     public NicknameComponent(SpawnableObject owner) : base(owner)
     {
         this.OnSerializeSyncVars += SerializeSyncVars;
+    }
+
+    public override void OnReceiveCommand(ushort functionHash, ArraySegment<byte> payload = default)
+    {
+        switch (functionHash)
+        {
+            case NetworkingMessages.NicknameSync.Commands.SetNick:
+                NetworkReader reader = new NetworkReader(payload);
+                string nickname = reader.ReadString();
+
+                Nickname = nickname;
+                Owner.SendUpdate(Owner.Owner);
+                break;
+        }
     }
 
     void SerializeSyncVars(NetworkWriter writer, bool intial)

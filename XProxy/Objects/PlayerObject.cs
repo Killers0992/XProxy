@@ -20,7 +20,7 @@ public class PlayerObject : SpawnableObject
     public PlayerAuthComponent PlayerAuthComponent { get; }
     public NicknameComponent NicknameComponent { get; }
 
-    public PlayerObject(BaseClient client) : base(client.World, client, 3816198336)
+    public PlayerObject(BaseClient client, uint networkId = 0) : base(client.World, client, 3816198336, networkId: networkId)
     {
         Behaviours = new BehaviourInfo[24];
 
@@ -32,5 +32,23 @@ public class PlayerObject : SpawnableObject
 
         NicknameComponent = new NicknameComponent(this);
         Behaviours[3] = NicknameComponent;
+    }
+
+    public override void OnReceiveCommand(byte componentIndex, ushort functionHash, ArraySegment<byte> payload = default)
+    {
+        switch (componentIndex)
+        {
+            // CharacterClassManager
+            case 1:
+                switch (functionHash)
+                {
+                    case NetworkingMessages.CharacterClassManager.Commands.ConfirmDisconnect:
+                        Owner.Peer.Disconnect();
+                        break;
+                }
+                return;
+        }
+
+        base.OnReceiveCommand(componentIndex, functionHash, payload);
     }
 }

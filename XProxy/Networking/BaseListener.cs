@@ -1,7 +1,4 @@
-﻿using System.Net.Http;
-using System.Net.Sockets;
-
-namespace XProxy.Networking;
+﻿namespace XProxy.Networking;
 
 public class BaseListener
 {
@@ -212,6 +209,19 @@ public class BaseListener
             return;
 
         OnClientDisconneted(client, disconnectInfo.Reason);
+
+        client.World = null;
+
+        switch (disconnectInfo.Reason)
+        {
+            case DisconnectReason.RemoteConnectionClose:
+                Logger.Info($"{client.Tag} Client closed the connection!", "Listener");
+                break;
+            default:
+                Logger.Info($"{client.Tag} Disconnected", "Listener");
+                break;
+        }
+
         client.Dispose();
     }
 
