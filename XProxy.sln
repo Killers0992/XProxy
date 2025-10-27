@@ -11,6 +11,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Portals", "Plugins\Portals\
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Lobby", "Plugins\Lobby\Lobby.csproj", "{B4CB7D45-1E76-41BB-AF3F-7006EE62852F}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "XProxy.Validator", "XProxy.Validator\XProxy.Validator.csproj", "{4C350946-419B-4B5E-86BB-34E3E5DFD952}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "XProxy.API", "XProxy.API\XProxy.API.csproj", "{68818C70-A7A1-46D1-8CBC-12CF931B1222}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -29,6 +33,14 @@ Global
 		{B4CB7D45-1E76-41BB-AF3F-7006EE62852F}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{B4CB7D45-1E76-41BB-AF3F-7006EE62852F}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{B4CB7D45-1E76-41BB-AF3F-7006EE62852F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{4C350946-419B-4B5E-86BB-34E3E5DFD952}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4C350946-419B-4B5E-86BB-34E3E5DFD952}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4C350946-419B-4B5E-86BB-34E3E5DFD952}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4C350946-419B-4B5E-86BB-34E3E5DFD952}.Release|Any CPU.Build.0 = Release|Any CPU
+		{68818C70-A7A1-46D1-8CBC-12CF931B1222}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{68818C70-A7A1-46D1-8CBC-12CF931B1222}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{68818C70-A7A1-46D1-8CBC-12CF931B1222}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{68818C70-A7A1-46D1-8CBC-12CF931B1222}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

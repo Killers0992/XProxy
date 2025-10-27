@@ -1,8 +1,4 @@
-﻿using Newtonsoft.Json;
-using System.Buffers;
-using static Org.BouncyCastle.Math.EC.ECCurve;
-
-namespace XProxy.Services;
+﻿namespace XProxy.Services;
 
 public class ListService : BackgroundService
 {
@@ -12,24 +8,8 @@ public class ListService : BackgroundService
     public bool ScheduleTokenRefresh;
     public string VerKey;
 
-    public static string Base64Decode(string base64EncodedData)
-    {
-        byte[] bytes = Convert.FromBase64String(base64EncodedData);
-        return Encoding.UTF8.GetString(bytes);
-    }
-
-    public static string Base64Encode(string plainText)
-    {
-        byte[] array = ArrayPool<byte>.Shared.Rent(Encoding.UTF8.GetMaxByteCount(plainText.Length));
-        int bytes = Encoding.UTF8.GetBytes(plainText, 0, plainText.Length, array, 0);
-        string result = Convert.ToBase64String(array, 0, bytes);
-        ArrayPool<byte>.Shared.Return(array, false);
-        return result;
-    }
-
     public void RefreshToken(bool init = false)
     {
-        Logger.Debug("Refresh Token");
         ScheduleTokenRefresh = false;
 
         if (!File.Exists("verkey.txt"))
@@ -41,16 +21,11 @@ public class ListService : BackgroundService
         if (string.IsNullOrEmpty(VerKey))
             return;
 
-        if (!init && string.IsNullOrEmpty(Password) && !string.IsNullOrEmpty(VerKey))
-        {
-            Logger.Info("Token loaded");
-        }
-
         if (Password != VerKey)
         {
             //Logger.Info("Token reloaded");
 
-            foreach (Listener listener in ListenersService.Listeners)
+            foreach (Listener listener in Listener.List)
                 listener.ForceServerListUpdate = true;
         }
 
@@ -72,7 +47,7 @@ public class ListService : BackgroundService
         }
         catch (Exception ex)
         {
-            Logger.Error(ex, "ListService");
+            ProxyLogger.Error(ex, "ListService");
             return false;
         }
     }
@@ -83,19 +58,19 @@ public class ListService : BackgroundService
 
         if (!string.IsNullOrEmpty(authenticatorResponse.VerificationChallenge) && !string.IsNullOrEmpty(authenticatorResponse.VerificationResponse))
         {
-            Logger.Info("Verificatio challenge obtained");
+            ProxyLogger.Info("Verificatio challenge obtained");
         }
 
         if (!authenticatorResponse.Success)
         {
-            Logger.Error($"Failed to update {authenticatorResponse.Error}");
+            ProxyLogger.Error($"Failed to update {authenticatorResponse.Error}");
             return false;
         }
         else
         {
             if (!string.IsNullOrEmpty(authenticatorResponse.Token))
             {
-                Logger.Info("Received token");
+                ProxyLogger.Info("Received token");
                 SaveNewToken(authenticatorResponse.Token);
             }
             if (authenticatorResponse.Actions != null && authenticatorResponse.Actions.Length != 0)
@@ -110,9 +85,11 @@ public class ListService : BackgroundService
             {
                 foreach (string str in authenticatorResponse.Messages)
                 {
-                    Logger.Info($"Message from central server {str}", "List");
+                    ProxyLogger.Info($"Message from central server {str}", "List");
                 }
             }
+
+            //Logger.Info("Is verified : " + authenticatorResponse.Verified);
             return authenticatorResponse.Verified;
         }
     }
@@ -124,16 +101,16 @@ public class ListService : BackgroundService
             VerKey = token;
             File.WriteAllText("verkey.txt", token);
 
-            Logger.Info("Token saved", $"ListService");
+            ProxyLogger.Info("Token saved", $"ListService");
 
-            foreach (Listener listener in ListenersService.Listeners)
+            foreach (Listener listener in Listener.List)
                 listener.ForceServerListUpdate = true;
 
             ScheduleTokenRefresh = true;
         }
         catch (Exception ex)
         {
-            Logger.Error("Token failed to save " + ex);
+            ProxyLogger.Error("Token failed to save " + ex);
         }
     }
 
@@ -156,14 +133,14 @@ public class ListService : BackgroundService
 
                 File.WriteAllText("verkey.txt", text);
 
-                Logger.Info("Password saved");
+                ProxyLogger.Info("Password saved");
 
                 server.ForceServerListUpdate = true;
                 return true;
             }
             catch
             {
-                Logger.Error("Failed to save password");
+                ProxyLogger.Error("Failed to save password");
                 return true;
             }
         }
@@ -187,7 +164,7 @@ public class ListService : BackgroundService
         {
             string text2 = response.Substring(response.IndexOf(":Message - ", StringComparison.Ordinal) + 11);
             text2 = text2.Substring(0, text2.IndexOf(":::", StringComparison.Ordinal));
-            //Logger.Info(_config.Messages.CentralCommandMessage.Replace("%message%", text2), $"CommandService");
+            ProxyLogger.Info(text2, $"CommandService");
         }
         else if (response.Contains(":GetContactAddress:"))
         {
@@ -196,16 +173,18 @@ public class ListService : BackgroundService
         else
         {
             if (response.Contains("Server is not verified."))
+            {
                 return false;
+            }
 
-            //Logger.Error(_config.Messages.CantUpdateDataMessage, $"ListService");
+            ProxyLogger.Error("Cant update data " + response, $"ListService");
         }
         return true;
     }
 
     public async Task HandleAction(Listener listener, string action)
     {
-        Logger.Info(action);
+        ProxyLogger.Info(action);
         switch (action.ToUpper())
         {
             case "RESTART":
@@ -224,14 +203,14 @@ public class ListService : BackgroundService
         }
     }
 
-    async Task SendContactAddress(Listener server)
+    async Task SendContactAddress(Listener listener)
     {
         Dictionary<string, string> data = new Dictionary<string, string>()
             {
-                { "ip", server.PublicIp },
-                { "port", $"{server.ListenPort}" },
+                { "ip", listener.PublicIp },
+                { "port", $"{listener.ListenPort}" },
                 { "version", "2" },
-                { "address", Base64Encode(server.Settings.Email) }
+                { "address", listener.Settings.ServerList.Email.Base64Encode() }
             };
 
         if (!string.IsNullOrEmpty(Password))
@@ -239,7 +218,7 @@ public class ListService : BackgroundService
 
         try
         {
-            using (var response = await server.Http.PostAsync("https://api.scpslgame.com/v4/contactaddress.php", new FormUrlEncodedContent(data)))
+            using (var response = await listener.Http.PostAsync("https://api.scpslgame.com/v4/contactaddress.php", new FormUrlEncodedContent(data)))
             {
                 string text = await response.Content.ReadAsStringAsync();
                 Console.WriteLine(text);
@@ -247,7 +226,7 @@ public class ListService : BackgroundService
         }
         catch (Exception ex)
         {
-            Logger.Error(ex, "ListService");
+            ProxyLogger.Error(ex, "ListService");
         }
     }
 
@@ -262,19 +241,19 @@ public class ListService : BackgroundService
                 PublicKeyResponseModel publicKeyResponse = JsonConvert.DeserializeObject<PublicKeyResponseModel>(text);
                 if (!ECDSA.Verify(publicKeyResponse.Key, publicKeyResponse.Signature, CentralServerKeyCache.MasterKey))
                 {
-                    Logger.Error("Cant refresh public key");
+                    ProxyLogger.Error("Cant refresh public key");
                 }
                 else
                 {
                     PublicKeyService.Key = ECDSA.PublicKeyFromString(publicKeyResponse.Key);
-                    Logger.Info("Obtained public key");
+                    ProxyLogger.Info("Obtained public key");
                     CentralServerKeyCache.SaveCache(publicKeyResponse.Key, publicKeyResponse.Signature);
                 }
             }
         }
         catch (Exception ex)
         {
-            Logger.Error(ex, "ListService");
+            ProxyLogger.Error(ex, "ListService");
         }
     }
 
@@ -299,7 +278,7 @@ public class ListService : BackgroundService
             }
             catch (Exception ex)
             {
-                Logger.Error(ex, "ListService");
+                ProxyLogger.Error(ex, "ListService");
             }
 
             await Task.Delay(5000);
@@ -312,7 +291,7 @@ public class ListService : BackgroundService
     {
         cycle += 1;
 
-        foreach (Listener listener in ListenersService.Listeners)
+        foreach (Listener listener in Listener.List)
             listener.ServerListCycle += 1;
 
         if (!init && string.IsNullOrEmpty(Password) && cycle < 15)
@@ -326,22 +305,22 @@ public class ListService : BackgroundService
         {
             init = false;
 
-            foreach (Listener listener in ListenersService.Listeners)
+            foreach (Listener listener in Listener.List)
             {
-                if (!listener.Settings.DisplayOnServerList)
+                if (!listener.Settings.ServerList.ShowServerOnServerList)
                     continue;
 
-                if (listener.PublicIp == null)
+                if (listener.PublicIp == "auto")
                     await listener.Initialize();
 
                 listener.ServerListUpdate = listener.ForceServerListUpdate || listener.ServerListCycle == 10;
 
-                string playersStr = $"{listener.ClientById.Values}/150";
+                string playersStr = $"{listener.ClientById.Values.Count}/{ProxySettings.Singleton.PlayerLimit}";
 
-                Server target = Server.Get<Server>(name: listener.Settings.TakePlayerCountFromServer);
+                Server target = Server.Get<Server>(name: listener.Settings.ServerList.TakePlayerCountFromServer);
                 if (target != null)
                 {
-                    playersStr = $"{target.Clients.Count}/25";
+                    //playersStr = $"{target.Clients.Count}/25";
                 }
 
                 Dictionary<string, string> upd = listener.ServerListUpdate ?
@@ -352,11 +331,11 @@ public class ListService : BackgroundService
                         { "playersList", string.Empty },
                         { "newPlayers", "\\{ objects: [] \\}" },
                         { "port", $"{listener.ListenPort}" },
-                        { "pastebin", listener.Settings.Pastebin },
+                        { "pastebin", listener.Settings.ServerList.Pastebin },
                         { "gameVersion", listener.GameVersion.ToString(3) },
                         { "version", "2" },
                         { "update", "1" },
-                        { "info", Base64Encode(listener.Settings.Name.Replace('+', '-') + $"<color=#00000000><size=1>XProxy {BuildInformation.VersionText}</size></color>") },
+                        { "info", listener.Settings.Name.Replace('+', '-') + $"<color=#00000000><size=1>XProxy {BuildInformation.VersionText}</size></color>".Base64Encode() },
                         { "privateBeta", "False" },
                         { "staffRA", "False" },
                         { "friendlyFire", "False" },
@@ -386,7 +365,7 @@ public class ListService : BackgroundService
 
                 if (result && !_verifyNotice)
                 {
-                    //Logger.Info($"Server {listener.PublicIp}:{listener.ListenPort} is visible on list!");
+                    ProxyLogger.Info($"Server {listener.PublicIp}:{listener.ListenPort} is visible on list!");
                     _verifyNotice = true;
                 }
 
@@ -397,7 +376,7 @@ public class ListService : BackgroundService
         if (cycle >= 15)
             cycle = 0;
 
-        foreach (Listener server in ListenersService.Listeners)
+        foreach (Listener server in Listener.List)
         {
             if (server.ServerListCycle >= 15)
                 server.ServerListCycle = 0;

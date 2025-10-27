@@ -1,21 +1,20 @@
-﻿using XProxy.Servers;
+﻿using XProxy.API.Models;
+using XProxy.Servers;
 
 namespace XProxy.Services;
 
 public class ListenersService : BackgroundService
 {
-    public static List<Listener> Listeners = new List<Listener>();
-
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        foreach(ServerSettings server in Settings.Singleton.Servers)
+        foreach(ServerSettings server in ProxySettings.Singleton.Servers)
         {
             Server.Register(new RemoteServer(server.Name, server.Address, server.Port, false, server.ForwardIpAddress));
         }
 
-        foreach(ListenerSettings listener in Settings.Singleton.Listeners)
+        foreach(ListenerSettings settings in ProxySettings.Singleton.Listeners)
         {
-            Listeners.Add(new Listener(listener, stoppingToken));
+            Listener.Register(new Listener(settings, stoppingToken));
         }
 
         await RunServerUpdater(stoppingToken);

@@ -1,4 +1,6 @@
-﻿namespace XProxy.Misc;
+﻿using LiteNetLib;
+
+namespace XProxy.Misc;
 
 public class CustomNetLogger : INetLogger
 {
@@ -10,14 +12,16 @@ public class CustomNetLogger : INetLogger
         switch (level)
         {
             case NetLogLevel.Error:
-                Logger.Error(text, _tag);
+                ProxyLogger.Error(text, _tag);
                 break;
+
             case NetLogLevel.Trace:
             case NetLogLevel.Warning:
-                Logger.Warn(text, _tag);
+                ProxyLogger.Warn(text, _tag);
                 break;
+
             case NetLogLevel.Info:
-                Logger.Info(text, _tag);
+                ProxyLogger.Info(text, _tag);
                 break;
         }
     }

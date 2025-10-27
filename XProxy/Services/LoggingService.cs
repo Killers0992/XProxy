@@ -1,4 +1,4 @@
-﻿using XProxy.Misc;
+﻿using XProxy.API.Misc;
 
 namespace XProxy.Services;
 
@@ -9,7 +9,7 @@ public class LoggingService : BackgroundService
         if (!Directory.Exists("Logs"))
             Directory.CreateDirectory("Logs");
 
-        File.AppendAllLines($"Logs/log_{Logger.SessionTime.ToString("dd_MM_yyyy_hh_mm_ss")}.txt", new string[1] { message.ToString() });
+        File.AppendAllLines($"Logs/log_{ProxyLogger.SessionTime.ToString("dd_MM_yyyy_hh_mm_ss")}.txt", [message.ToString()] );
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -18,18 +18,19 @@ public class LoggingService : BackgroundService
         {
             try
             {
-                while (Logger.NewLogEntry.Count != 0)
+
+                while (ProxyLogger.NewLogEntry.Count != 0)
                 {
-                    if (Logger.NewLogEntry.TryDequeue(out string entry))
+                    if (ProxyLogger.NewLogEntry.TryDequeue(out string entry))
                     {
-                        WriteLogToFile(Logger.FormatAnsi(entry, true));
-                        Console.WriteLine(Logger.FormatAnsi(entry));
+                        WriteLogToFile(entry.FormatAnsi(true));
+                        Console.WriteLine(entry.FormatAnsi());
                     }
                 }
             }
             catch (Exception ex)
             {
-                Logger.Error(ex, "XProxy");
+                ProxyLogger.Error(ex);
             }
 
             await Task.Delay(1000);

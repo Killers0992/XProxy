@@ -6,7 +6,7 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-		<ProjectReference Include="..\..\XProxy\XProxy.csproj" />
+		<ProjectReference Include="..\..\XProxy.API\XProxy.API.csproj" />
 		<ProjectReference Include="..\Portals\Portals.csproj" />
 		<Reference Include="Assembly-CSharp">
 			<HintPath>$(SL_REFERENCES)\Assembly-CSharp.dll</HintPath>

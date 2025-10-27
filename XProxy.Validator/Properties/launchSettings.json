@@ -1,0 +1,10 @@
+{
+  "profiles": {
+    "SCP SL Server": {
+      "commandName": "Executable",
+      "executablePath": "./LocalAdmin.exe",
+      "commandLineArgs": "7777",
+      "workingDirectory": "D:\\SteamLibrary\\steamapps\\common\\SCP Secret Laboratory Dedicated Server"
+    }
+  }
+}

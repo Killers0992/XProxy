@@ -1,4 +1,5 @@
-﻿using System.Reflection;
+﻿using Mirror;
+using System.Reflection;
 
 namespace XProxy.Misc;
 

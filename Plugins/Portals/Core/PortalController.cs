@@ -1,4 +1,5 @@
-﻿using XProxy.Core;
+﻿using XProxy.API.Core;
+using XProxy.Core;
 
 namespace Portals.Core;
 

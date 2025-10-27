@@ -1,7 +1,7 @@
 ﻿using UnityEngine;
-using XProxy.Core;
-using XProxy.Networking;
-using XProxy.Objects;
+using XProxy.API.Core;
+using XProxy.API.Networking;
+using XProxy.API.Networking.Objects;
 
 namespace Portals.Core;
 
@@ -36,10 +36,13 @@ public class Portal
             SpawnedPortals.Add(world, portals);
         }
 
-        _text = new TextToyObject(world, FormatText());
+        _text = new TextToyObject(world);
+
         _text.Position = position;
         _text.Rotation = rotation;
-        _text.DisplaySize = new Vector2(150f, 50f);
+
+        _text.TextToy.TextFormat = FormatText();
+        _text.TextToy.DisplaySize = new Vector2(150f, 50f);
 
         portals.Add(this);
     }
@@ -70,18 +73,18 @@ public class Portal
         if (_nextCheck > DateTime.Now)
             return;
 
-        foreach(BaseClient client in World.GetClientsSnapshot())
+        foreach(Client client in World.GetClientsSnapshot())
         {
-            float distance = Vector3.Distance(World.GetPosition(client), Position);
+            if (Vector3.Distance(client.Position, Position) > MinimumDistanceToActivePortal)
+                continue;
 
-            if (distance < MinimumDistanceToActivePortal)
-                PlayerActivatedPortal(client);
+            PlayerActivatedPortal(client);
         }
 
         _nextCheck = DateTime.Now.AddSeconds(1);
     }
 
-    void PlayerActivatedPortal(BaseClient client)
+    void PlayerActivatedPortal(Client client)
     {
         client.Connect(TargetServer);
     }

@@ -9,12 +9,12 @@ public static class CentralServerKeyCache
         {
             if (!File.Exists("./centralcache.txt"))
             {
-                Logger.Info($"Central server public key not found in cache.", $"CentralServerKeyCache");
+                ProxyLogger.Info($"Central server public key not found in cache.", $"CentralServerKeyCache");
                 result = null;
             }
             else if (!File.Exists("./centralkeysignature.txt"))
             {
-                Logger.Info($"Central server public key signature not found in cache.", $"CentralServerKeyCache");
+                ProxyLogger.Info($"Central server public key signature not found in cache.", $"CentralServerKeyCache");
                 result = null;
             }
             else
@@ -23,7 +23,7 @@ public static class CentralServerKeyCache
                 string[] array = File.ReadAllLines("./centralkeysignature.txt");
                 if (array.Length == 0)
                 {
-                    Logger.Error($"Can't load central server public key from cache - empty signature.", $"CentralServerKeyCache");
+                    ProxyLogger.Error($"Can't load central server public key from cache - empty signature.", $"CentralServerKeyCache");
                     result = null;
                 }
                 else
@@ -37,13 +37,13 @@ public static class CentralServerKeyCache
                         }
                         else
                         {
-                            Logger.Error($"Invalid signature of Central Server Key in cache!", $"CentralServerKeyCache");
+                            ProxyLogger.Error($"Invalid signature of Central Server Key in cache!", $"CentralServerKeyCache");
                             result = null;
                         }
                     }
                     catch (Exception ex)
                     {
-                        Logger.Error($"Can't load central server public key from cache - " + ex.Message, $"CentralServerKeyCache");
+                        ProxyLogger.Error($"Can't load central server public key from cache - " + ex.Message, $"CentralServerKeyCache");
                         result = null;
                     }
                 }
@@ -51,7 +51,7 @@ public static class CentralServerKeyCache
         }
         catch (Exception ex2)
         {
-            Logger.Error($"Can't read public key cache - " + ex2.Message, $"CentralServerKeyCache");
+            ProxyLogger.Error($"Can't read public key cache - " + ex2.Message, $"CentralServerKeyCache");
             result = null;
         }
         return result;
@@ -63,7 +63,7 @@ public static class CentralServerKeyCache
         {
             if (!ECDSA.Verify(key, signature, CentralServerKeyCache.MasterKey))
             {
-                Logger.Error($"Invalid signature of Central Server Key!", $"CentralServerKeyCache");
+                ProxyLogger.Error($"Invalid signature of Central Server Key!", $"CentralServerKeyCache");
             }
             else
             {
@@ -71,21 +71,21 @@ public static class CentralServerKeyCache
                 {
                     if (key == CentralServerKeyCache.ReadCache())
                     {
-                        Logger.Info($"Key cache is up to date.", $"CentralServerKeyCache");
+                        ProxyLogger.Info($"Key cache is up to date.", $"CentralServerKeyCache");
                         return;
                     }
                     File.Delete("./centralcache.txt");
                 }
 
-                Logger.Info($"Updating key cache...", $"CentralServerKeyCache");
+                ProxyLogger.Info($"Updating key cache...", $"CentralServerKeyCache");
                 File.WriteAllText($"./centralcache.txt", key, Encoding.UTF8);
                 File.WriteAllText($"./centralkeysignature.txt", signature, Encoding.UTF8);
-                Logger.Info($"Key cache updated!", $"CentralServerKeyCache");
+                ProxyLogger.Info($"Key cache updated!", $"CentralServerKeyCache");
             }
         }
         catch (Exception ex)
         {
-            Logger.Error("Can't write public key cache - " + ex.Message, $"CentralServerKeyCache");
+            ProxyLogger.Error("Can't write public key cache - " + ex.Message, $"CentralServerKeyCache");
         }
     }
 

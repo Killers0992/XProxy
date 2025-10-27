@@ -1,4 +1,4 @@
-﻿using Newtonsoft.Json;
+﻿using XProxy.API.Misc;
 
 namespace XProxy.Services;
 
@@ -53,7 +53,7 @@ public class PublicKeyService : BackgroundService
             }
             catch (Exception ex)
             {
-                Logger.Error(ex, "PublicKeyService");
+                ProxyLogger.Error(ex, "PublicKeyService");
             }
 
             await Task.Delay(360000);

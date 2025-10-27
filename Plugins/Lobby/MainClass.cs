@@ -1,5 +1,6 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
-using XProxy.Core;
+using XProxy.API.Core;
+using XProxy.API.Plugins;
 
 namespace Lobby;
 

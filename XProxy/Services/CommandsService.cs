@@ -1,65 +1,41 @@
-﻿using System.Reflection;
-using XProxy.Attributes;
-using XProxy.Core;
+﻿using Microsoft.Extensions.Hosting;
+using XProxy.API.Commands;
+using XProxy.API.Misc;
 
-namespace XProxy.Services
+namespace XProxy.Services;
+
+public class CommandsService : BackgroundService
 {
-    public class CommandsService : BackgroundService
+    protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        public delegate void CommandDelegate(CommandsService service, string[] args);
-
-        public static Dictionary<string, Delegate> Commands { get; private set; } = new Dictionary<string, Delegate>();
-
-        public static void RegisterConsoleCommandsInAssembly(Assembly assembly)
+        while (!stoppingToken.IsCancellationRequested)
         {
-            foreach (var type in assembly.GetTypes())
+            string line = Console.ReadLine();
+
+            if (string.IsNullOrEmpty(line)) continue;
+
+            string[] spLine = line.Split(' ');
+
+            string commandName = spLine[0].ToLower();
+            string[] args = spLine.Skip(1).ToArray();
+
+            if (CommandsManager.RegisteredCommands.TryGetValue(commandName, out CommandDelegate cmd))
             {
-                foreach (var method in type.GetMethods(BindingFlags.Public | BindingFlags.Static))
+                try
                 {
-                    var ev = method.GetCustomAttribute<ConsoleCommand>();
-
-                    if (ev == null) 
-                        continue;
-
-                    if (Commands.ContainsKey(ev.Name.ToLower()))
-                        continue;
-
-                    Delegate del = Delegate.CreateDelegate(typeof(CommandDelegate), method);
-                    Commands.Add(ev.Name.ToLower(), del);
+                    cmd?.Invoke(args);
+                }
+                catch (Exception ex)
+                {
+                    ProxyLogger.Error($"Failed executing command {ex}", commandName);
                 }
             }
-        }
-
-        protected override async Task ExecuteAsync(CancellationToken stoppingToken)
-        {
-            while (!stoppingToken.IsCancellationRequested)
+            else
             {
-                string cmd = Console.ReadLine();
-
-                if (string.IsNullOrEmpty(cmd)) continue;
-
-                string[] args = cmd.Split(' ');
-
-                if (Commands.TryGetValue(args[0].ToLower(), out Delegate del))
-                {
-                    if (del is CommandDelegate d2)
-                    {
-                        try
-                        {
-                            d2?.Invoke(this, args.Skip(1).ToArray());
-                        }
-                        catch (Exception ex)
-                        {
-                            Logger.Error($"Failed executing command {args[0]} {ex}");
-                        }
-                    }
-                }
-                else
-                {
-                }
-
-                await Task.Delay(15);
+                ProxyLogger.Info("Unknown command. Type 'help' to see a list of available commands.", commandName);
             }
+
+            await Task.Delay(15);
         }
     }
 }

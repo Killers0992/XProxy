@@ -1,4 +1,6 @@
-﻿namespace XProxy.Misc;
+﻿using Mirror;
+
+namespace XProxy.Misc;
 
 public static class ProxyUtils
 {

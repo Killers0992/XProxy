@@ -6,7 +6,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\XProxy\XProxy.csproj" />
+    <ProjectReference Include="..\..\XProxy.API\XProxy.API.csproj" />
 	<Reference Include="UnityEngine.CoreModule">
 		<HintPath>$(UNITY_REFERENCES)\UnityEngine.CoreModule.dll</HintPath>
 	</Reference>

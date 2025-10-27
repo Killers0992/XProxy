@@ -2,18 +2,16 @@
 using PlayerRoles;
 using Portals.Core;
 using UnityEngine;
-using XProxy.Core;
-using XProxy.Networking;
-using XProxy.Objects;
-using XProxy.Responses;
-using Logger = XProxy.Misc.Logger;
+using XProxy.API.Core;
+using XProxy.API.Networking;
+using XProxy.API.Networking.Objects;
 
 namespace Lobby.Worlds;
 
 public class LobbyWorld : World
 {
-    public ConfigSyncObject ConfigSync;
-    public WaypointObject Waypoint;
+    //public ConfigSyncObject ConfigSync;
+    public WaypointToyObject Waypoint;
     public TextToyObject TextToy;
     public TextToyObject TextToy2;
 
@@ -23,13 +21,17 @@ public class LobbyWorld : World
 
         AddWaypoint(new Vector3(0f, -300f, 0f));
 
-        ConfigSync = new ConfigSyncObject(this);
+        //ConfigSync = new ConfigSyncObject(this);
 
         foreach(TextInfo text in MainClass.Singleton.Config.Texts)
         {
-            TextToyObject textObject = new TextToyObject(this, text.Text);
-            textObject.Position = new Vector3(text.PositionX, text.PositionY, text.PositionZ);
-            textObject.DisplaySize = new Vector2(150f, 25f);
+            TextToyObject textObject = new TextToyObject(this)
+            {
+                Position = new Vector3(text.PositionX, text.PositionY, text.PositionZ),
+            };
+
+            textObject.TextToy.TextFormat = text.Text;
+            textObject.TextToy.DisplaySize = new Vector2(150f, 25f);
         }
 
         foreach(PortalInfo portal in MainClass.Singleton.Config.Portals)
@@ -43,18 +45,18 @@ public class LobbyWorld : World
         PortalController.Update(this);
     }
 
-    public override void OnLoad(BaseClient client)
+    public override void OnLoad(Client client)
     {
         client.SpawnPlayer();
     }
 
-    public override void OnObjectsSpawned(BaseClient client)
+    public override void OnObjectsSpawned(Client client)
     {
         client.SetRole(RoleTypeId.Tutorial);
         client.SetHealth(100f);
         client.SetSeed(350);
 
-        client.Object.UserId = client.PreAuth.UserId;
+        client.Object.PlayerAuthenticationManager.SyncedUserId = client.PreAuth.UserId;
         client.Object.SendUpdate(client);
     }
 
